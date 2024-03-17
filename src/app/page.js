@@ -1,10 +1,12 @@
-import Image from "next/image";
+"use client";
 import styles from "./page.module.css";
 import SideBar from "@/components/SideBar";
 
 export default function Home() {
   return (
-    <main className={styles.main}>
+    <main
+    // className={styles.main}
+    >
       <SideBar />
     </main>
   );
