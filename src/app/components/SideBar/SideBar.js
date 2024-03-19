@@ -1,6 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import {
+  MdDashboard,
+  MdEventNote,
+  MdLogout,
+  MdOutlineSettings,
+  MdSupervisedUserCircle,
+} from "react-icons/md";
 import styled from "styled-components";
+import { GrGallery } from "react-icons/gr";
+
+import { FaPersonArrowUpFromLine } from "react-icons/fa6";
 
 const Wrapper = styled.div`
   .sideBar {
@@ -31,45 +42,93 @@ const Wrapper = styled.div`
       cursor: pointer;
     }
   }
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .userImage {
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .userDetail {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .username {
+    font-weight: 500;
+  }
+
+  .userTitle {
+    font-size: 12px;
+    color: var(--textSoft);
+  }
 `;
 const SideBar = () => {
   const Items = [
     {
       title: "Dashboard",
       link: "/",
+      icon: <MdDashboard />,
     },
     {
       title: "Line Up",
       link: "/lineup",
+      icon: <FaPersonArrowUpFromLine />,
     },
     {
       title: "Event",
-      link: "/event",
+      link: "/#event",
+      icon: <MdEventNote />,
     },
     {
       title: "Gallery",
       link: "/gallery",
+      icon: <GrGallery />,
     },
     {
       title: "Profile",
       link: "/profile",
+      icon: <MdSupervisedUserCircle />,
     },
     {
       title: "Settings",
       link: "/settings",
+      icon: <MdOutlineSettings />,
     },
     {
       title: "Logout",
       link: "/logout",
+      icon: <MdLogout />,
     },
   ];
   return (
     <Wrapper>
       <div className="sideBar">
+        <div className="user">
+          <Image
+            className="userImage"
+            src={"/noavatar.png"}
+            alt="no avatar"
+            width="50"
+            height="50"
+          />
+          <div className="userDetail">
+            <span className="usename">Admin</span>
+            <span className="userTittle">Administrator</span>
+          </div>
+        </div>
         <div className="items">
           {Items.map((item) => (
             <div className="item-container" id={Items.link}>
-              <Link href={item.link}>{item.title}</Link>
+              <Link href={item.link}>
+                <span style={{ marginRight: "10px" }}>{item.icon}</span>
+                {item.title}
+              </Link>
             </div>
           ))}
         </div>
