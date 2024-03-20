@@ -74,7 +74,7 @@ const SideBar = () => {
   const Items = [
     {
       title: "Dashboard",
-      link: "/",
+      link: "/dashboard",
       icon: <MdDashboard />,
     },
     {
