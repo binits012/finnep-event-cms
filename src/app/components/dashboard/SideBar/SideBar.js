@@ -22,6 +22,8 @@ const Wrapper = styled.div`
     padding: 10px;
     color: beige;
     text-decoration: none;
+    position: sticky;
+    top: 40px;
   }
   .items {
     border: 3px solid #000000;
@@ -77,22 +79,22 @@ const SideBar = () => {
     },
     {
       title: "Line Up",
-      link: "/lineup",
+      link: "/dashboard/lineup",
       icon: <FaPersonArrowUpFromLine />,
     },
     {
       title: "Event",
-      link: "/#event",
+      link: "/dashboard/events",
       icon: <MdEventNote />,
     },
     {
       title: "Gallery",
-      link: "/gallery",
+      link: "/dashboard/gallery",
       icon: <GrGallery />,
     },
     {
       title: "Profile",
-      link: "/profile",
+      link: "/dashboard/profile",
       icon: <MdSupervisedUserCircle />,
     },
     {

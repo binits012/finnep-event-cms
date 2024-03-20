@@ -9,9 +9,10 @@ import {
 } from "react-icons/md";
 
 const Navbar = () => {
+  const pathname = usePathname();
   return (
     <div className={styles.container}>
-      <div className={styles.title}>Dashboard</div>
+      <div className={styles.title}>{pathname.split("/").pop()}</div>
       <div className={styles.menu}>
         <div className={styles.search}>
           <MdSearch />
