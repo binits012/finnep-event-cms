@@ -121,17 +121,16 @@ const rows = [
   { id: 9, lastName: "Roxie", firstName: "Harvey", age: 65 },
 ];
 
-const DropzoneComponent = ({ onFileDrop }) => {
-  // const [filePreviews, setFilePreviews] = useState([]);
+const DropzoneComponent = ({ onFileDrop, filePreviews, setFilePreviews }) => {
   const onDrop = useCallback(
     (acceptedFiles) => {
       onFileDrop(acceptedFiles);
-      // setFilePreviews(
-      //   acceptedFiles.map((file) => ({
-      //     file,
-      //     preview: URL.createObjectURL(file),
-      //   }))
-      // );
+      setFilePreviews(
+        acceptedFiles.map((file) => ({
+          file,
+          preview: URL.createObjectURL(file),
+        }))
+      );
     },
     [onFileDrop]
   );
@@ -154,6 +153,8 @@ const DropzoneComponent = ({ onFileDrop }) => {
 };
 
 const Event = () => {
+  const [filePreviews, setFilePreviews] = useState([]);
+
   const handleFileDrop = (files) => {
     // Handle the dropped files here, for example, you can log them to the console
     console.log("Dropped files:", files);
@@ -186,8 +187,12 @@ const Event = () => {
           <IconButton color="primary" component="span">
             <CloudUploadIcon />
           </IconButton>
-          <DropzoneComponent onFileDrop={handleFileDrop} />
-          {/* <Box mt={2} display="flex" flexWrap="wrap">
+          <DropzoneComponent
+            onFileDrop={handleFileDrop}
+            setFilePreviews={setFilePreviews}
+            filePreviews={filePreviews}
+          />
+          <Box mt={2} display="flex" flexWrap="wrap">
             {filePreviews.map((file, index) => (
               <Box key={index} mr={1} mb={1}>
                 <img
@@ -197,7 +202,7 @@ const Event = () => {
                 />
               </Box>
             ))}
-          </Box> */}
+          </Box>
         </div>
       </Box>
     </div>
