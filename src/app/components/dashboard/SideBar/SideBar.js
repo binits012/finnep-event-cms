@@ -79,22 +79,22 @@ const SideBar = () => {
     },
     {
       title: "Line Up",
-      link: "/dashboard/lineup",
+      link: "/lineup",
       icon: <FaPersonArrowUpFromLine />,
     },
     {
       title: "Event",
-      link: "/dashboard/events",
+      link: "/events",
       icon: <MdEventNote />,
     },
     {
       title: "Gallery",
-      link: "/dashboard/gallery",
+      link: "/gallery",
       icon: <GrGallery />,
     },
     {
       title: "Profile",
-      link: "/dashboard/profile",
+      link: "/profile",
       icon: <MdSupervisedUserCircle />,
     },
     {
