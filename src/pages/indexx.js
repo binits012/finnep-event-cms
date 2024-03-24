@@ -1,6 +1,6 @@
 "use client";
 
-// import styles from "./page.module.css";
+import styles from "./page.module.css";
 import SideBar from "@/components/dashboard/SideBar/SideBar";
 import Navbar from "@/components/dashboard/NavBar/Navbar";
 
