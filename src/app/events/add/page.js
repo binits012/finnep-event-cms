@@ -16,8 +16,9 @@ import { StaticDatePicker } from "@mui/x-date-pickers";
 import styled from "styled-components";
 import FormSection from "@/components/FormSection";
 import IOSSwitch from "@/components/IOSSwtich";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DropZone from "@/components/DropZone";
+import { toast } from "react-toastify";
 
 const AddEvent = () => {
   const formik = useFormik({
@@ -44,6 +45,7 @@ const AddEvent = () => {
   const [eventPhotos, setEventPhotos] = useState([]);
 
   console.log(promotionPhotos, eventPhotos, "testtt");
+
   return (
     <FormWrapper>
       <h1>Add New Event: {formik.values.eventTitle}</h1>

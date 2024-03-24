@@ -72,12 +72,14 @@
 // export default Event;
 
 "use client";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Grid, IconButton } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { DataGrid } from "@mui/x-data-grid";
 import { useDropzone } from "react-dropzone";
 import Link from "next/link";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const columns = [
   { field: "id", headerName: "ID", width: 90 },
@@ -163,6 +165,24 @@ const Event = () => {
     console.log("Dropped files:", files);
   };
 
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await axios({
+          method: "GET",
+          baseURL: process.env.NEXT_PUBLIC_API_URL,
+          url: "event",
+        });
+        console.log(res, "check res");
+      } catch (err) {
+        console.log(err);
+        toast.error("Error getting events!!");
+      }
+    };
+    fetchEvents();
+    console.log("TESTTTTTTTT");
+  }, []);
+
   return (
     <div
       id="event"
@@ -224,3 +244,6 @@ const Event = () => {
 };
 
 export default Event;
+
+// curl --location 'https://eventapp.finnep.fi/api/event' \
+// --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InllbGxvd0JyaWRnZSIsInJvbGUiOiJzdXBlckFkbWluIiwiaWQiOiI2NWZkZWU5NTg0MWJkNjAyYzkwOGExZTIiLCJpYXQiOjE3MTEyOTAzNzYsImV4cCI6MTcxMTQ2MzE3Nn0.Oje0AWz1v0VW3RRfSy7GlJAOlKhXmYhhkl3uAwnLAFw'

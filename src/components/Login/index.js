@@ -145,21 +145,17 @@ export default function Login() {
                 </StyledSubHeader>
               </div>
               <TextField
-                borderColor={"#CCCCCC"}
                 label="Username"
                 placeholder="eg. example@mail.com"
                 onChange={(e) => setUsername(e.target.value)}
                 onKeyDown={handlePressEnter("username")}
                 value={username}
-                containerWidth={"100%"}
-                containerCSS={"margin-bottom: 30px;"}
                 style={{
                   width: "100%",
                   marginBottom: 20,
                 }}
               />
               <TextField
-                borderColor={"#CCCCCC"}
                 label="Password"
                 placeholder="Enter your password"
                 type={!!show ? "text" : "password"}
@@ -167,8 +163,6 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={handlePressEnter("password")}
                 value={password}
-                containerCSS={"margin-bottom: 30px;"}
-                containerWidth={"100%"}
                 style={{
                   width: "100%",
                   marginBottom: 20,
@@ -237,7 +231,6 @@ export default function Login() {
                 <Button
                   className="btn primary"
                   width="100%"
-                  mBot={18}
                   disabled={loading}
                   variant="contained"
                   onClick={handleSubmit}
