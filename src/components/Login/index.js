@@ -239,9 +239,8 @@ export default function Login() {
                   width="100%"
                   mBot={18}
                   disabled={loading}
-                  variant="outlined"
+                  variant="contained"
                   onClick={handleSubmit}
-                  variant="outlined"
                   style={{
                     width: "100%",
                   }}
