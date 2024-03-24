@@ -27,6 +27,7 @@ import { motion } from "framer-motion";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import axios from "axios";
+import { setUser } from "@/store/reducers/userSlice";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +48,7 @@ export default function Login() {
   //   };
   const [keepSignedIn, setKeepmeSignedIn] = useState("");
 
-  //   const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   const handleChangeKeepSignedIn = (e) => {
     if (keepSignedIn === "yes") {
@@ -73,17 +74,17 @@ export default function Login() {
 
       if (!!res.data.result) {
         if (keepSignedIn === "yes") {
-          localStorage.setItem("fts-user", JSON.stringify(res.data.result));
-          localStorage.setItem("ftsAccessToken", res.data.result.token);
+          localStorage.setItem("auth", JSON.stringify(res.data.result));
+          localStorage.setItem("accessToken", res.data.result.token);
           localStorage.setItem("stamp", moment().toISOString());
         } else {
         }
       }
-      localStorage.setItem("fts-user", JSON.stringify(res.data.result));
-      localStorage.setItem("ftsAccessToken", res.data.result.token);
+      localStorage.setItem("auth", JSON.stringify(res.data.result));
+      localStorage.setItem("accessToken", res.data.result.token);
       localStorage.setItem("stamp", moment().toISOString());
       setLoading(false);
-      //   dispatch(loginSuccessActionn(res.data.result));
+      dispatch(setUser(res.data.result));
       toast("Logged In Successfully", {
         autoClose: 5000,
         position: toast?.POSITION.TOP_RIGHT,

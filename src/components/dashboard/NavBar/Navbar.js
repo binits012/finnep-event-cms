@@ -7,7 +7,7 @@ import {
   MdPublic,
   MdSearch,
 } from "react-icons/md";
-
+import { IoLogOutOutline } from "react-icons/io5";
 const Navbar = () => {
   const pathname = usePathname();
   return (
