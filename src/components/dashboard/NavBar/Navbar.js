@@ -8,20 +8,34 @@ import {
   MdSearch,
 } from "react-icons/md";
 import { IoLogOutOutline } from "react-icons/io5";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/reducers/userSlice";
 const Navbar = () => {
   const pathname = usePathname();
+  const dispatch = useDispatch();
+
+  const handleLogOut = (e) => {
+    localStorage.removeItem("auth");
+    localStorage.removeItem("accessToken");
+    dispatch(setUser(null));
+  };
   return (
     <div className={styles.container}>
-      <div className={styles.title}>{pathname.split("/").pop()}</div>
+      <div className={styles.title}></div>
       <div className={styles.menu}>
         <div className={styles.search}>
-          <MdSearch />
-          <input type="text" placeholder="Search..." className={styles.input} />
+          {/* <MdSearch /> */}
+          {/* <input type="text" placeholder="Search..." className={styles.input} /> */}
         </div>
         <div className={styles.icons}>
-          <IoLogOutOutline size={20} />
-          <MdOutlineChat size={20} />
-          <MdNotifications size={20} />
+          <IoLogOutOutline
+            size={32}
+            title={"Log Out"}
+            onClick={handleLogOut}
+            style={{ cursor: "pointer" }}
+          />
+          <MdOutlineChat size={32} />
+          <MdNotifications size={32} />
           {/* <MdPublic size={20} /> */}
         </div>
       </div>
