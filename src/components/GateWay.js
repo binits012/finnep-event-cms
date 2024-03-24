@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import SideBar from "./dashboard/SideBar/SideBar";
 import Navbar from "./dashboard/NavBar/Navbar";
 
-const GateWay = () => {
+const GateWay = ({ children }) => {
   const dispatch = useDispatch();
   useEffect(() => {
     const auth = localStorage.getItem("auth");
@@ -26,9 +26,7 @@ const GateWay = () => {
       </div>
       <div style={{ marginLeft: 300, width: "calc(100% - 300px)" }}>
         <Navbar />
-        <div style={{ padding: 30 }}>
-          <Dashboard />
-        </div>
+        <div style={{ padding: 30 }}>{children}</div>
       </div>
     </div>
   );

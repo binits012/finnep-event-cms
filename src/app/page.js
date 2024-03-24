@@ -28,7 +28,9 @@ export default function Home() {
           pauseOnHover
           theme="light"
         />
-        <GateWay />
+        <GateWay>
+          <Dashboard />
+        </GateWay>
       </main>
     </Provider>
   );

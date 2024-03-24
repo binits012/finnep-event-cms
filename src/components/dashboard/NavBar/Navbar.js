@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./navbar.module.css";
 import {
   MdNotifications,
@@ -10,11 +10,14 @@ import {
 import { IoLogOutOutline } from "react-icons/io5";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/store/reducers/userSlice";
+// import { useRouter } from "next/router";
 const Navbar = () => {
   const pathname = usePathname();
   const dispatch = useDispatch();
+  const router = useRouter();
 
   const handleLogOut = (e) => {
+    router.push("/");
     localStorage.removeItem("auth");
     localStorage.removeItem("accessToken");
     dispatch(setUser(null));

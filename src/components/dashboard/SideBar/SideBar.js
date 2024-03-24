@@ -103,11 +103,11 @@ const SideBar = () => {
       link: "/settings",
       icon: <MdOutlineSettings />,
     },
-    {
-      title: "Logout",
-      link: "/logout",
-      icon: <MdLogout />,
-    },
+    // {
+    //   title: "Logout",
+    //   link: "/logout",
+    //   icon: <MdLogout />,
+    // },
   ];
   return (
     <Wrapper>
