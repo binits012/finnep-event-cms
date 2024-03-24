@@ -12,6 +12,8 @@ import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
 
 import { FaPersonArrowUpFromLine } from "react-icons/fa6";
+import usePagination from "@mui/material/usePagination/usePagination";
+import { usePathname } from "next/navigation";
 
 const Wrapper = styled.div`
   .sideBar {
@@ -32,18 +34,27 @@ const Wrapper = styled.div`
     padding: 10px;
   }
   .item-container {
-    padding: 10px;
+    padding: 15px 10px;
     margin: 15px 0;
     border-radius: 15px;
     transition: 0.53s;
     font-weight: 600;
+    font-size: 18px;
     letter-spacing: 1px;
+    cursor: pointer;
     &:hover {
       background-color: #ffffff;
       color: #000000;
       border: 3px solid #28282b;
-      cursor: pointer;
     }
+    a {
+      display: flex;
+      align-items: center;
+    }
+  }
+  .item-container.active {
+    background-color: #a4fc62;
+    color: #090909;
   }
   .user {
     display: flex;
@@ -76,32 +87,32 @@ const SideBar = () => {
     {
       title: "Dashboard",
       link: "/dashboard",
-      icon: <MdDashboard />,
+      icon: <MdDashboard size={24} />,
     },
     {
       title: "Line Up",
       link: "/lineup",
-      icon: <FaPersonArrowUpFromLine />,
+      icon: <FaPersonArrowUpFromLine size={24} />,
     },
     {
       title: "Event",
       link: "/events",
-      icon: <MdEventNote />,
+      icon: <MdEventNote size={24} />,
     },
     {
       title: "Gallery",
       link: "/gallery",
-      icon: <GrGallery />,
+      icon: <GrGallery size={24} />,
     },
     {
       title: "Profile",
       link: "/profile",
-      icon: <MdSupervisedUserCircle />,
+      icon: <MdSupervisedUserCircle size={24} />,
     },
     {
       title: "Settings",
       link: "/settings",
-      icon: <MdOutlineSettings />,
+      icon: <MdOutlineSettings size={24} />,
     },
     // {
     //   title: "Logout",
@@ -109,6 +120,8 @@ const SideBar = () => {
     //   icon: <MdLogout />,
     // },
   ];
+  const pathname = usePathname();
+  // console.log(pathname, "");
   return (
     <Wrapper>
       <div className="sideBar">
@@ -128,11 +141,13 @@ const SideBar = () => {
         <div className="items">
           {ITEMS.map((item) => (
             <div
-              className="item-container"
-              // id={item.title}
+              className={`${
+                pathname.includes(item.link) ? "active" : ""
+              } item-container `}
+              id={item.title}
               key={item.link}
             >
-              <Link href={item.link}>
+              <Link href={item.link} passHref>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}
               </Link>
