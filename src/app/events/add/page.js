@@ -19,8 +19,20 @@ import IOSSwitch from "@/components/IOSSwtich";
 import { useEffect, useState } from "react";
 import DropZone from "@/components/DropZone";
 import { toast } from "react-toastify";
+import { addEvent } from "@/RESTAPIs/events";
 
 const AddEvent = () => {
+  const handleSubmit = async (values) => {
+    try {
+      const res = await addEvent({
+        ...values,
+      });
+      console.log(res, "check res");
+    } catch (err) {
+      console.log(err);
+      toast.error("Error creating event!!");
+    }
+  };
   const formik = useFormik({
     initialValues: {
       eventTitle: "",
@@ -39,11 +51,12 @@ const AddEvent = () => {
       transportLink: "",
       active: "",
     },
-    onSubmit: (values) => console.log(values),
+    onSubmit: (values) => handleSubmit(values),
   });
   const [promotionPhotos, setPromotionPhotos] = useState([]);
   const [eventPhotos, setEventPhotos] = useState([]);
 
+  useEffect(() => {}, []);
   console.log(promotionPhotos, eventPhotos, "testtt");
 
   return (

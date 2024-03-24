@@ -7,7 +7,7 @@ const getHeader = (auth, form) => {
   let header = {};
   if (auth) {
     try {
-      const token = localStorage.getItem("ftsAccessToken");
+      const token = localStorage.getItem("accessToken");
       if (token) {
         header = {
           Authorization: `Bearer ${token}`,
@@ -57,8 +57,8 @@ const apiHandler = (
       const status = error?.response?.status;
       const originalRequest = error?.config;
       if (status === 401) {
-        localStorage.setItem("fts-user", "");
-        localStorage.setItem("ftsAccessToken", "");
+        localStorage.setItem("auth", "");
+        localStorage.setItem("accessToken", "");
         window.location.assign("/");
       } else {
         throw error;
