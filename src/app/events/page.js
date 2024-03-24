@@ -71,11 +71,13 @@
 
 // export default Event;
 
+"use client";
 import React, { useCallback, useState } from "react";
-import { Box, IconButton } from "@mui/material";
+import { Box, Button, Grid, IconButton } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { DataGrid } from "@mui/x-data-grid";
 import { useDropzone } from "react-dropzone";
+import Link from "next/link";
 
 const columns = [
   { field: "id", headerName: "ID", width: 90 },
@@ -143,9 +145,10 @@ const DropzoneComponent = ({ onFileDrop, filePreviews, setFilePreviews }) => {
       style={{
         border: "1px dashed black",
         padding: "20px",
-        aspectRatio: "3/2",
+        margin: "10px 0",
         textAlign: "center",
-      }}>
+      }}
+    >
       <input {...getInputProps()} />
       <p>Drag 'n' drop some files here, or click to select files</p>
     </div>
@@ -161,8 +164,16 @@ const Event = () => {
   };
 
   return (
-    <div id="event" style={{ height: 400, width: "100%", padding: "20px" }}>
-      <Box sx={{ height: 400, width: "80%" }}>
+    <div
+      id="event"
+      style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
+    >
+      <Grid container justifyContent="flex-end" mb={2}>
+        <Link passHref href="/events/add">
+          <Button variant="container">+ Add Event</Button>
+        </Link>
+      </Grid>
+      <Box sx={{ height: 400, width: "100%" }}>
         <DataGrid
           rows={rows}
           columns={columns}
@@ -183,7 +194,8 @@ const Event = () => {
             alignItems: "center",
             justifyContent: "flex-end",
             padding: "8px",
-          }}>
+          }}
+        >
           <IconButton color="primary" component="span">
             <CloudUploadIcon />
           </IconButton>
@@ -192,7 +204,9 @@ const Event = () => {
             setFilePreviews={setFilePreviews}
             filePreviews={filePreviews}
           />
-          <Box mt={2} display="flex" flexWrap="wrap">
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", padding: "8px" }}>
+          <Box mt={4} display="flex" flexWrap="wrap">
             {filePreviews.map((file, index) => (
               <Box key={index} mr={1} mb={1}>
                 <img
