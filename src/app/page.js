@@ -32,25 +32,4 @@ export default function Home() {
       </main>
     </Provider>
   );
-  return (
-    <main className={styles.main}>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      <div style={{ display: "flex" }}>
-        <SideBar />
-        <Navbar />
-      </div>
-      <Dashboard />
-    </main>
-  );
 }
