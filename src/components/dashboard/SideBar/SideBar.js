@@ -17,13 +17,14 @@ const Wrapper = styled.div`
   .sideBar {
     width: 300px;
     height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
     /* background-color: #36454f; */
     background-color: #28282b;
     padding: 10px;
     color: beige;
     text-decoration: none;
-    position: sticky;
-    top: 40px;
   }
   .items {
     border: 3px solid #000000;
@@ -71,7 +72,7 @@ const Wrapper = styled.div`
   }
 `;
 const SideBar = () => {
-  const Items = [
+  const ITEMS = [
     {
       title: "Dashboard",
       link: "/dashboard",
@@ -79,22 +80,22 @@ const SideBar = () => {
     },
     {
       title: "Line Up",
-      link: "/dashboard/lineup",
+      link: "/lineup",
       icon: <FaPersonArrowUpFromLine />,
     },
     {
       title: "Event",
-      link: "/dashboard/events",
+      link: "/events",
       icon: <MdEventNote />,
     },
     {
       title: "Gallery",
-      link: "/dashboard/gallery",
+      link: "/gallery",
       icon: <GrGallery />,
     },
     {
       title: "Profile",
-      link: "/dashboard/profile",
+      link: "/profile",
       icon: <MdSupervisedUserCircle />,
     },
     {
@@ -125,8 +126,12 @@ const SideBar = () => {
           </div>
         </div>
         <div className="items">
-          {Items.map((item) => (
-            <div className="item-container" id={Items.link}>
+          {ITEMS.map((item) => (
+            <div
+              className="item-container"
+              // id={item.title}
+              key={item.link}
+            >
               <Link href={item.link}>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}

@@ -19,9 +19,10 @@ const Navbar = () => {
           <input type="text" placeholder="Search..." className={styles.input} />
         </div>
         <div className={styles.icons}>
+          <IoLogOutOutline size={20} />
           <MdOutlineChat size={20} />
           <MdNotifications size={20} />
-          <MdPublic size={20} />
+          {/* <MdPublic size={20} /> */}
         </div>
       </div>
     </div>
