@@ -11,7 +11,7 @@ import InnerLayout from "./InnerLayout";
 const GateWay = ({ children }) => {
   const { user } = useSelector((state) => state.auth);
   console.log(user, "check abc");
-  return !user?.token ? <Login /> : <InnerLayout>{children}</InnerLayout>;
+  return !user?.accessToken ? <Login /> : <InnerLayout>{children}</InnerLayout>;
 };
 
 export default GateWay;
