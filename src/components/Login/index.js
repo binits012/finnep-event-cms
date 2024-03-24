@@ -20,7 +20,7 @@ import { HiOutlinePhone } from "react-icons/hi";
 import styled from "styled-components";
 import { useRouter } from "next/router";
 import { BeatLoader, ClipLoader } from "react-spinners";
-import { useDispatch, useSelector } from "react-redux";
+// import { useDispatch, useSelector } from "react-redux";
 // import { getResetLink, login as loginApi } from "../../RESTAPIs/users";
 import moment from "moment";
 import { motion } from "framer-motion";
@@ -28,6 +28,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import axios from "axios";
 import { setUser } from "@/store/reducers/userSlice";
+import { useDispatch } from "react-redux";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -71,29 +72,29 @@ export default function Login() {
         },
         data: { username, password },
       });
-
+      console.log(res, "check response");
       if (!!res.data.result) {
         if (keepSignedIn === "yes") {
-          localStorage.setItem("auth", JSON.stringify(res.data.result));
-          localStorage.setItem("accessToken", res.data.result.token);
+          localStorage.setItem("auth", JSON.stringify(res.data));
+          localStorage.setItem("accessToken", res.data.token);
           localStorage.setItem("stamp", moment().toISOString());
         } else {
         }
       }
-      localStorage.setItem("auth", JSON.stringify(res.data.result));
-      localStorage.setItem("accessToken", res.data.result.token);
+      localStorage.setItem("auth", JSON.stringify(res.data));
+      localStorage.setItem("accessToken", res.data.token);
       localStorage.setItem("stamp", moment().toISOString());
       setLoading(false);
-      dispatch(setUser(res.data.result));
+      dispatch(setUser(res.data));
       toast("Logged In Successfully", {
         autoClose: 5000,
-        position: toast?.POSITION.TOP_RIGHT,
+        // position: toast?.POSITION?.TOP_RIGHT,
       });
     } catch (err) {
       setLoading(false);
       toast("Invalid email or password", {
         autoClose: 5000,
-        position: toast?.POSITION.TOP_RIGHT,
+        // position: toast?.POSITION?.TOP_RIGHT,
       });
       console.log(err, "check err");
     }
@@ -110,7 +111,6 @@ export default function Login() {
       }
     }
   };
-  console.log(passwordRef);
   return (
     <Page className="container">
       <Head>
@@ -122,7 +122,7 @@ export default function Login() {
         {/* <Grid container> */}
         <div className="aircraft-img-container">
           <div className="logo">
-            <img src="/fts_logo.png" alt="logo" />
+            <img src="logo.png" alt="logo" />
           </div>
         </div>
         <Grid
@@ -155,6 +155,7 @@ export default function Login() {
                 containerCSS={"margin-bottom: 30px;"}
                 style={{
                   width: "100%",
+                  marginBottom: 20,
                 }}
               />
               <TextField
@@ -170,14 +171,16 @@ export default function Login() {
                 containerWidth={"100%"}
                 style={{
                   width: "100%",
+                  marginBottom: 20,
                 }}
-                rightIcon={
-                  !!show ? (
+                InputProps={{
+                  endAdornment: !!show ? (
                     <VisibilityOffIcon
                       onClick={() => {
                         setShow(false);
                       }}
                       size={12}
+                      style={{ cursor: "pointer" }}
                     />
                   ) : (
                     <VisibilityIcon
@@ -185,11 +188,12 @@ export default function Login() {
                       onClick={() => {
                         setShow(true);
                       }}
+                      style={{ cursor: "pointer" }}
                     />
-                  )
-                }
+                  ),
+                }}
               />
-              <Grid
+              {/* <Grid
                 className="mb-30"
                 alignSelf={"flex-start"}
                 style={{
@@ -227,7 +231,7 @@ export default function Login() {
                     </span>
                   </div>
                 </Grid>
-              </Grid>
+              </Grid> */}
 
               <Grid item md={12}>
                 <Button
@@ -237,6 +241,10 @@ export default function Login() {
                   disabled={loading}
                   variant="outlined"
                   onClick={handleSubmit}
+                  variant="outlined"
+                  style={{
+                    width: "100%",
+                  }}
                 >
                   {loading ? (
                     <BeatLoader color={"#1336f0"} speedMultiplier={0.5} />
@@ -246,19 +254,17 @@ export default function Login() {
                 </Button>
               </Grid>
 
-              <InfoContainer
+              {/* <InfoContainer
                 className="mt-30"
                 style={{ display: "flex", justifyContent: "space-between" }}
               >
                 <Box style={{ alignItems: "center", gap: "5px" }}>
                   <MdOutlineMailOutline color="var(--gray-800)" size={24} />
-                  {/* <Text content="info@flighttaxsystems.com" /> */}
                 </Box>
                 <Box style={{ alignItems: "center", gap: "5px" }}>
                   <HiOutlinePhone color="var(--gray-800)" size={24} />
-                  {/* <Text content="954.763.9363" mLeft={5} /> */}
                 </Box>
-              </InfoContainer>
+              </InfoContainer> */}
             </div>
           </LoginContainer>
         </Grid>
