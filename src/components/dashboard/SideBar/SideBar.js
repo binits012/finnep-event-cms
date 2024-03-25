@@ -92,38 +92,22 @@ const SideBar = () => {
     {
       title: "Line Up",
       link: "/lineup",
-<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
-      icon: <FaPersonArrowUpFromLine />,
-=======
       icon: <FaPersonArrowUpFromLine size={24} />,
->>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Event",
       link: "/events",
-<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
-      icon: <MdEventNote />,
-=======
       icon: <MdEventNote size={24} />,
->>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Gallery",
       link: "/gallery",
-<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
-      icon: <GrGallery />,
-=======
       icon: <GrGallery size={24} />,
->>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Profile",
       link: "/profile",
-<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
-      icon: <MdSupervisedUserCircle />,
-=======
       icon: <MdSupervisedUserCircle size={24} />,
->>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Settings",
@@ -161,8 +145,7 @@ const SideBar = () => {
                 pathname.includes(item.link) ? "active" : ""
               } item-container `}
               id={item.title}
-              key={item.link}
-            >
+              key={item.link}>
               <Link href={item.link} passHref>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}
