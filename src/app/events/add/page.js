@@ -1,10 +1,12 @@
 "use client";
 import styled from "styled-components";
 import { useState } from "react";
-import AdapterDayjs from "@mui/x-date-pickers/AdapterDayjs";
-import LocalizationProvider from "@mui/x-date-pickers/LocalizationProvider";
 import DatePicker from "@mui/x-date-pickers/DatePicker";
 import { TextField, Button } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
 const Wrapper = styled.div`
   .form {
@@ -31,11 +33,11 @@ const Wrapper = styled.div`
 `;
 
 const AddEvents = () => {
-  const [selectedDate, setSelectedDate] = useState(null);
+  // const [selectedDate, setSelectedDate] = useState(null);
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-  };
+  // const handleDateChange = (date) => {
+  //   setSelectedDate(date);
+  // };
 
   return (
     <Wrapper>
@@ -60,14 +62,25 @@ const AddEvents = () => {
           Select Date
           <input type="date" placeholder="Date" name="date" required />
         </label>
+        {/* <DatePicker
+          label="Select Date"
+          value={selectedDate}
+          onChange={handleDateChange}
+          renderInput={(params) => <TextField {...params} />}
+        /> */}
         {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DatePicker
-            label="Select Date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            renderInput={(params) => <TextField {...params} />}
-          />
+          <DemoContainer components={["DatePicker"]}>
+            <DatePicker label="Basic date picker" />
+          </DemoContainer>
         </LocalizationProvider> */}
+        <label>
+          Pick Time
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DemoContainer components={["TimePicker"]}>
+              <TimePicker label=" Time picker" />
+            </DemoContainer>
+          </LocalizationProvider>
+        </label>
         <label>
           Location
           <textarea name="address" rows="2" placeholder="Location" />
