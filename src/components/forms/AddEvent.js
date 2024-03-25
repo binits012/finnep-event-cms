@@ -12,7 +12,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { StaticTimePicker } from "@mui/x-date-pickers/StaticTimePicker";
 import { useFormik } from "formik";
-import { StaticDatePicker } from "@mui/x-date-pickers";
+import { DatePicker, StaticDatePicker } from "@mui/x-date-pickers";
 import styled from "styled-components";
 import FormSection from "@/components/FormSection";
 import IOSSwitch from "@/components/IOSSwtich";
@@ -20,8 +20,20 @@ import { useEffect, useState } from "react";
 import DropZone from "@/components/DropZone";
 import { toast } from "react-toastify";
 import { addEvent } from "@/RESTAPIs/events";
+import { useParams, useRouter } from "next/navigation";
+import apiHandler from "@/RESTAPIs/helper";
+import moment from "moment";
+import dayjs from "dayjs";
+function convertTime(minutes) {
+  // Create a moment duration from minutes
+  const duration = moment.duration(minutes, "minutes");
 
-const AddEvent = () => {
+  // Format the duration as H:mm
+  const formattedTime = moment.utc(duration.asMilliseconds()).format("H:mm");
+
+  return formattedTime;
+}
+const AddEvent = ({ editMode }) => {
   const handleSubmit = async (values) => {
     try {
       const res = await addEvent({
@@ -50,18 +62,59 @@ const AddEvent = () => {
       eventPhoto: "",
       transportLink: "",
       active: "",
+      fbLink: "",
+      xLink: "",
+      igLink: "",
     },
     onSubmit: (values) => handleSubmit(values),
   });
   const [promotionPhotos, setPromotionPhotos] = useState([]);
   const [eventPhotos, setEventPhotos] = useState([]);
 
-  useEffect(() => {}, []);
-  console.log(promotionPhotos, eventPhotos, "testtt");
+  const { id } = useParams();
+
+  const transformObtainedValuesToForm = (values) => {
+    return {
+      ...values,
+      eventDate: dayjs(moment(values.eventDate).format("YYYY-MM-DD")),
+      // eventTime: convertTime(values.eventTime),
+      eventTime: null,
+      fbLink: values.socialMedia.fb,
+      xLink: values.socialMedia.x,
+      eventPrice: values.eventPrice["$numberDecimal"],
+      //  fbLink: values.socialMedia.fb,
+    };
+  };
+  useEffect(() => {
+    if (editMode) {
+      const fetchEventById = async () => {
+        try {
+          const res = await apiHandler("GET", `event/${id}`, true);
+          console.log(res, "check res");
+          // formik.setValues(res.data.data);
+          formik.setValues(transformObtainedValuesToForm(res.data.data));
+        } catch (err) {
+          console.log(err);
+          toast.error("Error getting the event details!");
+        }
+      };
+      fetchEventById();
+    }
+  }, [editMode]);
+  console.log(
+    promotionPhotos,
+    eventPhotos,
+    formik.values,
+    // convertTime(formik.values.eventTime),
+    "testtt"
+  );
 
   return (
     <FormWrapper>
-      <h1>Add New Event: {formik.values.eventTitle}</h1>
+      <h1>
+        {" "}
+        {editMode ? "Edit" : "Add New"} Event: {formik.values.eventTitle}
+      </h1>
       <form>
         <Grid container direction="column" spacing={0}>
           <FormSection title="Introduce">
@@ -113,17 +166,22 @@ const AddEvent = () => {
                     }}
                     id="eventTime"
                     name="eventTime"
-                    value={formik.values.eventTime}
+                    // value={formik.values.eventTime}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    //  value={formik.values.eventTime}
+                    // value={formik.values.eventTime}
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="eventTitle" className="label">
                     Date
                   </FormLabel>
-                  <StaticDatePicker />
+                  <StaticDatePicker
+                    id="eventDate"
+                    name="eventDate"
+                    // value={formik.values.eventDate}
+                    onChange={(e) => setFieldValue("eventDate", e.target.value)}
+                  />
                 </Grid>
               </Grid>
             </LocalizationProvider>
@@ -250,6 +308,20 @@ const AddEvent = () => {
                   fullWidth
                 />
               </Grid>
+              <Grid item container md={10} direction={"column"}>
+                <FormLabel htmlFor="xLink" className="label">
+                  X{"("}Twitter {")"} Link
+                </FormLabel>
+                <TextField
+                  id="xLink"
+                  name="xLink"
+                  value={formik.values.xLink}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="X (Twitter) Link"
+                  fullWidth
+                />
+              </Grid>
             </Grid>
           </FormSection>
           <FormSection title="Others">
@@ -262,16 +334,16 @@ const AddEvent = () => {
                   control={
                     <IOSSwitch
                       sx={{ m: 1 }}
-                      checked={!+formik.values.hidden}
+                      checked={formik.values.active}
                       id="active"
                       name="active"
                     />
                   }
                   htmlFor="active"
-                  label=""
+                  label="Is this event acitve, happening?"
                   value={formik.values.active}
                   onChange={(e) =>
-                    formik.setFieldValue("active", !+formik.values.active)
+                    formik.setFieldValue("active", !formik.values.active)
                   }
                 />
               </Grid>
