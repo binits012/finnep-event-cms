@@ -80,6 +80,7 @@ import { useDropzone } from "react-dropzone";
 import Link from "next/link";
 import axios from "axios";
 import { toast } from "react-toastify";
+import apiHandler from "@/RESTAPIs/helper";
 
 const columns = [
   { field: "id", headerName: "ID", width: 90 },
@@ -168,11 +169,7 @@ const Event = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios({
-          method: "GET",
-          baseURL: process.env.NEXT_PUBLIC_API_URL,
-          url: "event",
-        });
+        const res = await apiHandler("GET", "event", true);
         console.log(res, "check res");
       } catch (err) {
         console.log(err);
