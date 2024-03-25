@@ -12,18 +12,21 @@ import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
 
 import { FaPersonArrowUpFromLine } from "react-icons/fa6";
+import usePagination from "@mui/material/usePagination/usePagination";
+import { usePathname } from "next/navigation";
 
 const Wrapper = styled.div`
   .sideBar {
     width: 300px;
     height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
     /* background-color: #36454f; */
     background-color: #28282b;
     padding: 10px;
     color: beige;
     text-decoration: none;
-    position: sticky;
-    top: 40px;
   }
   .items {
     border: 3px solid #000000;
@@ -31,18 +34,27 @@ const Wrapper = styled.div`
     padding: 10px;
   }
   .item-container {
-    padding: 10px;
+    padding: 15px 10px;
     margin: 15px 0;
     border-radius: 15px;
     transition: 0.53s;
     font-weight: 600;
+    font-size: 18px;
     letter-spacing: 1px;
+    cursor: pointer;
     &:hover {
       background-color: #ffffff;
       color: #000000;
       border: 3px solid #28282b;
-      cursor: pointer;
     }
+    a {
+      display: flex;
+      align-items: center;
+    }
+  }
+  .item-container.active {
+    background-color: #a4fc62;
+    color: #090909;
   }
   .user {
     display: flex;
@@ -71,43 +83,61 @@ const Wrapper = styled.div`
   }
 `;
 const SideBar = () => {
-  const Items = [
+  const ITEMS = [
     {
       title: "Dashboard",
       link: "/dashboard",
-      icon: <MdDashboard />,
+      icon: <MdDashboard size={24} />,
     },
     {
       title: "Line Up",
       link: "/lineup",
+<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
       icon: <FaPersonArrowUpFromLine />,
+=======
+      icon: <FaPersonArrowUpFromLine size={24} />,
+>>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Event",
       link: "/events",
+<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
       icon: <MdEventNote />,
+=======
+      icon: <MdEventNote size={24} />,
+>>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Gallery",
       link: "/gallery",
+<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
       icon: <GrGallery />,
+=======
+      icon: <GrGallery size={24} />,
+>>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Profile",
       link: "/profile",
+<<<<<<< HEAD:src/app/components/dashboard/SideBar/SideBar.js
       icon: <MdSupervisedUserCircle />,
+=======
+      icon: <MdSupervisedUserCircle size={24} />,
+>>>>>>> main:src/components/dashboard/SideBar/SideBar.js
     },
     {
       title: "Settings",
       link: "/settings",
-      icon: <MdOutlineSettings />,
+      icon: <MdOutlineSettings size={24} />,
     },
-    {
-      title: "Logout",
-      link: "/logout",
-      icon: <MdLogout />,
-    },
+    // {
+    //   title: "Logout",
+    //   link: "/logout",
+    //   icon: <MdLogout />,
+    // },
   ];
+  const pathname = usePathname();
+  // console.log(pathname, "");
   return (
     <Wrapper>
       <div className="sideBar">
@@ -125,9 +155,15 @@ const SideBar = () => {
           </div>
         </div>
         <div className="items">
-          {Items.map((item) => (
-            <div className="item-container" id={Items.link}>
-              <Link href={item.link}>
+          {ITEMS.map((item) => (
+            <div
+              className={`${
+                pathname.includes(item.link) ? "active" : ""
+              } item-container `}
+              id={item.title}
+              key={item.link}
+            >
+              <Link href={item.link} passHref>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}
               </Link>

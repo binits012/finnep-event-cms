@@ -1,18 +1,12 @@
 "use client";
-import Navbar from "../components/dashboard/NavBar/Navbar";
-import SideBar from "../components/dashboard/SideBar/SideBar";
-
+import InnerLayout from "@/components/InnerLayout";
+import store from "@/store/store";
+import { Provider } from "react-redux";
 const layout = ({ children }) => {
   return (
-    <div style={{ display: "flex", width: "100vw" }}>
-      <div>
-        <SideBar />
-      </div>
-      <div>
-        <Navbar />
-        {children}
-      </div>
-    </div>
+    <Provider store={store}>
+      <InnerLayout>{children}</InnerLayout>
+    </Provider>
   );
 };
 

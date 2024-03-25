@@ -72,12 +72,22 @@
 // export default Event;
 
 "use client";
+<<<<<<< HEAD
 import React, { useCallback, useState } from "react";
 import { Box, Button, IconButton } from "@mui/material";
+=======
+import React, { useCallback, useEffect, useState } from "react";
+import { Box, Button, Grid, IconButton } from "@mui/material";
+>>>>>>> main
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { DataGrid } from "@mui/x-data-grid";
 import { useDropzone } from "react-dropzone";
 import Link from "next/link";
+<<<<<<< HEAD
+=======
+import axios from "axios";
+import { toast } from "react-toastify";
+>>>>>>> main
 
 const columns = [
   { field: "id", headerName: "ID", width: 90 },
@@ -230,7 +240,8 @@ const DropzoneComponent = ({ onFileDrop, filePreviews, setFilePreviews }) => {
         padding: "20px",
         margin: "10px 0",
         textAlign: "center",
-      }}>
+      }}
+    >
       <input {...getInputProps()} />
       <p>Drag 'n' drop some files here, or click to select files</p>
     </div>
@@ -243,6 +254,7 @@ const Event = () => {
   const handleFileDrop = (files) => {
     console.log("Dropped files:", files);
   };
+<<<<<<< HEAD
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 8,
     page: 10,
@@ -259,6 +271,38 @@ const Event = () => {
         </Link>
       </div>
       <Box sx={{ height: 500, width: 1000 }}>
+=======
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await axios({
+          method: "GET",
+          baseURL: process.env.NEXT_PUBLIC_API_URL,
+          url: "event",
+        });
+        console.log(res, "check res");
+      } catch (err) {
+        console.log(err);
+        toast.error("Error getting events!!");
+      }
+    };
+    fetchEvents();
+    console.log("TESTTTTTTTT");
+  }, []);
+
+  return (
+    <div
+      id="event"
+      style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
+    >
+      <Grid container justifyContent="flex-end" mb={2}>
+        <Link passHref href="/events/add">
+          <Button variant="container">+ Add Event</Button>
+        </Link>
+      </Grid>
+      <Box sx={{ height: 400, width: "100%" }}>
+>>>>>>> main
         <DataGrid
           rows={rows}
           columns={columns}
@@ -281,7 +325,8 @@ const Event = () => {
             alignItems: "center",
             justifyContent: "flex-end",
             padding: "8px",
-          }}>
+          }}
+        >
           <IconButton color="primary" component="span">
             <CloudUploadIcon />
           </IconButton>
@@ -310,3 +355,6 @@ const Event = () => {
 };
 
 export default Event;
+
+// curl --location 'https://eventapp.finnep.fi/api/event' \
+// --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InllbGxvd0JyaWRnZSIsInJvbGUiOiJzdXBlckFkbWluIiwiaWQiOiI2NWZkZWU5NTg0MWJkNjAyYzkwOGExZTIiLCJpYXQiOjE3MTEyOTAzNzYsImV4cCI6MTcxMTQ2MzE3Nn0.Oje0AWz1v0VW3RRfSy7GlJAOlKhXmYhhkl3uAwnLAFw'
