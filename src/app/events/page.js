@@ -11,6 +11,7 @@ import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
 import { MdOutlineEdit } from "react-icons/md";
 import { HiOutlineTrash } from "react-icons/hi";
+import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -93,6 +94,16 @@ const Events = () => {
       id="event"
       style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
     >
+      <CustomBreadcrumbs
+        title={"Events"}
+        links={[
+          {
+            path: "/events",
+            title: "Events",
+            active: true,
+          },
+        ]}
+      />
       <Grid container justifyContent="flex-end" mb={2}>
         <Link passHref href="/events/add">
           <Button variant="contained">+ Add Events</Button>

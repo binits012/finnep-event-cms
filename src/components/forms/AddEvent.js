@@ -24,6 +24,7 @@ import { useParams, useRouter } from "next/navigation";
 import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
 import dayjs from "dayjs";
+import CustomBreadcrumbs from "../CustomBreadcrumbs";
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -111,10 +112,22 @@ const AddEvent = ({ editMode }) => {
 
   return (
     <FormWrapper>
-      <h1>
-        {" "}
-        {editMode ? "Edit" : "Add New"} Event: {formik.values.eventTitle}
-      </h1>
+      <CustomBreadcrumbs
+        title={`${editMode ? "Edit" : "Add New"} Event: ${
+          formik.values.eventTitle
+        }`}
+        links={[
+          {
+            path: "/events",
+            title: "Events",
+          },
+          {
+            path: "/events/add",
+            title: editMode ? "Edit Event" : "Add Event",
+            active: true,
+          },
+        ]}
+      />
       <form>
         <Grid container direction="column" spacing={0}>
           <FormSection title="Introduce">

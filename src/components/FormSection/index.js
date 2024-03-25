@@ -35,7 +35,7 @@ const FormSection = ({ children, title, ...rest }) => {
       <Container {...rest}>
         <div className="heading">
           {/* <Text content={title} size={20} bold color="#222222" /> */}
-          <Typography variant="h4">{title}</Typography>
+          <h2>{title}</h2>
         </div>
         <div className="body">{children}</div>
       </Container>
