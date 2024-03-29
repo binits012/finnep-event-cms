@@ -7,90 +7,72 @@ import { useDropzone } from "react-dropzone";
 import Link from "next/link";
 import axios from "axios";
 import { toast } from "react-toastify";
+import apiHandler from "@/RESTAPIs/helper";
+import moment from "moment";
+import { MdOutlineEdit } from "react-icons/md";
+import { HiOutlineTrash } from "react-icons/hi";
+import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 
-const columns = [
-  { field: "id", headerName: "ID", width: 90 },
-  {
-    field: "firstName",
-    headerName: "First name",
-    width: 150,
-    editable: true,
-  },
-  {
-    field: "lastName",
-    headerName: "Last name",
-    width: 150,
-    editable: true,
-  },
-  {
-    field: "age",
-    headerName: "Age",
-    type: "number",
-    width: 110,
-    editable: true,
-  },
-  {
-    field: "fullName",
-    headerName: "Full name",
-    description: "This column has a value getter and is not sortable.",
-    sortable: false,
-    width: 160,
-    valueGetter: (params) =>
-      `${params.row.firstName || ""} ${params.row.lastName || ""}`,
-  },
-];
+const Events = () => {
+  const [events, setEvents] = useState([]);
 
-const rows = [
-  { id: 1, lastName: "Snow", firstName: "Jon", age: 14 },
-  { id: 2, lastName: "Lannister", firstName: "Cersei", age: 31 },
-  { id: 3, lastName: "Lannister", firstName: "Jaime", age: 31 },
-  { id: 4, lastName: "Stark", firstName: "Arya", age: 11 },
-  { id: 5, lastName: "Targaryen", firstName: "Daenerys", age: null },
-  { id: 6, lastName: "Melisandre", firstName: null, age: 150 },
-  { id: 7, lastName: "Clifford", firstName: "Ferrara", age: 44 },
-  { id: 8, lastName: "Frances", firstName: "Rossini", age: 36 },
-  { id: 9, lastName: "Roxie", firstName: "Harvey", age: 65 },
-];
-
-const DropzoneComponent = ({ onFileDrop, filePreviews, setFilePreviews }) => {
-  const onDrop = useCallback(
-    (acceptedFiles) => {
-      onFileDrop(acceptedFiles);
-      setFilePreviews(
-        acceptedFiles.map((file) => ({
-          file,
-          preview: URL.createObjectURL(file),
-        }))
-      );
+  const COLUMNS = [
+    { field: "id", headerName: "ID", width: 90 },
+    {
+      field: "eventTitle",
+      headerName: "Title",
+      width: 150,
+      editable: true,
     },
-    [onFileDrop]
-  );
+    {
+      field: "occupancy",
+      headerName: "Occupancy",
+      width: 150,
+      editable: true,
+    },
+    {
+      field: "eventDate",
+      headerName: "Date",
+      type: "number",
+      width: 110,
+      editable: true,
+      renderCell: ({ row }) => (
+        <span>{moment(row.eventDate).format("MMM DD YYYY")}</span>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "_",
+      width: 110,
+      editable: false,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Box
+          direction="row"
+          width="100%"
+          justify="space-between"
+          className="actions">
+          <Link href={`/events/edit/${row._id}`} passHref>
+            <MdOutlineEdit
+              size={24}
+              color="#4C4C4C"
+              title="Edit Event"
+              style={{ marginLeft: 10, cursor: "pointer" }}
+            />
+          </Link>
 
-  const { getRootProps, getInputProps } = useDropzone({ onDrop });
-
-  return (
-    <div
-      {...getRootProps()}
-      style={{
-        border: "1px dashed black",
-        padding: "20px",
-        margin: "10px 0",
-        textAlign: "center",
-      }}>
-      <input {...getInputProps()} />
-      <p>Drag 'n' drop some files here, or click to select files</p>
-    </div>
-  );
-};
-
-const Event = () => {
-  const [filePreviews, setFilePreviews] = useState([]);
-
-  const handleFileDrop = (files) => {
-    // Handle the dropped files here, for example, you can log them to the console
-    console.log("Dropped files:", files);
-  };
-
+          <HiOutlineTrash
+            size={24}
+            color={`${"#C73F33"}`}
+            title="Delete Event"
+            style={{ marginLeft: 10, cursor: "pointer" }}
+            // di
+            // onClick={(e) => handleAskForDelete(e, row)}
+          />
+        </Box>
+      ),
+    },
+  ];
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -127,8 +109,8 @@ const Event = () => {
       </Grid>
       <Box sx={{ height: 400, width: "100%" }}>
         <DataGrid
-          rows={rows}
-          columns={columns}
+          rows={events}
+          columns={COLUMNS}
           initialState={{
             pagination: {
               paginationModel: {
