@@ -1,17 +1,10 @@
 "use client";
-<<<<<<< HEAD
-import React, { useCallback, useState } from "react";
-import { Box, Button, IconButton } from "@mui/material";
-=======
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, Grid, IconButton } from "@mui/material";
->>>>>>> main
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { DataGrid } from "@mui/x-data-grid";
 import { useDropzone } from "react-dropzone";
 import Link from "next/link";
-<<<<<<< HEAD
-=======
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -83,8 +76,7 @@ const DropzoneComponent = ({ onFileDrop, filePreviews, setFilePreviews }) => {
         padding: "20px",
         margin: "10px 0",
         textAlign: "center",
-      }}
-    >
+      }}>
       <input {...getInputProps()} />
       <p>Drag 'n' drop some files here, or click to select files</p>
     </div>
@@ -117,8 +109,7 @@ const Event = () => {
   return (
     <div
       id="event"
-      style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
-    >
+      style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}>
       <CustomBreadcrumbs
         title={"Events"}
         links={[
@@ -135,7 +126,6 @@ const Event = () => {
         </Link>
       </Grid>
       <Box sx={{ height: 400, width: "100%" }}>
->>>>>>> main
         <DataGrid
           rows={rows}
           columns={columns}
