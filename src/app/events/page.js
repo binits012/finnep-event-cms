@@ -9,12 +9,14 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
-import { MdOutlineEdit } from "react-icons/md";
+import { MdOutlineEdit, MdOutlineRemoveRedEye } from "react-icons/md";
 import { HiOutlineTrash } from "react-icons/hi";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
+import Modal from "@/components/Modal";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
+  const [showModal, setShowModal] = useState(false);
 
   const COLUMNS = [
     { field: "id", headerName: "ID", width: 90 },
@@ -69,6 +71,14 @@ const Events = () => {
             // di
             // onClick={(e) => handleAskForDelete(e, row)}
           />
+
+          <MdOutlineRemoveRedEye
+            size={24}
+            color="#4C4C4C"
+            title="View Event"
+            style={{ marginLeft: 5, cursor: "pointer" }}
+            onclick={() => setShowModal(true)}
+          />
         </Box>
       ),
     },
@@ -89,42 +99,47 @@ const Events = () => {
 
   // console.log(events, "TESTTTTTTTT");
   return (
-    <div
-      id="event"
-      style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}>
-      <CustomBreadcrumbs
-        title={"Events"}
-        links={[
-          {
-            path: "/events",
-            title: "Events",
-            active: true,
-          },
-        ]}
-      />
-      <Grid container justifyContent="flex-end" mb={2}>
-        <Link passHref href="/events/add">
-          <Button variant="contained">+ Add Events</Button>
-        </Link>
-      </Grid>
-      <Box sx={{ height: 400, width: "100%" }}>
-        <DataGrid
-          rows={events}
-          columns={COLUMNS}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 5,
-              },
+    <>
+      <div
+        id="event"
+        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}>
+        <CustomBreadcrumbs
+          title={"Events"}
+          links={[
+            {
+              path: "/events",
+              title: "Events",
+              active: true,
             },
-          }}
-          pageSizeOptions={[5]}
-          checkboxSelection
-          disableRowSelectionOnClick
-          getRowId={(row) => row._id}
+          ]}
         />
-      </Box>
-    </div>
+        <Grid container justifyContent="flex-end" mb={2}>
+          <Link passHref href="/events/add">
+            <Button variant="contained">+ Add Events</Button>
+          </Link>
+        </Grid>
+        <Box sx={{ height: 400, width: "100%" }}>
+          <DataGrid
+            rows={events}
+            columns={COLUMNS}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 5,
+                },
+              },
+            }}
+            pageSizeOptions={[5]}
+            checkboxSelection
+            disableRowSelectionOnClick
+            getRowId={(row) => row._id}
+          />
+        </Box>
+      </div>
+      <Modal isVisible={showModal} onClose={() => setShowModal(false)}>
+        Modal for preview
+      </Modal>
+    </>
   );
 };
 
