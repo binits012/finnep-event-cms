@@ -365,7 +365,7 @@ const AddEvent = ({ editMode }) => {
         </Grid>
         <Grid container>
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
-            Add Event
+            {editMode ? "Update " : " Add"} Event
           </Button>
         </Grid>
       </form>
