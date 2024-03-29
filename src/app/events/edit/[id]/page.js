@@ -1,7 +1,7 @@
 const { default: AddEvent } = require("@/components/forms/AddEvent");
 
 const AddEventPage = () => {
-  return <AddEvent />;
+  return <AddEvent editMode={true} />;
 };
 
 export default AddEventPage;
