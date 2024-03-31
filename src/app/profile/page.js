@@ -33,6 +33,7 @@ import {
   plugin_annotate_locale_en_gb,
   markup_editor_defaults,
   markup_editor_locale_en_gb,
+  plugin_sticker_locale_en_gb,
 } from "@pqina/pintura";
 setPlugins(plugin_crop, plugin_finetune, plugin_filter, plugin_annotate);
 
@@ -48,6 +49,7 @@ const editorDefaults = {
     ...plugin_crop_locale_en_gb,
     ...plugin_finetune_locale_en_gb,
     ...plugin_filter_locale_en_gb,
+    ...plugin_sticker_locale_en_gb,
     ...plugin_annotate_locale_en_gb,
     ...markup_editor_locale_en_gb,
   },
@@ -57,8 +59,8 @@ const page = () => {
   const [inlineResult, setInlineResult] = useState("");
 
   // modal
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalResult, setModalResult] = useState("");
+  // const [modalVisible, setModalVisible] = useState(false);
+  // const [modalResult, setModalResult] = useState("");
 
   // overlay
   const [overlayVisible, setOverlayVisible] = useState(false);
@@ -69,10 +71,11 @@ const page = () => {
   return (
     <div className="App">
       <h1>Pintura Image Editor</h1>
-
+      <br />
       <h2>Inline</h2>
+      <br />
 
-      <div style={{ height: "70vh" }}>
+      <div style={{ height: "90vh" }}>
         <PinturaEditor
           {...editorDefaults}
           className={`${pintura} ${pinturaTheme}`}
@@ -92,7 +95,7 @@ const page = () => {
         </p>
       )}
 
-      <h2>Modal</h2>
+      {/* <h2>Modal</h2>
 
       <p>
         <button onClick={() => setModalVisible(true)}>Open editor</button>
@@ -111,7 +114,7 @@ const page = () => {
         <p>
           <img src={modalResult} alt="" />
         </p>
-      )}
+      )} */}
 
       <h2>Overlay</h2>
 
