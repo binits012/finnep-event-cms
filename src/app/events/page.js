@@ -19,7 +19,6 @@ const Events = () => {
   const [showModal, setShowModal] = useState(false);
 
   const COLUMNS = [
-    { field: "id", headerName: "ID", width: 90 },
     {
       field: "eventTitle",
       headerName: "Title",
@@ -44,7 +43,7 @@ const Events = () => {
     },
     {
       field: "actions",
-      headerName: "_",
+      headerName: "Actions",
       width: 110,
       editable: false,
       sortable: false,
@@ -77,7 +76,7 @@ const Events = () => {
             color="#4C4C4C"
             title="View Event"
             style={{ marginLeft: 5, cursor: "pointer" }}
-            onclick={() => setShowModal(true)}
+            onClick={() => setShowModal(true)}
           />
         </Box>
       ),
@@ -96,7 +95,6 @@ const Events = () => {
     };
     fetchEvents();
   }, []);
-
   // console.log(events, "TESTTTTTTTT");
   return (
     <>
@@ -130,14 +128,15 @@ const Events = () => {
               },
             }}
             pageSizeOptions={[5]}
-            checkboxSelection
             disableRowSelectionOnClick
             getRowId={(row) => row._id}
           />
         </Box>
       </div>
       <Modal isVisible={showModal} onClose={() => setShowModal(false)}>
-        Modal for preview
+        <div>
+          <h1>test</h1>
+        </div>
       </Modal>
     </>
   );
