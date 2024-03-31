@@ -24,17 +24,17 @@ const StyleModal = styled.div`
   .modal {
     position: fixed;
     inset: 0;
-    background-color: black;
-    opacity: 0.5;
-    backdrop-filter: blur(10px);
+    background-color: transparent;
+    backdrop-filter: blur(2px);
     display: flex;
     justify-content: center;
     align-items: center;
   }
   .box {
     display: flex;
-    width: 800px;
+    width: 80%;
     height: 100%;
+    opacity: 100%;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -51,7 +51,7 @@ const StyleModal = styled.div`
     padding: 20px;
     opacity: 100%;
     border-radius: 10px;
-    width: 50vh;
-    height: 50vh;
+    width: 100%;
+    height: 90%;
   }
 `;
