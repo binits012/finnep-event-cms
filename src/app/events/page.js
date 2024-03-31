@@ -17,6 +17,9 @@ import Modal from "@/components/Modal";
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [targetRowId, setTargetRowId] = useState(null);
+  console.log(selectedEvent, "check selected event");
 
   const COLUMNS = [
     {
@@ -76,7 +79,13 @@ const Events = () => {
             color="#4C4C4C"
             title="View Event"
             style={{ marginLeft: 5, cursor: "pointer" }}
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setShowModal(true);
+              setTargetRowId(row._id);
+              setSelectedEvent(row);
+              console.log(row, "modal");
+              console.log(targetRowId, "target");
+            }}
           />
         </Box>
       ),
@@ -133,9 +142,20 @@ const Events = () => {
           />
         </Box>
       </div>
-      <Modal isVisible={showModal} onClose={() => setShowModal(false)}>
+      <Modal
+        isVisible={showModal}
+        onClose={() => setShowModal(false)}
+        targetRowId={targetRowId}>
         <div>
-          <h1>test</h1>
+          {/* <h1>{selectedEvent.eventTitle}</h1>
+          <p>{selectedEvent.eventDescription}</p> */}
+          {/* <p>{selectedEvent.eventTime}</p>
+          <p>{moment(selectedEvent.eventDate).format("MMM DD YYYY")}</p>
+          <p>{selectedEvent.eventPrice}</p>
+          <p>{selectedEvent.occupancy}</p>
+          <p>{selectedEvent.eventLocationAddress}</p>
+          <p>{selectedEvent.eventLocationGeoCode}</p>
+          <p>{selectedEvent.eventPromotionPhoto}</p> */}
         </div>
       </Modal>
     </>
