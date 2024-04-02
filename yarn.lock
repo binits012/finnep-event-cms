@@ -417,6 +417,11 @@
   resolved "https://registry.yarnpkg.com/@pqina/pintura/-/pintura-8.76.0.tgz#4270697643b39daa0995b60cd58770208682a0d3"
   integrity sha512-3txzvtrwvYazLwkMi+YhqmgVsLWFry3KSFhM6hw+xKBgFCmeVcF0Lt6gFJevsukOP3Igx9fcYYFHnk/AIfkx6Q==
 
+"@pqina/react-pintura@^9.0.3":
+  version "9.0.3"
+  resolved "https://registry.yarnpkg.com/@pqina/react-pintura/-/react-pintura-9.0.3.tgz#30627ea94e5d46a7ad29657db15262479561e4c9"
+  integrity sha512-AYeiUUO1NFBBLH72XlMSX9gt9uGOGIkl0MysveH5Zg4GpXIAgyl4YMoNo7GQ/KvuY98lIxx1X+abF3vaeWAAPQ==
+
 "@redux-saga/core@^1.3.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@redux-saga/core/-/core-1.3.0.tgz#2ce08b73d407fc6ea9e7f7d83d2e97d981a3a8b8"
