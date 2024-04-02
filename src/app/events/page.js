@@ -1,8 +1,8 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button, Grid, IconButton } from "@mui/material";
+import { Box, Button, Grid, IconButton, Input } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { useDropzone } from "react-dropzone";
 import Link from "next/link";
 import axios from "axios";
@@ -14,13 +14,14 @@ import { HiOutlineTrash } from "react-icons/hi";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 import Modal from "@/components/Modal";
 import styled from "styled-components";
-import { FaLocationArrow } from "react-icons/fa6";
 import { PulseLoader } from "react-spinners";
+import { CiSearch } from "react-icons/ci";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [search, setSearch] = useState("");
   // console.log(selectedEvent, "check selected event");
 
   const COLUMNS = [
@@ -104,6 +105,13 @@ const Events = () => {
     };
     fetchEvents();
   }, []);
+  useEffect(() => {
+    setEvents(
+      events.filter((event) =>
+        event.eventTitle.toLowerCase().includes(search.toLowerCase())
+      )
+    );
+  }, [search]);
   // console.log(events, "TESTTTTTTTT");
   return (
     <>
@@ -120,11 +128,39 @@ const Events = () => {
             },
           ]}
         />
-        <Grid container justifyContent="flex-end" mb={2}>
-          <Link passHref href="/events/add">
-            <Button variant="contained">+ Add Events</Button>
-          </Link>
+        <Grid container justifyContent="space-between">
+          <Grid container justifyContent="flex-start" mb={2}>
+            <CiSearch
+              size={20}
+              style={{ marginRight: 8, marginTop: 7 }}
+              title="Search Events"
+            />
+            <Input
+              // variant="soft"
+              placeholder="Search Event"
+              value={search}
+              sx={{
+                width: 200,
+                "--Input-focusedInset": "var(--any, )",
+                "--Input-focusedThickness": "0.50rem",
+                "--Input-focusedHighlight": "rgba(13,110,253,.25)",
+                "&::before": {
+                  transition: "box-shadow .15s ease-in-out",
+                },
+                "&:focus-within": {
+                  borderColor: "#86b7fe",
+                },
+              }}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </Grid>
+          <Grid container justifyContent="flex-end" mb={2}>
+            <Link passHref href="/events/add">
+              <Button variant="contained">+ Add Events</Button>
+            </Link>
+          </Grid>
         </Grid>
+
         <Box sx={{ height: 400, width: "100%" }}>
           <DataGrid
             rows={events}
