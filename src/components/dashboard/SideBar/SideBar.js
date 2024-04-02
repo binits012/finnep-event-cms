@@ -145,8 +145,7 @@ const SideBar = () => {
                 pathname.includes(item.link) ? "active" : ""
               } item-container `}
               id={item.title}
-              key={item.link}
-            >
+              key={item.link}>
               <Link href={item.link} passHref>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}

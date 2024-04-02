@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 
 const Container = styled.section`
   width: 60%;
-  background: #fff00;
+  background: #fff000;
   /* muted-color */
   min-height: 100px;
   border: 1px dashed #bdbdbd;
