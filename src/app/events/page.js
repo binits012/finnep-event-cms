@@ -15,7 +15,10 @@ import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 import Modal from "@/components/Modal";
 import styled from "styled-components";
 import { PulseLoader } from "react-spinners";
-import { CiSearch } from "react-icons/ci";
+import { RxCross1 } from "react-icons/rx";
+import { IoIosSearch } from "react-icons/io";
+import { FaFacebook, FaInstagram } from "react-icons/fa6";
+import { RiTwitterXFill } from "react-icons/ri";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -26,25 +29,83 @@ const Events = () => {
 
   const COLUMNS = [
     {
+      field: "eventPromotionPhoto",
+      headerName: "Thumbnail",
+      width: 100,
+      // editable: true,
+      renderCell: (abc) => {
+        return <img src={abc.row.eventPromotionPhoto} width={50} height={50} />;
+      },
+    },
+    {
       field: "eventTitle",
       headerName: "Title",
       width: 150,
-      editable: true,
+      // editable: true,
     },
     {
       field: "occupancy",
       headerName: "Occupancy",
       width: 150,
-      editable: true,
+      // editable: true,
+    },
+    {
+      field: "eventPrice",
+      headerName: "Price",
+      width: 150,
+      // editable: true,
+      renderCell: (abc, def) => {
+        // console.log(def, abc, "test 123434245");
+        return <span>{abc.row.eventPrice.$numberDecimal}</span>;
+      },
     },
     {
       field: "eventDate",
       headerName: "Date",
       type: "number",
       width: 110,
-      editable: true,
+      // editable: true,
       renderCell: ({ row }) => (
         <span>{moment(row.eventDate).format("MMM DD YYYY")}</span>
+      ),
+    },
+    {
+      field: "socialMedia",
+      headerName: "Social Media Links",
+      width: 130,
+      editable: false,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Box
+          direction="row"
+          width="100%"
+          justify="space-between"
+          className="actions">
+          <Link href={`${row.fblink}`} target="_blank">
+            <FaFacebook
+              size={24}
+              color="#4C4C4C"
+              title="Facebook Link"
+              style={{ marginLeft: 10, cursor: "pointer" }}
+            />
+          </Link>
+          <Link href={`${row.xLink}`} target="_blank">
+            <RiTwitterXFill
+              size={24}
+              color="#4C4C4C"
+              title="X Link"
+              style={{ marginLeft: 10, cursor: "pointer" }}
+            />
+          </Link>
+          <Link href={`${row.igLink}`} target="_blank">
+            <FaInstagram
+              size={24}
+              color="#4C4C4C"
+              title="Instagram Link"
+              style={{ marginLeft: 10, cursor: "pointer" }}
+            />
+          </Link>
+        </Box>
       ),
     },
     {
@@ -105,13 +166,13 @@ const Events = () => {
     };
     fetchEvents();
   }, []);
-  useEffect(() => {
-    setEvents(
-      events.filter((event) =>
-        event.eventTitle.toLowerCase().includes(search.toLowerCase())
-      )
-    );
-  }, [search]);
+  // useEffect(() => {
+  //   setEvents(
+  //     events.filter((event) =>
+  //       event.eventTitle.toLowerCase().includes(search.toLowerCase())
+  //     )
+  //   );
+  // }, [search]);
   // console.log(events, "TESTTTTTTTT");
   return (
     <>
@@ -130,11 +191,6 @@ const Events = () => {
         />
         <Grid container justifyContent="space-between">
           <Grid container justifyContent="flex-start" mb={2}>
-            <CiSearch
-              size={20}
-              style={{ marginRight: 8, marginTop: 7 }}
-              title="Search Events"
-            />
             <Input
               // variant="soft"
               placeholder="Search Event"
@@ -152,6 +208,26 @@ const Events = () => {
                 },
               }}
               onChange={(e) => setSearch(e.target.value)}
+              endAdornment={
+                search && search !== " " ? (
+                  <RxCross1
+                    size={25}
+                    style={{
+                      margin: 8,
+                      cursor: "pointer",
+                    }}
+                    onClick={(e) => setSearch("")}
+                  />
+                ) : (
+                  <IoIosSearch
+                    size={30}
+                    style={{
+                      margin: 8,
+                      cursor: "pointer",
+                    }}
+                  />
+                )
+              }
             />
           </Grid>
           <Grid container justifyContent="flex-end" mb={2}>
@@ -163,7 +239,9 @@ const Events = () => {
 
         <Box sx={{ height: 400, width: "100%" }}>
           <DataGrid
-            rows={events}
+            rows={events.filter((event) =>
+              event.eventTitle.toLowerCase().includes(search.toLowerCase())
+            )}
             columns={COLUMNS}
             initialState={{
               pagination: {
