@@ -12,7 +12,9 @@ const Modal = ({ isVisible, onClose, children }) => {
       <div className="modal" id="modal" onClick={handleClose}>
         <div className="box">
           <IoClose size={24} className="close" onClick={onClose} />
-          <div className="content">{children}</div>
+          <div className="content">
+            <div>{children}</div>
+          </div>
         </div>
       </div>
     </StyleModal>
@@ -28,23 +30,26 @@ const StyleModal = styled.div`
     backdrop-filter: blur(2px);
     display: flex;
     justify-content: center;
-    align-items: center;
   }
   .box {
     display: flex;
     width: 80%;
     height: 100%;
-    opacity: 100%;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
   }
   .close {
     cursor: pointer;
     align-self: flex-end;
-    width: 100%;
-    color: red;
+    margin-top: 20;
+    color: black;
+    transition: 0.5s ease-in-out;
+    &:hover {
+      color: red;
+      transform: scale(1.5);
+    }
   }
   .content {
     background-color: white;
@@ -54,5 +59,26 @@ const StyleModal = styled.div`
     width: 100%;
     height: 90%;
     overflow-y: auto;
+    border: 2px solid black;
+    div {
+      border: none;
+    }
+  }
+  .content::-webkit-scrollbar {
+    width: 10px; /* Width of the scrollbar */
+  }
+
+  .content::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Color of the track */
+    border-radius: 5px; /* Roundness of the track */
+  }
+
+  .content::-webkit-scrollbar-thumb {
+    background: #888; /* Color of the thumb */
+    border-radius: 5px; /* Roundness of the thumb */
+  }
+
+  .content::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Color of the thumb on hover */
   }
 `;
