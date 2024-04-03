@@ -33,6 +33,7 @@ const Events = () => {
       headerName: "Thumbnail",
       width: 100,
       // editable: true,
+      sortable: false,
       renderCell: (abc) => {
         return <img src={abc.row.eventPromotionPhoto} width={50} height={50} />;
       },
@@ -40,19 +41,20 @@ const Events = () => {
     {
       field: "eventTitle",
       headerName: "Title",
-      width: 150,
+      width: 180,
       // editable: true,
     },
     {
       field: "occupancy",
       headerName: "Occupancy",
-      width: 150,
+      width: 90,
+      sortable: false,
       // editable: true,
     },
     {
       field: "eventPrice",
       headerName: "Price",
-      width: 150,
+      width: 80,
       // editable: true,
       renderCell: (abc, def) => {
         // console.log(def, abc, "test 123434245");
@@ -72,7 +74,7 @@ const Events = () => {
     {
       field: "socialMedia",
       headerName: "Social Media Links",
-      width: 130,
+      width: 150,
       editable: false,
       sortable: false,
       renderCell: ({ row }) => (
@@ -81,7 +83,7 @@ const Events = () => {
           width="100%"
           justify="space-between"
           className="actions">
-          <Link href={`${row.fblink}`} target="_blank">
+          <Link href={`${row.socialMedia.fb}`} target="_blank">
             <FaFacebook
               size={24}
               color="#4C4C4C"
@@ -89,7 +91,7 @@ const Events = () => {
               style={{ marginLeft: 10, cursor: "pointer" }}
             />
           </Link>
-          <Link href={`${row.xLink}`} target="_blank">
+          <Link href={`${row.socialMedia.x}`} target="_blank">
             <RiTwitterXFill
               size={24}
               color="#4C4C4C"
@@ -97,7 +99,7 @@ const Events = () => {
               style={{ marginLeft: 10, cursor: "pointer" }}
             />
           </Link>
-          <Link href={`${row.igLink}`} target="_blank">
+          <Link href={`${row.socialMedia.ig}`} target="_blank">
             <FaInstagram
               size={24}
               color="#4C4C4C"
@@ -190,7 +192,7 @@ const Events = () => {
           ]}
         />
         <Grid container justifyContent="space-between">
-          <Grid container justifyContent="flex-start" mb={2}>
+          {/* <Grid container justifyContent="flex-start" mb={2}>
             <Input
               // variant="soft"
               placeholder="Search Event"
@@ -229,7 +231,7 @@ const Events = () => {
                 )
               }
             />
-          </Grid>
+          </Grid> */}
           <Grid container justifyContent="flex-end" mb={2}>
             <Link passHref href="/events/add">
               <Button variant="contained">+ Add Events</Button>
@@ -255,6 +257,47 @@ const Events = () => {
             getRowId={(row) => row._id}
             loading={events.length === 0}
             slots={{
+              toolbar: () => (
+                <Input
+                  // variant="soft"
+                  placeholder="Search Event"
+                  value={search}
+                  sx={{
+                    width: 200,
+                    margin: 2,
+                    "--Input-focusedInset": "var(--any, )",
+                    "--Input-focusedThickness": "0.50rem",
+                    "--Input-focusedHighlight": "rgba(13,110,253,.25)",
+                    "&::before": {
+                      transition: "box-shadow .15s ease-in-out",
+                    },
+                    "&:focus-within": {
+                      borderColor: "#86b7fe",
+                    },
+                  }}
+                  onChange={(e) => setSearch(e.target.value)}
+                  endAdornment={
+                    search && search !== " " ? (
+                      <RxCross1
+                        size={25}
+                        style={{
+                          margin: 8,
+                          cursor: "pointer",
+                        }}
+                        onClick={(e) => setSearch("")}
+                      />
+                    ) : (
+                      <IoIosSearch
+                        size={30}
+                        style={{
+                          margin: 8,
+                          cursor: "pointer",
+                        }}
+                      />
+                    )
+                  }
+                />
+              ),
               loadingOverlay: () => (
                 <div
                   style={{
@@ -293,7 +336,7 @@ const Events = () => {
                 src={selectedEvent?.eventPromotionPhoto}
                 alt={selectedEvent?.eventTitle}
                 width={500}
-                height={800}
+                height={600}
               />
             </div>
             <div className="info">
@@ -348,18 +391,21 @@ const Styled = styled.div`
     display: flex;
     flex-direction: row;
     padding: 20px;
+    /* border: none; */
   }
   .info {
     padding-left: 20px;
     width: 100%;
     display: flex;
     flex-direction: column;
+    padding: 20px;
     h1 {
       align-self: center;
       font-size: 45px;
       margin-bottom: 20px;
       font-weight: bolder;
       justify-content: center;
+      text-decoration: underline;
     }
     .description {
       font-size: 16px;
