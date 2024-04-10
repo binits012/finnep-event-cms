@@ -89,11 +89,7 @@ const SideBar = () => {
       link: "/dashboard",
       icon: <MdDashboard size={24} />,
     },
-    {
-      title: "Line Up",
-      link: "/lineup",
-      icon: <FaPersonArrowUpFromLine size={24} />,
-    },
+
     {
       title: "Event",
       link: "/events",
@@ -145,7 +141,8 @@ const SideBar = () => {
                 pathname.includes(item.link) ? "active" : ""
               } item-container `}
               id={item.title}
-              key={item.link}>
+              key={item.link}
+            >
               <Link href={item.link} passHref>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}
