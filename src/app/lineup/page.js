@@ -1,9 +1,9 @@
 "use client";
 import React, { useState } from "react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+// import ReactQuill from "react-quill";
+// import "react-quill/dist/quill.snow.css";
 
-const page = () => {
+const LineUp = () => {
   // const [value, setValue] = useState("");
   // const toolbarOptions = [
   //   ["bold", "italic", "underline", "strike"], // toggled buttons
@@ -45,4 +45,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default LineUp;
