@@ -19,12 +19,15 @@ import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
 import { FaFacebook, FaInstagram } from "react-icons/fa6";
 import { RiTwitterXFill } from "react-icons/ri";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
   // console.log(selectedEvent, "check selected event");
 
   const COLUMNS = [
@@ -191,6 +194,7 @@ const Events = () => {
             },
           ]}
         />
+
         <Grid container justifyContent="space-between">
           {/* <Grid container justifyContent="flex-start" mb={2}>
             <Input
@@ -234,8 +238,18 @@ const Events = () => {
           </Grid> */}
           <Grid container justifyContent="flex-end" mb={2}>
             <Link passHref href="/events/add">
-              <Button variant="contained">+ Add Events</Button>
+              <Button variant="contained" onClick={() => setOpen(true)}>
+                + Add Events
+              </Button>
             </Link>
+            <Backdrop
+              sx={{
+                color: "#fff",
+                zIndex: (theme) => theme.zIndex.drawer + 1,
+              }}
+              open={open}>
+              <CircularProgress color="inherit" />
+            </Backdrop>
           </Grid>
         </Grid>
 

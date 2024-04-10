@@ -29,12 +29,15 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import axios from "axios";
 import { setUser } from "@/store/reducers/userSlice";
 import { useDispatch } from "react-redux";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
+
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [open, setOpen] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetLinkEmail, setResetLinkEmail] = useState("");
   //   const handleSendResetLink = async () => {
@@ -62,6 +65,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     setLoading(true);
+    setOpen(true);
     try {
       const res = await axios({
         method: "POST",
@@ -129,14 +133,12 @@ export default function Login() {
           item
           container
           direction="column"
-          className="field-container login-container"
-        >
+          className="field-container login-container">
           <LoginContainer
             initial={{ opacity: 0.75, translateX: -80, scale: 1 }}
             animate={{ opacity: 1, translateX: 10, scale: 1 }}
             exit={{ opacity: 0, translateX: -24 }}
-            transition={{ duration: 0.5 }}
-          >
+            transition={{ duration: 0.5 }}>
             <div className="login-form-wrap">
               <div className="mb-30">
                 <StyledHeader>Login</StyledHeader>
@@ -236,14 +238,23 @@ export default function Login() {
                   onClick={handleSubmit}
                   style={{
                     width: "100%",
-                  }}
-                >
+                  }}>
                   {loading ? (
                     <BeatLoader color={"#1336f0"} speedMultiplier={0.5} />
                   ) : (
                     "Login"
                   )}
                 </Button>
+                <Backdrop
+                  sx={{
+                    color: "#fff",
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                  }}
+                  open={open}
+                  // onClick={() => handleSubmit}
+                >
+                  <CircularProgress color="inherit" />
+                </Backdrop>
               </Grid>
 
               {/* <InfoContainer
