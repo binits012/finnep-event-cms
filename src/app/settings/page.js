@@ -5,13 +5,16 @@ import FormSection from "@/components/FormSection";
 import TextEditor from "@/components/TextEditor";
 import { Grid, Typography, FormLabel, TextField, Button } from "@mui/material";
 import { useFormik } from "formik";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
 
 import { toast } from "react-toastify";
 
 import styled from "styled-components";
 
 const Settings = () => {
+  const [open, setOpen] = useState(false);
   const handleSubmit = async (values) => {
     try {
       const res = await apiHandler(
@@ -33,9 +36,11 @@ const Settings = () => {
         }
       );
       toast.success("Settings updated!!");
+      setOpen(true);
     } catch (err) {
       console.log(err);
       toast.error("Error updaing settings");
+      setOpen(false);
     }
   };
   const formik = useFormik({
@@ -155,8 +160,7 @@ const Settings = () => {
             </FormSection>
             <FormSection
               title="Social Media"
-              containerCSS={`margin-top: 20px;`}
-            >
+              containerCSS={`margin-top: 20px;`}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="email" className="label">
@@ -208,6 +212,14 @@ const Settings = () => {
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             Update Front Page Details
           </Button>
+          <Backdrop
+            sx={{
+              color: "#fff",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+            open={open}>
+            <CircularProgress color="inherit" />
+          </Backdrop>
         </Grid>
       </form>
     </FormWrapper>
