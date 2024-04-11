@@ -19,7 +19,18 @@ const Settings = () => {
         `setting/${values?._id}`,
         true,
         false,
-        values
+        {
+          ...values,
+          socialMedia: {
+            fb: values.fbLink,
+            x: values.xLink,
+            // insta: values.instaLink,
+          },
+          contactInfo: {
+            email: values.email,
+            phone: values.phone,
+          },
+        }
       );
       toast.success("Settings updated!!");
     } catch (err) {
