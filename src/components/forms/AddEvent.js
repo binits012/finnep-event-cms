@@ -26,6 +26,10 @@ import moment from "moment";
 import dayjs from "dayjs";
 import CustomBreadcrumbs from "../CustomBreadcrumbs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -76,22 +80,26 @@ const AddEvent = ({ editMode }) => {
       xLink: "",
       igLink: "",
     },
-    onSubmit: (values) => handleSubmit(values),
+    onSubmit: (values) => handleSubmit(values, timeZone),
   });
   const [promotionPhotos, setPromotionPhotos] = useState([]);
   const [eventPhotos, setEventPhotos] = useState([]);
 
   const { id } = useParams();
 
-  const transformObtainedValuesToForm = (values) => {
+  const transformObtainedValuesToForm = (values, tz) => {
+    console.log(values);
     return {
       ...values,
-      eventDate: dayjs(moment(values.eventDate).format("YYYY-MM-DD")),
+      eventDate: dayjs(
+        moment.utc(values.eventDate).format("YYYY-MM-DDTHH:mm:sss")
+      ),
       // eventTime: convertTime(values.eventTime),
       eventTime: null,
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
       eventPrice: values.eventPrice["$numberDecimal"],
+      timeZone: tz,
       //  fbLink: values.socialMedia.fb,
     };
   };
@@ -102,7 +110,9 @@ const AddEvent = ({ editMode }) => {
           const res = await apiHandler("GET", `event/${id}`, true);
           console.log(res, "check res");
           // formik.setValues(res.data.data);
-          formik.setValues(transformObtainedValuesToForm(res.data.data));
+          formik.setValues(
+            transformObtainedValuesToForm(res.data.data, res.data.timeZone)
+          );
         } catch (err) {
           console.log(err);
           toast.error("Error getting the event details!");
@@ -209,7 +219,7 @@ const AddEvent = ({ editMode }) => {
                   <StaticDatePicker
                     id="eventDate"
                     name="eventDate"
-                    // value={formik.values.eventDate}
+                    value={dayjs(formik.values.eventDate)}
                     onChange={(e) => setFieldValue("eventDate", e.target.value)}
                   />
                 </Grid> */}
