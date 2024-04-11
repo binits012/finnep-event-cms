@@ -25,6 +25,10 @@ import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
 import dayjs from "dayjs";
 import CustomBreadcrumbs from "../CustomBreadcrumbs";
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(utc);
+dayjs.extend(timezone);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -67,22 +71,24 @@ const AddEvent = ({ editMode }) => {
       xLink: "",
       igLink: "",
     },
-    onSubmit: (values) => handleSubmit(values),
+    onSubmit: (values) => handleSubmit(values, timeZone),
   });
   const [promotionPhotos, setPromotionPhotos] = useState([]);
   const [eventPhotos, setEventPhotos] = useState([]);
 
   const { id } = useParams();
 
-  const transformObtainedValuesToForm = (values) => {
+  const transformObtainedValuesToForm = (values,tz) => {
+    console.log( values);
     return {
       ...values,
-      eventDate: dayjs(moment(values.eventDate).format("YYYY-MM-DD")),
+      eventDate: dayjs(moment.utc(values.eventDate).format("YYYY-MM-DDTHH:mm:sss")),
       // eventTime: convertTime(values.eventTime),
       eventTime: null,
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
       eventPrice: values.eventPrice["$numberDecimal"],
+      timeZone: tz
       //  fbLink: values.socialMedia.fb,
     };
   };
@@ -93,7 +99,9 @@ const AddEvent = ({ editMode }) => {
           const res = await apiHandler("GET", `event/${id}`, true);
           console.log(res, "check res");
           // formik.setValues(res.data.data);
-          formik.setValues(transformObtainedValuesToForm(res.data.data));
+          formik.setValues(transformObtainedValuesToForm(res.data.data, res.data.timeZone)); 
+           
+           
         } catch (err) {
           console.log(err);
           toast.error("Error getting the event details!");
@@ -177,9 +185,12 @@ const AddEvent = ({ editMode }) => {
                     sx={{
                       margin: 0,
                     }}
+                    timezone={formik.values.timeZone}
                     id="eventTime"
                     name="eventTime"
-                    // value={formik.values.eventTime}
+                    views={['hours', 'minutes']} // Only display hours and minutes
+                    ampm={false} // Disable AM/PM indicators
+                    value={dayjs(formik.values.eventDate)}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     // value={formik.values.eventTime}
@@ -192,7 +203,7 @@ const AddEvent = ({ editMode }) => {
                   <StaticDatePicker
                     id="eventDate"
                     name="eventDate"
-                    // value={formik.values.eventDate}
+                    value={dayjs(formik.values.eventDate)}
                     onChange={(e) => setFieldValue("eventDate", e.target.value)}
                   />
                 </Grid>
@@ -270,25 +281,20 @@ const AddEvent = ({ editMode }) => {
           <FormSection title="Photos">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
-                <FormLabel htmlFor="eventLocationAddress" className="label">
+                <FormLabel htmlFor="eventPromotionPhoto" className="label">
                   Promotion Photo
                 </FormLabel>
-                <DropZone
-                  files={promotionPhotos}
-                  setFiles={setPromotionPhotos}
-                  multiple={false}
-                  maxSize={1024 * 1024 * 2}
-                  accept={{
-                    "image/*": [],
-                  }}
-                />
-              </Grid>
-              <Grid item container md={10} direction={"column"}>
-                <FormLabel htmlFor="eventLocationGeoCode" className="label">
-                  After Event Photos
-                </FormLabel>
-                <DropZone files={eventPhotos} setFiles={setEventPhotos} />
-              </Grid>
+                <TextField
+                  id="eventPromotionPhoto"
+                  name="eventPromotionPhoto"
+                  value={formik.values.eventPromotionPhoto}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Geo Code"
+                  fullWidth
+                  // type="number"
+                /> 
+              </Grid> 
             </Grid>
           </FormSection>
           <FormSection title="Social Media">
