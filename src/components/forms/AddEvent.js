@@ -25,6 +25,11 @@ import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
 import dayjs from "dayjs";
 import CustomBreadcrumbs from "../CustomBreadcrumbs";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -39,6 +44,15 @@ const AddEvent = ({ editMode }) => {
     try {
       const res = await addEvent({
         ...values,
+        eventDate: dayjs(values.eventDate).toISOString(),
+        socialMedia: {
+          fb: values.fbLink,
+          x: values.xLink,
+        },
+        eventName: "test",
+        // eventPrice: {
+        //   $numberDecimal: values.eventPrice,
+        // },
       });
       console.log(res, "check res");
     } catch (err) {
@@ -50,8 +64,8 @@ const AddEvent = ({ editMode }) => {
     initialValues: {
       eventTitle: "",
       eventDescription: "",
-      eventTime: null,
-      eventDate: "",
+      eventTime: "4:44",
+      eventDate: null,
       eventPrice: "",
       occupancy: "",
       lang: "",
@@ -74,15 +88,19 @@ const AddEvent = ({ editMode }) => {
 
   const { id } = useParams();
 
-  const transformObtainedValuesToForm = (values) => {
+  const transformObtainedValuesToForm = (values, tz) => {
+    console.log(values);
     return {
       ...values,
-      eventDate: dayjs(moment(values.eventDate).format("YYYY-MM-DD")),
+      eventDate: dayjs(
+        moment.utc(values.eventDate).format("YYYY-MM-DDTHH:mm:sss")
+      ),
       // eventTime: convertTime(values.eventTime),
       eventTime: null,
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
       eventPrice: values.eventPrice["$numberDecimal"],
+      timeZone: tz,
       //  fbLink: values.socialMedia.fb,
     };
   };
@@ -93,7 +111,9 @@ const AddEvent = ({ editMode }) => {
           const res = await apiHandler("GET", `event/${id}`, true);
           console.log(res, "check res");
           // formik.setValues(res.data.data);
-          formik.setValues(transformObtainedValuesToForm(res.data.data));
+          formik.setValues(
+            transformObtainedValuesToForm(res.data.data, res.data.timeZone)
+          );
         } catch (err) {
           console.log(err);
           toast.error("Error getting the event details!");
@@ -166,36 +186,44 @@ const AddEvent = ({ editMode }) => {
             </Grid>
           </FormSection>
 
-          <FormSection title="When?">
+          <FormSection
+            title={`When? ${
+              formik.values.eventDate
+                ? dayjs(formik.values.eventDate).format("MMMM DD, YYYY hh:mm A")
+                : ""
+            }`}
+          >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="eventTitle" className="label">
-                    Event Time
+                    Event Date/ Time
                   </FormLabel>
-                  <StaticTimePicker
+                  <DateTimePicker
                     sx={{
                       margin: 0,
                     }}
-                    id="eventTime"
-                    name="eventTime"
-                    // value={formik.values.eventTime}
-                    onChange={formik.handleChange}
+                    id="eventDate"
+                    name="eventDate"
+                    value={formik.values.eventDate}
+                    onChange={(value) => {
+                      console.log(value);
+                      formik.setFieldValue("eventDate", value);
+                    }}
                     onBlur={formik.handleBlur}
-                    // value={formik.values.eventTime}
                   />
                 </Grid>
-                <Grid item container md={5} direction={"column"}>
+                {/* <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="eventTitle" className="label">
                     Date
                   </FormLabel>
                   <StaticDatePicker
                     id="eventDate"
                     name="eventDate"
-                    // value={formik.values.eventDate}
+                    value={dayjs(formik.values.eventDate)}
                     onChange={(e) => setFieldValue("eventDate", e.target.value)}
                   />
-                </Grid>
+                </Grid> */}
               </Grid>
             </LocalizationProvider>
           </FormSection>
@@ -270,10 +298,19 @@ const AddEvent = ({ editMode }) => {
           <FormSection title="Photos">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
-                <FormLabel htmlFor="eventLocationAddress" className="label">
+                <FormLabel htmlFor="eventPromotionPhoto" className="label">
                   Promotion Photo
                 </FormLabel>
-                <DropZone
+                <TextField
+                  id="eventPromotionPhoto"
+                  name="eventPromotionPhoto"
+                  value={formik.values.eventPromotionPhoto}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Promotion Photo"
+                  fullWidth
+                />
+                {/* <DropZone
                   files={promotionPhotos}
                   setFiles={setPromotionPhotos}
                   multiple={false}
@@ -281,14 +318,14 @@ const AddEvent = ({ editMode }) => {
                   accept={{
                     "image/*": [],
                   }}
-                />
+                /> */}
               </Grid>
-              <Grid item container md={10} direction={"column"}>
+              {/* <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="eventLocationGeoCode" className="label">
                   After Event Photos
                 </FormLabel>
                 <DropZone files={eventPhotos} setFiles={setEventPhotos} />
-              </Grid>
+              </Grid> */}
             </Grid>
           </FormSection>
           <FormSection title="Social Media">
@@ -360,6 +397,35 @@ const AddEvent = ({ editMode }) => {
                   }
                 />
               </Grid>
+            </Grid>
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="transportLink" className="label">
+                Transport Link
+              </FormLabel>
+              <TextField
+                id="transportLink"
+                name="transportLink"
+                value={formik.values.transportLink}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Transport Link"
+                fullWidth
+              />
+            </Grid>
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="position" className="label">
+                Order Of Event
+              </FormLabel>
+              <TextField
+                id="position"
+                name="position"
+                value={formik.values.position}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Order of event"
+                fullWidth
+                type="number"
+              />
             </Grid>
           </FormSection>
         </Grid>

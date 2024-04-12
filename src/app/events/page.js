@@ -85,7 +85,8 @@ const Events = () => {
           direction="row"
           width="100%"
           justify="space-between"
-          className="actions">
+          className="actions"
+        >
           <Link href={`${row.socialMedia.fb}`} target="_blank">
             <FaFacebook
               size={24}
@@ -124,7 +125,8 @@ const Events = () => {
           direction="row"
           width="100%"
           justify="space-between"
-          className="actions">
+          className="actions"
+        >
           <Link href={`/events/edit/${row._id}`} passHref>
             <MdOutlineEdit
               size={24}
@@ -183,7 +185,8 @@ const Events = () => {
     <>
       <div
         id="event"
-        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}>
+        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
+      >
         <CustomBreadcrumbs
           title={"Events"}
           links={[
@@ -242,14 +245,14 @@ const Events = () => {
                 + Add Events
               </Button>
             </Link>
-            <Backdrop
+            {/* <Backdrop
               sx={{
                 color: "#fff",
                 zIndex: (theme) => theme.zIndex.drawer + 1,
               }}
               open={open}>
               <CircularProgress color="inherit" />
-            </Backdrop>
+            </Backdrop> */}
           </Grid>
         </Grid>
 
@@ -320,7 +323,8 @@ const Events = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                  }}>
+                  }}
+                >
                   <div style={{ display: "flex", alignItems: "flex-end" }}>
                     <h2>loading </h2>
                     <PulseLoader
@@ -342,7 +346,8 @@ const Events = () => {
         onClose={() => {
           setShowModal(false);
           setSelectedEvent(null);
-        }}>
+        }}
+      >
         <Styled>
           <div className="content">
             <div className="img">
