@@ -157,7 +157,7 @@ const AddEvent = ({ editMode }) => {
       />
       <form>
         <Grid container direction="column" spacing={0}>
-          <FormSection title="Introduce">
+          <FormSection showSection title="Introduce">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="eventTitle" className="label">
@@ -194,11 +194,13 @@ const AddEvent = ({ editMode }) => {
           </FormSection>
 
           <FormSection
+            showSection
             title={`When? ${
               formik.values.eventDate
                 ? dayjs(formik.values.eventDate).format("MMMM DD, YYYY hh:mm A")
                 : ""
-            }`}>
+            }`}
+          >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
@@ -234,7 +236,7 @@ const AddEvent = ({ editMode }) => {
             </LocalizationProvider>
           </FormSection>
 
-          <FormSection title="Business">
+          <FormSection showSection title="Business">
             <Grid container spacing={2}>
               <Grid item container md={5} direction={"column"}>
                 <FormLabel htmlFor="eventPrice" className="label">
@@ -268,7 +270,7 @@ const AddEvent = ({ editMode }) => {
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection title="Where?">
+          <FormSection showSection title="Where?">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="eventLocationAddress" className="label">
@@ -301,7 +303,7 @@ const AddEvent = ({ editMode }) => {
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection title="Photos">
+          <FormSection showSection title="Photos">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="eventPromotionPhoto" className="label">
@@ -334,7 +336,7 @@ const AddEvent = ({ editMode }) => {
               </Grid> */}
             </Grid>
           </FormSection>
-          <FormSection title="Social Media">
+          <FormSection showSection title="Social Media">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="fbLink" className="label">
@@ -380,7 +382,7 @@ const AddEvent = ({ editMode }) => {
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection title="Others">
+          <FormSection showSection title="Others">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="active" className="label">
@@ -444,7 +446,8 @@ const AddEvent = ({ editMode }) => {
               color: "#fff",
               zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            open={loading}>
+            open={loading}
+          >
             <CircularProgress color="inherit" />
           </Backdrop>
         </Grid>

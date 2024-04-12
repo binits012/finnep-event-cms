@@ -1,6 +1,8 @@
 // import { children } from "cheerio/lib/api/traversing";
 import styled from "styled-components";
 import { Stack, Typography } from "@mui/material";
+import { useState } from "react";
+import { motion } from "framer-motion";
 const Container = styled.div`
   width: 100%;
   // min-height: 60vh;
@@ -20,6 +22,10 @@ const Container = styled.div`
   .heading {
     padding: 12px 24px;
     border-bottom: 1px solid #cccccc;
+    transition: all 0.4s;
+    &:hover {
+      background-color: #09990939;
+    }
   }
   .body {
     padding: 24px;
@@ -29,15 +35,33 @@ const Container = styled.div`
   }
 `;
 
-const FormSection = ({ children, title, ...rest }) => {
+const FormSection = ({ children, title, showSection, ...rest }) => {
+  const [expanded, setExpanded] = useState(showSection || false);
   return (
     <Stack>
       <Container {...rest}>
         <div className="heading">
           {/* <Text content={title} size={20} bold color="#222222" /> */}
-          <h2>{title}</h2>
+          <h2
+            role="button"
+            onClick={(e) => setExpanded(!expanded)}
+            style={{
+              cursor: "pointer",
+            }}
+          >
+            {title}
+          </h2>
         </div>
-        <div className="body">{children}</div>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0.3, y: -10 }} // Initial state (hidden and slightly above)
+            animate={{ opacity: 1, y: 0 }} // Animation when component mounts (visible and at normal position)
+            transition={{ duration: 0.3 }}
+            className="body"
+          >
+            {children}
+          </motion.div>
+        )}
       </Container>
     </Stack>
   );

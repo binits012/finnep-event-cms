@@ -3,7 +3,15 @@ import apiHandler from "@/RESTAPIs/helper";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 import FormSection from "@/components/FormSection";
 import TextEditor from "@/components/TextEditor";
-import { Grid, Typography, FormLabel, TextField, Button } from "@mui/material";
+import {
+  Grid,
+  Typography,
+  FormLabel,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+} from "@mui/material";
 import { useFormik } from "formik";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -37,7 +45,6 @@ const Tickets = () => {
       const response = await apiHandler("POST", `singleTicket`, true, false, {
         ...values,
         event: id,
-        type: "normal",
       });
       formik.resetForm();
       toast.success(`Ticket created for ${formik.values.ticketFor}!`);
@@ -68,6 +75,7 @@ const Tickets = () => {
   const formik = useFormik({
     initialValues: {
       ticketFor: "",
+      type: "normal",
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -111,7 +119,7 @@ const Tickets = () => {
             title={`Create new ticket for ${formik.values.ticketFor}`}
           >
             <Grid container spacing={2} alignItems={"flex-end"}>
-              <Grid item container md={6} direction={"column"}>
+              <Grid item container md={4} direction={"column"}>
                 <FormLabel htmlFor="ticketFor" className="label">
                   Create Single New Ticket for:
                 </FormLabel>
@@ -126,7 +134,24 @@ const Tickets = () => {
                   type="email"
                 />
               </Grid>
-              <Grid item container md={6} spacing={0}>
+              <Grid item container md={4} direction={"column"}>
+                <FormLabel htmlFor="type" className="label">
+                  Type of ticket
+                </FormLabel>
+                <Select
+                  id="type"
+                  name="type"
+                  value={formik.values.type}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Type"
+                  fullWidth
+                >
+                  <MenuItem value="normal">Normal</MenuItem>
+                  <MenuItem value="vip">VIP</MenuItem>
+                </Select>
+              </Grid>
+              <Grid item container md={4} spacing={0}>
                 <Button
                   variant="contained"
                   onClick={formik.handleSubmit}
@@ -141,63 +166,68 @@ const Tickets = () => {
 
         <form>
           <FormSection title={`Create Multiple Tickets`}>
-            <Grid container direction="column">
-              {(({ files, setFiles, ...props }) => {
-                const onDrop = useCallback(
-                  (acceptedFiles) => {
-                    //   // console.log(acceptedFiles, "check");
-                    setFiles(
-                      acceptedFiles.map((file) =>
-                        Object.assign(file, {
-                          preview: URL.createObjectURL(file),
-                        })
-                      )
-                    );
+            <Grid container spacing={2} alignItems={"flex-end"}>
+              <Grid container item md={6} direction="column">
+                {(({ files, setFiles, ...props }) => {
+                  const onDrop = useCallback(
+                    (acceptedFiles) => {
+                      //   // console.log(acceptedFiles, "check");
+                      setFiles(
+                        acceptedFiles.map((file) =>
+                          Object.assign(file, {
+                            preview: URL.createObjectURL(file),
+                          })
+                        )
+                      );
 
-                    acceptedFiles.forEach((file) => {
-                      const reader = new FileReader();
+                      acceptedFiles.forEach((file) => {
+                        const reader = new FileReader();
 
-                      reader.onabort = () =>
-                        console.log("file reading was aborted");
-                      reader.onerror = () =>
-                        console.log("file reading has failed");
-                      reader.onload = (event) => {
-                        // Do whatever you want with the file contents
-                        const image = new Image();
-                        const binaryStr = reader.result;
-                        // console.log(binaryStr);
-                        image.src = event.target.result;
-                        // console.log(image, "check imagess");
-                        // image.onload = () => {
-                        //   console.log(
-                        //     // reader,
-                        //     image.width,
-                        //     image.height,
-                        //     image,
-                        //     "chck onload",
-                        //     file
-                        //   );
-                        // };
-                        // setFiles([
-                        //   {
-                        //     ...file,
-                        //     preview: reader.result,
-                        //     preview: URL.createObjectURL(file),
-                        //   },
-                        //   ...files,
-                        // ]);
-                      };
-                      reader.readAsArrayBuffer(file);
-                    });
-                  },
-                  [setFiles]
-                );
-                const onDropRejected = useCallback((err) => {
-                  console.log("seee", err, err[0].errors[0].message);
-                  toast.error(`Error: ${err[0].errors[0].message} !!!!`);
-                }, []);
-                const { acceptedFiles, getRootProps, getInputProps, ...rest } =
-                  useDropzone({
+                        reader.onabort = () =>
+                          console.log("file reading was aborted");
+                        reader.onerror = () =>
+                          console.log("file reading has failed");
+                        reader.onload = (event) => {
+                          // Do whatever you want with the file contents
+                          const image = new Image();
+                          const binaryStr = reader.result;
+                          // console.log(binaryStr);
+                          image.src = event.target.result;
+                          // console.log(image, "check imagess");
+                          // image.onload = () => {
+                          //   console.log(
+                          //     // reader,
+                          //     image.width,
+                          //     image.height,
+                          //     image,
+                          //     "chck onload",
+                          //     file
+                          //   );
+                          // };
+                          // setFiles([
+                          //   {
+                          //     ...file,
+                          //     preview: reader.result,
+                          //     preview: URL.createObjectURL(file),
+                          //   },
+                          //   ...files,
+                          // ]);
+                        };
+                        reader.readAsArrayBuffer(file);
+                      });
+                    },
+                    [setFiles]
+                  );
+                  const onDropRejected = useCallback((err) => {
+                    console.log("seee", err, err[0].errors[0].message);
+                    toast.error(`Error: ${err[0].errors[0].message} !!!!`);
+                  }, []);
+                  const {
+                    acceptedFiles,
+                    getRootProps,
+                    getInputProps,
+                    ...rest
+                  } = useDropzone({
                     onDrop,
                     onDropRejected,
                     maxFiles: 1,
@@ -205,66 +235,80 @@ const Tickets = () => {
                     // accept: {
                     //   "file/*": ["xlsx"],
                     // },
-                    accept: [".xlsx"],
+                    accept: [
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    ],
                     ...props,
                   });
-                console.log(files, "check");
-                return (
-                  <div style={{}}>
-                    {files.length < 1 ? (
-                      <div
-                        {...getRootProps()}
-                        style={{
-                          height: 100,
-                          width: 600,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          border: "1px dashed black",
-                        }}
-                      >
-                        <input {...getInputProps()} />
-                        <BsUpload size={24} color="var(--primary)" />
-                        {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
-                        <Typography variant="p">Drag and drop</Typography>
-                        <Typography variant="p">or</Typography>
-                        <Typography variant="p">Select Excel Files</Typography>
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          height: 100,
-                        }}
-                      >
-                        {files.map((doc, i) => (
-                          <div key={i}>
-                            <GrDocumentExcel size={32} />
-                            <span>{doc.path}</span>
-                            <span>{(doc.size / 1024).toFixed(2)} KB</span>
-                            <GrTrash
-                              onClick={(e) =>
-                                setFiles(
-                                  files.filter((x, index) => index !== i)
-                                )
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })({ files, setFiles })}
-            </Grid>
-            <Grid item container md={6} spacing={0}>
-              <Button
-                variant="contained"
-                onClick={createMultipleTickets}
-                disabled={!files.length}
-                sx={{ height: 50 }}
-              >
-                Create Multiple Tickets
-              </Button>
+                  console.log(files, "check");
+                  return (
+                    <div style={{}}>
+                      {files.length < 1 ? (
+                        <div
+                          {...getRootProps()}
+                          style={{
+                            height: 100,
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            border: "1px dashed black",
+                            cursor: "pointer",
+                            borderRadius: 6,
+                          }}
+                        >
+                          <input {...getInputProps()} />
+                          <BsUpload size={32} color="green" />
+                          {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
+                          <Typography variant="p">Drag and drop</Typography>
+                          <Typography variant="p">or</Typography>
+                          <Typography variant="p">
+                            Select Excel Files
+                          </Typography>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            height: 100,
+                          }}
+                        >
+                          {files.map((doc, i) => (
+                            <div key={i}>
+                              <Link href={doc.preview} target="_blank" passHref>
+                                <GrDocumentExcel size={48} color={"green"} />
+                              </Link>
+                              <span>{doc.path}</span>
+                              <span>{(doc.size / 1024).toFixed(2)} KB</span>
+                              <GrTrash
+                                onClick={(e) =>
+                                  setFiles(
+                                    files.filter((x, index) => index !== i)
+                                  )
+                                }
+                                size={24}
+                                color={"crimson"}
+                                style={{
+                                  cursor: "pointer",
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })({ files, setFiles })}
+              </Grid>
+              <Grid item container md={2.5} direction="column">
+                <Button
+                  variant="contained"
+                  onClick={createMultipleTickets}
+                  disabled={!files.length}
+                  sx={{ height: 50 }}
+                >
+                  Create Multiple Tickets
+                </Button>
+              </Grid>
             </Grid>
           </FormSection>
         </form>

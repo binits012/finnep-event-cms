@@ -11,9 +11,9 @@ const CustomBreadcrumbs = ({ title, links }) => {
               key={link.path}
               href={link.path}
               style={{
-                fontSize: "15px",
+                fontSize: "18px",
                 textDecoration: "none",
-                color: !link.active ? "var(--primary)" : "#090909",
+                color: !link.active ? "#789867" : "#090909",
                 pointerEvents: link.active ? "none" : "initial",
               }}
             >
