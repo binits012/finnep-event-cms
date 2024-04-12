@@ -14,6 +14,7 @@ import { GrGallery } from "react-icons/gr";
 import { FaPersonArrowUpFromLine } from "react-icons/fa6";
 import usePagination from "@mui/material/usePagination/usePagination";
 import { usePathname } from "next/navigation";
+import Avatar from "@mui/material/Avatar";
 
 const Wrapper = styled.div`
   .sideBar {
@@ -63,10 +64,10 @@ const Wrapper = styled.div`
     margin-bottom: 20px;
   }
 
-  .userImage {
+  /* .userImage {
     border-radius: 50%;
     object-fit: cover;
-  }
+  } */
 
   .userDetail {
     display: flex;
@@ -122,13 +123,14 @@ const SideBar = () => {
     <Wrapper>
       <div className="sideBar">
         <div className="user">
-          <Image
+          {/* <Image
             className="userImage"
             src={"/noavatar.png"}
             alt="no avatar"
             width="50"
             height="50"
-          />
+          /> */}
+          <Avatar src={"/noavatar.png"} alt="no avatar" />
           <div className="userDetail">
             <span className="usename">Admin</span>
             <span className="userTittle">Administrator</span>

@@ -30,6 +30,8 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -40,7 +42,9 @@ function convertTime(minutes) {
   return formattedTime;
 }
 const AddEvent = ({ editMode }) => {
+  const [loading, setLoading] = useState(false);
   const handleSubmit = async (values) => {
+    setLoading(true);
     try {
       const res = await addEvent({
         ...values,
@@ -55,9 +59,12 @@ const AddEvent = ({ editMode }) => {
         // },
       });
       console.log(res, "check res");
+      toast.success("Event Added!!");
+      setLoading(false);
     } catch (err) {
       console.log(err);
       toast.error("Error creating event!!");
+      setLoading(false);
     }
   };
   const formik = useFormik({
@@ -191,8 +198,7 @@ const AddEvent = ({ editMode }) => {
               formik.values.eventDate
                 ? dayjs(formik.values.eventDate).format("MMMM DD, YYYY hh:mm A")
                 : ""
-            }`}
-          >
+            }`}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
@@ -433,6 +439,14 @@ const AddEvent = ({ editMode }) => {
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             {editMode ? "Update " : " Add"} Event
           </Button>
+          <Backdrop
+            sx={{
+              color: "#fff",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+            open={loading}>
+            <CircularProgress color="inherit" />
+          </Backdrop>
         </Grid>
       </form>
     </FormWrapper>

@@ -8,6 +8,8 @@ import Navbar from "./dashboard/NavBar/Navbar";
 import store from "@/store/store";
 import GateWay from "./GateWay";
 import { useRouter } from "next/navigation";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const InnerLayout = ({ children }) => {
   const dispatch = useDispatch();
@@ -29,6 +31,7 @@ const InnerLayout = ({ children }) => {
         <Navbar />
         <div style={{ padding: 30 }}>{children}</div>
       </div>
+      <ToastContainer />
     </div>
   );
 };
