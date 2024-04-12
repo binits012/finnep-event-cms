@@ -10,7 +10,7 @@ import {
 } from "react-icons/md";
 import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
-
+import { BsTicketPerforated } from "react-icons/bs";
 import { FaPersonArrowUpFromLine } from "react-icons/fa6";
 import usePagination from "@mui/material/usePagination/usePagination";
 import { usePathname } from "next/navigation";
@@ -94,6 +94,11 @@ const SideBar = () => {
       title: "Event",
       link: "/events",
       icon: <MdEventNote size={24} />,
+    },
+    {
+      title: "Tickets",
+      link: "/tickets",
+      icon: <BsTicketPerforated size={24} />,
     },
     {
       title: "Gallery",
