@@ -49,9 +49,10 @@ const AddEvent = ({ editMode }) => {
           fb: values.fbLink,
           x: values.xLink,
         },
-        eventPrice: {
-          $numberDecimal: values.eventPrice,
-        },
+        eventName: "test",
+        // eventPrice: {
+        //   $numberDecimal: values.eventPrice,
+        // },
       });
       console.log(res, "check res");
     } catch (err) {
@@ -80,7 +81,7 @@ const AddEvent = ({ editMode }) => {
       xLink: "",
       igLink: "",
     },
-    onSubmit: (values) => handleSubmit(values, timeZone),
+    onSubmit: (values) => handleSubmit(values),
   });
   const [promotionPhotos, setPromotionPhotos] = useState([]);
   const [eventPhotos, setEventPhotos] = useState([]);
