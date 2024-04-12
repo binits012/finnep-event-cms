@@ -212,7 +212,7 @@ const Settings = () => {
             </FormSection>
           </FormSection>
         </Grid>
-        <Grid container>
+        <Grid container justifyContent={"flex-end"}>
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             Update Front Page Details
           </Button>
