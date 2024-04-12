@@ -100,7 +100,9 @@ const Tickets = () => {
     <FormWrapper>
       {" "}
       <CustomBreadcrumbs
-        title={`Tickets for ${eventDetails?.eventTitle || ""}`}
+        title={`Tickets for ${eventDetails?.eventTitle || ""} (${
+          tickets?.length || 0
+        } sold of ${eventDetails?.occupancy})`}
         links={[
           {
             path: "/tickets",

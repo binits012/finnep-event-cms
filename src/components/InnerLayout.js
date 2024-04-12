@@ -23,13 +23,13 @@ const InnerLayout = ({ children }) => {
     }
   }, []);
   return (
-    <div style={{ display: "flex", width: "100vw" }}>
+    <div style={{ display: "flex", width: "100%" }}>
       <div>
         <SideBar />
       </div>
       <div style={{ marginLeft: 300, width: "calc(100% - 300px)" }}>
         <Navbar />
-        <div style={{ padding: 30 }}>{children}</div>
+        <div style={{ padding: 30, width: "100%" }}>{children}</div>
       </div>
       <ToastContainer />
     </div>
