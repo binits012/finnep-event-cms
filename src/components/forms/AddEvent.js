@@ -25,6 +25,8 @@ import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
 import dayjs from "dayjs";
 import CustomBreadcrumbs from "../CustomBreadcrumbs";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -35,15 +37,20 @@ function convertTime(minutes) {
   return formattedTime;
 }
 const AddEvent = ({ editMode }) => {
+  const [loading, setLoading] = useState(false);
   const handleSubmit = async (values) => {
+    setLoading(true);
     try {
       const res = await addEvent({
         ...values,
       });
       console.log(res, "check res");
+      toast.success("Event Added!!");
+      setLoading(false);
     } catch (err) {
       console.log(err);
       toast.error("Error creating event!!");
+      setLoading(false);
     }
   };
   const formik = useFormik({
@@ -367,6 +374,14 @@ const AddEvent = ({ editMode }) => {
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             {editMode ? "Update " : " Add"} Event
           </Button>
+          <Backdrop
+            sx={{
+              color: "#fff",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+            open={loading}>
+            <CircularProgress color="inherit" />
+          </Backdrop>
         </Grid>
       </form>
     </FormWrapper>
