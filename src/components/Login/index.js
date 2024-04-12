@@ -133,12 +133,14 @@ export default function Login() {
           item
           container
           direction="column"
-          className="field-container login-container">
+          className="field-container login-container"
+        >
           <LoginContainer
             initial={{ opacity: 0.75, translateX: -80, scale: 1 }}
             animate={{ opacity: 1, translateX: 10, scale: 1 }}
             exit={{ opacity: 0, translateX: -24 }}
-            transition={{ duration: 0.5 }}>
+            transition={{ duration: 0.5 }}
+          >
             <div className="login-form-wrap">
               <div className="mb-30">
                 <StyledHeader>Login</StyledHeader>
@@ -238,7 +240,8 @@ export default function Login() {
                   onClick={handleSubmit}
                   style={{
                     width: "100%",
-                  }}>
+                  }}
+                >
                   {loading ? (
                     <BeatLoader color={"#1336f0"} speedMultiplier={0.5} />
                   ) : (
