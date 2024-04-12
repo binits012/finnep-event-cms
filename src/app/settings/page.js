@@ -8,14 +8,18 @@ import { useFormik } from "formik";
 import { useEffect, useState } from "react";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
+// import { useRouter } from "next/router";
 
 import { toast } from "react-toastify";
 
 import styled from "styled-components";
 
 const Settings = () => {
-  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  // const router = useRouter();
+  // console.log("da", router);
   const handleSubmit = async (values) => {
+    setLoading(true);
     try {
       const res = await apiHandler(
         "POST",
@@ -36,11 +40,11 @@ const Settings = () => {
         }
       );
       toast.success("Settings updated!!");
-      setOpen(true);
+      setLoading(false);
     } catch (err) {
       console.log(err);
       toast.error("Error updaing settings");
-      setOpen(false);
+      setLoading(false);
     }
   };
   const formik = useFormik({
@@ -217,7 +221,7 @@ const Settings = () => {
               color: "#fff",
               zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            open={open}>
+            open={loading}>
             <CircularProgress color="inherit" />
           </Backdrop>
         </Grid>
