@@ -5,14 +5,21 @@ import FormSection from "@/components/FormSection";
 import TextEditor from "@/components/TextEditor";
 import { Grid, Typography, FormLabel, TextField, Button } from "@mui/material";
 import { useFormik } from "formik";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
+// import { useRouter } from "next/router";
 
 import { toast } from "react-toastify";
 
 import styled from "styled-components";
 
 const Settings = () => {
+  const [loading, setLoading] = useState(false);
+  // const router = useRouter();
+  // console.log("da", router);
   const handleSubmit = async (values) => {
+    setLoading(true);
     try {
       const res = await apiHandler(
         "POST",
@@ -33,9 +40,11 @@ const Settings = () => {
         }
       );
       toast.success("Settings updated!!");
+      setLoading(false);
     } catch (err) {
       console.log(err);
       toast.error("Error updaing settings");
+      setLoading(false);
     }
   };
   const formik = useFormik({
@@ -155,8 +164,7 @@ const Settings = () => {
             </FormSection>
             <FormSection
               title="Social Media"
-              containerCSS={`margin-top: 20px;`}
-            >
+              containerCSS={`margin-top: 20px;`}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="email" className="label">
@@ -204,10 +212,18 @@ const Settings = () => {
             </FormSection>
           </FormSection>
         </Grid>
-        <Grid container>
+        <Grid container justifyContent={"flex-end"}>
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             Update Front Page Details
           </Button>
+          <Backdrop
+            sx={{
+              color: "#fff",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+            open={loading}>
+            <CircularProgress color="inherit" />
+          </Backdrop>
         </Grid>
       </form>
     </FormWrapper>
