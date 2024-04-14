@@ -10,6 +10,7 @@ import {
   TextField,
   Button,
   CircularProgress,
+  Input,
 } from "@mui/material";
 import { Field, useFormik } from "formik";
 import { useEffect, useState } from "react";
@@ -18,9 +19,12 @@ import { toast } from "react-toastify";
 import styled from "styled-components";
 import { DataGrid } from "@mui/x-data-grid";
 import { render } from "react-dom";
+import { RxCross1 } from "react-icons/rx";
+import { IoIosSearch } from "react-icons/io";
 
 const Tickets = () => {
   const [events, setEvents] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const getEvents = async () => {
@@ -98,7 +102,9 @@ const Tickets = () => {
         ))}
       </div>  */}
       <DataGrid
-        rows={events}
+        rows={events.filter((event) =>
+          event.eventTitle.toLowerCase().includes(search.toLowerCase())
+        )}
         columns={COLUMNS}
         initialState={{
           pagination: {
@@ -109,6 +115,49 @@ const Tickets = () => {
         }}
         pageSizeOptions={[5, 10, 15, 20]}
         getRowId={(row) => row._id}
+        slots={{
+          toolbar: () => (
+            <Input
+              // variant="soft"
+              placeholder="Search Event"
+              value={search}
+              sx={{
+                width: 200,
+                margin: 2,
+                "--Input-focusedInset": "var(--any, )",
+                "--Input-focusedThickness": "0.50rem",
+                "--Input-focusedHighlight": "rgba(13,110,253,.25)",
+                "&::before": {
+                  transition: "box-shadow .15s ease-in-out",
+                },
+                "&:focus-within": {
+                  borderColor: "#86b7fe",
+                },
+              }}
+              onChange={(e) => setSearch(e.target.value)}
+              endAdornment={
+                search && search !== " " ? (
+                  <RxCross1
+                    size={25}
+                    style={{
+                      margin: 8,
+                      cursor: "pointer",
+                    }}
+                    onClick={(e) => setSearch("")}
+                  />
+                ) : (
+                  <IoIosSearch
+                    size={30}
+                    style={{
+                      margin: 8,
+                      cursor: "pointer",
+                    }}
+                  />
+                )
+              }
+            />
+          ),
+        }}
       />
     </FormWrapper>
   );
