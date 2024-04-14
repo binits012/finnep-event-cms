@@ -12,6 +12,8 @@ import {
   Select,
   MenuItem,
   Chip,
+  Backdrop,
+  CircularProgress,
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useCallback, useEffect, useState } from "react";
@@ -30,6 +32,7 @@ import { render } from "react-dom";
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(false);
   const { id } = useParams();
 
   const [files, setFiles] = useState([]);
@@ -44,6 +47,7 @@ const Tickets = () => {
     }
   }, [id]);
   const handleSubmit = async (values) => {
+    setLoading(true);
     try {
       const response = await apiHandler("POST", `singleTicket`, true, false, {
         ...values,
@@ -52,8 +56,10 @@ const Tickets = () => {
       formik.resetForm();
       toast.success(`Ticket created for ${formik.values.ticketFor}!`);
       getEventTickets();
+      setLoading(false);
     } catch (err) {
       toast.error("Error Creating ticket!");
+      setLoading(false);
     }
   };
   const createMultipleTickets = async (e) => {
@@ -199,10 +205,19 @@ const Tickets = () => {
               <Grid item container md={4} spacing={0}>
                 <Button
                   variant="contained"
+                  disabled={!formik.values.ticketFor || !formik.values.type}
                   onClick={formik.handleSubmit}
                   sx={{ height: 50 }}>
                   Create Ticket
                 </Button>
+                <Backdrop
+                  sx={{
+                    color: "#fff",
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                  }}
+                  open={loading}>
+                  <CircularProgress color="inherit" />
+                </Backdrop>
               </Grid>
             </Grid>
           </FormSection>
@@ -349,6 +364,14 @@ const Tickets = () => {
                   sx={{ height: 50 }}>
                   Create Multiple Tickets
                 </Button>
+                <Backdrop
+                  sx={{
+                    color: "#fff",
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                  }}
+                  open={loading}>
+                  <CircularProgress color="inherit" />
+                </Backdrop>
               </Grid>
             </Grid>
           </FormSection>
