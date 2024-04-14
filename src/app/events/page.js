@@ -19,6 +19,7 @@ import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
 import { FaFacebook, FaInstagram } from "react-icons/fa6";
 import { RiTwitterXFill } from "react-icons/ri";
+import { BsTicketPerforated } from "react-icons/bs";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 
@@ -85,8 +86,7 @@ const Events = () => {
           direction="row"
           width="100%"
           justify="space-between"
-          className="actions"
-        >
+          className="actions">
           <Link href={`${row.socialMedia.fb}`} target="_blank">
             <FaFacebook
               size={24}
@@ -117,7 +117,7 @@ const Events = () => {
     {
       field: "actions",
       headerName: "Actions",
-      width: 110,
+      width: 150,
       editable: false,
       sortable: false,
       renderCell: ({ row }) => (
@@ -125,8 +125,7 @@ const Events = () => {
           direction="row"
           width="100%"
           justify="space-between"
-          className="actions"
-        >
+          className="actions">
           <Link href={`/events/edit/${row._id}`} passHref>
             <MdOutlineEdit
               size={24}
@@ -156,6 +155,14 @@ const Events = () => {
               console.log(row, "modal");
             }}
           />
+          <Link href={`/tickets/${row._id}`} passHref>
+            <BsTicketPerforated
+              size={24}
+              color="#4C4C4C"
+              title="Edit Event"
+              style={{ marginLeft: 10, cursor: "pointer" }}
+            />
+          </Link>
         </Box>
       ),
     },
@@ -185,8 +192,7 @@ const Events = () => {
     <>
       <div
         id="event"
-        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
-      >
+        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}>
         <CustomBreadcrumbs
           title={"Events"}
           links={[
@@ -323,8 +329,7 @@ const Events = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                  }}
-                >
+                  }}>
                   <div style={{ display: "flex", alignItems: "flex-end" }}>
                     <h2>loading </h2>
                     <PulseLoader
@@ -346,8 +351,7 @@ const Events = () => {
         onClose={() => {
           setShowModal(false);
           setSelectedEvent(null);
-        }}
-      >
+        }}>
         <Styled>
           <div className="content">
             <div className="img">
