@@ -11,6 +11,7 @@ import {
   Button,
   Select,
   MenuItem,
+  Chip,
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useCallback, useEffect, useState } from "react";
@@ -23,6 +24,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 import { GrDocumentExcel, GrTrash } from "react-icons/gr";
+import { DataGrid } from "@mui/x-data-grid";
+import { render } from "react-dom";
 
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
@@ -95,6 +98,47 @@ const Tickets = () => {
     getEventDetails();
     getEventTickets();
   }, [getEventTickets]);
+  const COLUMNS = [
+    {
+      field: "sn",
+      headerName: "SN",
+      width: 50,
+      // renderCell: ()
+    },
+    {
+      field: "ticketFor",
+      headerName: "Ticket For",
+      width: 250,
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      width: 110,
+      renderCell: ({ row }) => {
+        return (
+          <Chip
+            size="medium"
+            label={row.type}
+            variant="outlined"
+            // color={row.type === "normal" ? "success" : "warning"}
+            style={{
+              borderColor: `${row.type === "normal" ? "green" : "gold"}`,
+              color: `${row.type === "normal" ? "green" : "gold"}`,
+              fontWeight: "bold",
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: "isSend",
+      headerName: "Ticket Send",
+      width: 100,
+      renderCell: ({ row }) => {
+        return <span>{row.isSend ? "Yes" : "No"}</span>;
+      },
+    },
+  ];
 
   return (
     <FormWrapper>
@@ -118,8 +162,8 @@ const Tickets = () => {
       <Grid container direction="column">
         <form>
           <FormSection
-            title={`Create new ticket for ${formik.values.ticketFor}`}
-          >
+            showSection
+            title={`Create new ticket for ${formik.values.ticketFor}`}>
             <Grid container spacing={2} alignItems={"flex-end"}>
               <Grid item container md={4} direction={"column"}>
                 <FormLabel htmlFor="ticketFor" className="label">
@@ -147,8 +191,7 @@ const Tickets = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   placeholder="Type"
-                  fullWidth
-                >
+                  fullWidth>
                   <MenuItem value="normal">Normal</MenuItem>
                   <MenuItem value="vip">VIP</MenuItem>
                 </Select>
@@ -157,8 +200,7 @@ const Tickets = () => {
                 <Button
                   variant="contained"
                   onClick={formik.handleSubmit}
-                  sx={{ height: 50 }}
-                >
+                  sx={{ height: 50 }}>
                   Create Ticket
                 </Button>
               </Grid>
@@ -167,7 +209,7 @@ const Tickets = () => {
         </form>
 
         <form>
-          <FormSection title={`Create Multiple Tickets`}>
+          <FormSection showSection title={`Create Multiple Tickets`}>
             <Grid container spacing={2} alignItems={"flex-end"}>
               <Grid container item md={6} direction="column">
                 {(({ files, setFiles, ...props }) => {
@@ -257,8 +299,7 @@ const Tickets = () => {
                             border: "1px dashed black",
                             cursor: "pointer",
                             borderRadius: 6,
-                          }}
-                        >
+                          }}>
                           <input {...getInputProps()} />
                           <BsUpload size={32} color="green" />
                           {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
@@ -272,8 +313,7 @@ const Tickets = () => {
                         <div
                           style={{
                             height: 100,
-                          }}
-                        >
+                          }}>
                           {files.map((doc, i) => (
                             <div key={i}>
                               <Link href={doc.preview} target="_blank" passHref>
@@ -306,8 +346,7 @@ const Tickets = () => {
                   variant="contained"
                   onClick={createMultipleTickets}
                   disabled={!files.length}
-                  sx={{ height: 50 }}
-                >
+                  sx={{ height: 50 }}>
                   Create Multiple Tickets
                 </Button>
               </Grid>
@@ -315,7 +354,7 @@ const Tickets = () => {
           </FormSection>
         </form>
 
-        {tickets.map((ticket, index) => (
+        {/* {tickets.map((ticket, index) => (
           <div key={ticket._id} style={{ display: "flex", margin: 10 }}>
             <h2>
               <span>{index + 1}</span> for {ticket.ticketFor}
@@ -324,7 +363,19 @@ const Tickets = () => {
             <span>{ticket.isSend ? "Sent" : "Not Sent"}</span>
             <span>{ticket.isRead ? "Acknowledged" : "Not Acknowledged"}</span>
           </div>
-        ))}
+        ))} */}
+        <DataGrid
+          rows={tickets}
+          columns={COLUMNS}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 5,
+              },
+            },
+          }}
+          pageSizeOptions={[5, 10, 15, 20]}
+        />
       </Grid>
     </FormWrapper>
   );
