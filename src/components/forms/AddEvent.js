@@ -445,7 +445,7 @@ const AddEvent = ({ editMode }) => {
             </Grid>
           </FormSection>
         </Grid>
-        <Grid container>
+        <Grid container justifyContent="flex-end">
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             {editMode ? "Update " : " Add"} Event
           </Button>
