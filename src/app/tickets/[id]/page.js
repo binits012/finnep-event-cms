@@ -11,6 +11,11 @@ import {
   Button,
   Select,
   MenuItem,
+  Input,
+  Chip,
+  Backdrop,
+  CircularProgress,
+  IconButton,
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useCallback, useEffect, useState } from "react";
@@ -23,14 +28,25 @@ import { useParams, useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 import { GrDocumentExcel, GrTrash } from "react-icons/gr";
+import { DataGrid } from "@mui/x-data-grid";
+import { render } from "react-dom";
+import { RxCross1 } from "react-icons/rx";
+import { IoIosSearch } from "react-icons/io";
+import { IoReload } from "react-icons/io5";
+import { PulseLoader } from "react-spinners";
 
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [search, setSearch] = useState(" ");
+
   const { id } = useParams();
 
   const [files, setFiles] = useState([]);
   const getEventTickets = useCallback(async () => {
+    setFetching(true);
     try {
       const response = await apiHandler("GET", `event/${id}/ticket`, true);
       console.log(response, "check res");
@@ -38,9 +54,12 @@ const Tickets = () => {
     } catch (err) {
       console.log(err);
       toast.error("Error getting tickets!");
+    } finally {
+      setFetching(false);
     }
   }, [id]);
   const handleSubmit = async (values) => {
+    setLoading(true);
     try {
       const response = await apiHandler("POST", `singleTicket`, true, false, {
         ...values,
@@ -49,8 +68,10 @@ const Tickets = () => {
       formik.resetForm();
       toast.success(`Ticket created for ${formik.values.ticketFor}!`);
       getEventTickets();
+      setLoading(false);
     } catch (err) {
       toast.error("Error Creating ticket!");
+      setLoading(false);
     }
   };
   const createMultipleTickets = async (e) => {
@@ -95,6 +116,52 @@ const Tickets = () => {
     getEventDetails();
     getEventTickets();
   }, [getEventTickets]);
+  const COLUMNS = [
+    {
+      field: "sn",
+      headerName: "SN",
+      width: 50,
+      // renderCell: ()
+    },
+    {
+      field: "ticketFor",
+      headerName: "Ticket For",
+      width: 250,
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      width: 110,
+      renderCell: ({ row }) => {
+        const typeMap = {
+          normal: "Normal",
+          vip: "VIP",
+        };
+        return (
+          <Chip
+            size="medium"
+            label={typeMap[row.type]}
+            variant="outlined"
+            // color={row.type === "normal" ? "success" : "warning"}
+            style={{
+              width: "100%",
+              borderColor: `${row.type === "normal" ? "green" : "gold"}`,
+              color: `${row.type === "normal" ? "green" : "gold"}`,
+              fontWeight: "bold",
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: "isSend",
+      headerName: "Ticket Send",
+      width: 100,
+      renderCell: ({ row }) => {
+        return <span>{row.isSend ? "Yes" : "No"}</span>;
+      },
+    },
+  ];
 
   return (
     <FormWrapper>
@@ -118,8 +185,8 @@ const Tickets = () => {
       <Grid container direction="column">
         <form>
           <FormSection
-            title={`Create new ticket for ${formik.values.ticketFor}`}
-          >
+            showSection
+            title={`Create new ticket for ${formik.values.ticketFor}`}>
             <Grid container spacing={2} alignItems={"flex-end"}>
               <Grid item container md={4} direction={"column"}>
                 <FormLabel htmlFor="ticketFor" className="label">
@@ -147,8 +214,7 @@ const Tickets = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   placeholder="Type"
-                  fullWidth
-                >
+                  fullWidth>
                   <MenuItem value="normal">Normal</MenuItem>
                   <MenuItem value="vip">VIP</MenuItem>
                 </Select>
@@ -156,18 +222,26 @@ const Tickets = () => {
               <Grid item container md={4} spacing={0}>
                 <Button
                   variant="contained"
+                  disabled={!formik.values.ticketFor || !formik.values.type}
                   onClick={formik.handleSubmit}
-                  sx={{ height: 50 }}
-                >
+                  sx={{ height: 50 }}>
                   Create Ticket
                 </Button>
+                <Backdrop
+                  sx={{
+                    color: "#fff",
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                  }}
+                  open={loading}>
+                  <CircularProgress color="inherit" />
+                </Backdrop>
               </Grid>
             </Grid>
           </FormSection>
         </form>
 
         <form>
-          <FormSection title={`Create Multiple Tickets`}>
+          <FormSection showSection title={`Create Multiple Tickets`}>
             <Grid container spacing={2} alignItems={"flex-end"}>
               <Grid container item md={6} direction="column">
                 {(({ files, setFiles, ...props }) => {
@@ -257,8 +331,7 @@ const Tickets = () => {
                             border: "1px dashed black",
                             cursor: "pointer",
                             borderRadius: 6,
-                          }}
-                        >
+                          }}>
                           <input {...getInputProps()} />
                           <BsUpload size={32} color="green" />
                           {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
@@ -272,8 +345,7 @@ const Tickets = () => {
                         <div
                           style={{
                             height: 100,
-                          }}
-                        >
+                          }}>
                           {files.map((doc, i) => (
                             <div key={i}>
                               <Link href={doc.preview} target="_blank" passHref>
@@ -306,16 +378,23 @@ const Tickets = () => {
                   variant="contained"
                   onClick={createMultipleTickets}
                   disabled={!files.length}
-                  sx={{ height: 50 }}
-                >
+                  sx={{ height: 50 }}>
                   Create Multiple Tickets
                 </Button>
+                <Backdrop
+                  sx={{
+                    color: "#fff",
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                  }}
+                  open={loading}>
+                  <CircularProgress color="inherit" />
+                </Backdrop>
               </Grid>
             </Grid>
           </FormSection>
         </form>
 
-        {tickets.map((ticket, index) => (
+        {/* {tickets.map((ticket, index) => (
           <div key={ticket._id} style={{ display: "flex", margin: 10 }}>
             <h2>
               <span>{index + 1}</span> for {ticket.ticketFor}
@@ -324,7 +403,98 @@ const Tickets = () => {
             <span>{ticket.isSend ? "Sent" : "Not Sent"}</span>
             <span>{ticket.isRead ? "Acknowledged" : "Not Acknowledged"}</span>
           </div>
-        ))}
+        ))} */}
+        <DataGrid
+          rows={tickets.filter((ticket) =>
+            ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
+          )}
+          columns={COLUMNS}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 5,
+              },
+            },
+          }}
+          pageSizeOptions={[5, 10, 15, 20]}
+          loading={fetching}
+          slots={{
+            toolbar: () => (
+              <Grid
+                container
+                justifyContent={"space-between"}
+                alignItems={"center"}>
+                <Input
+                  // variant="soft"
+                  placeholder="Search Email"
+                  value={search}
+                  sx={{
+                    width: 200,
+                    margin: 2,
+                    "--Input-focusedInset": "var(--any, )",
+                    "--Input-focusedThickness": "0.50rem",
+                    "--Input-focusedHighlight": "rgba(13,110,253,.25)",
+                    "&::before": {
+                      transition: "box-shadow .15s ease-in-out",
+                    },
+                    "&:focus-within": {
+                      borderColor: "#86b7fe",
+                    },
+                  }}
+                  onChange={(e) => setSearch(e.target.value)}
+                  endAdornment={
+                    search && search !== " " ? (
+                      <RxCross1
+                        size={25}
+                        style={{
+                          margin: 8,
+                          cursor: "pointer",
+                        }}
+                        onClick={(e) => setSearch("")}
+                      />
+                    ) : (
+                      <IoIosSearch
+                        size={30}
+                        style={{
+                          margin: 8,
+                          cursor: "pointer",
+                        }}
+                      />
+                    )
+                  }
+                />
+                <IconButton
+                  title="Refresh"
+                  onClick={getEventTickets}
+                  disabled={fetching}
+                  sx={{ margin: 2 }}>
+                  <IoReload size={30} />
+                </IconButton>
+              </Grid>
+            ),
+            loadingOverlay: () => (
+              <div
+                style={{
+                  height: 300,
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}>
+                <div style={{ display: "flex", alignItems: "flex-end" }}>
+                  <h2>loading </h2>
+                  <PulseLoader
+                    // color="#ffde59"
+                    color="#000000"
+                    margin={2}
+                    size={7}
+                    speedMultiplier={0.5}
+                  />
+                </div>
+              </div>
+            ),
+          }}
+        />
       </Grid>
     </FormWrapper>
   );

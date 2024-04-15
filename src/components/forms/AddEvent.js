@@ -199,8 +199,15 @@ const AddEvent = ({ editMode }) => {
               formik.values.eventDate
                 ? dayjs(formik.values.eventDate).format("MMMM DD, YYYY hh:mm A")
                 : ""
-            }`}
-          >
+            }${
+              formik.values.eventDate &&
+              dayjs(formik.values.eventDate).isAfter(dayjs())
+                ? `(${dayjs(formik.values.eventDate).diff(
+                    dayjs(),
+                    "days"
+                  )} days to go)`
+                : ""
+            }`}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
@@ -208,6 +215,7 @@ const AddEvent = ({ editMode }) => {
                     Event Date/ Time
                   </FormLabel>
                   <DateTimePicker
+                    disablePast
                     sx={{
                       margin: 0,
                     }}
@@ -437,7 +445,7 @@ const AddEvent = ({ editMode }) => {
             </Grid>
           </FormSection>
         </Grid>
-        <Grid container>
+        <Grid container justifyContent="flex-end">
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             {editMode ? "Update " : " Add"} Event
           </Button>
@@ -446,8 +454,7 @@ const AddEvent = ({ editMode }) => {
               color: "#fff",
               zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            open={loading}
-          >
+            open={loading}>
             <CircularProgress color="inherit" />
           </Backdrop>
         </Grid>
