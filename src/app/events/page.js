@@ -159,7 +159,7 @@ const Events = () => {
             <BsTicketPerforated
               size={24}
               color="#4C4C4C"
-              title="Edit Event"
+              title="View Tickets"
               style={{ marginLeft: 10, cursor: "pointer" }}
             />
           </Link>
