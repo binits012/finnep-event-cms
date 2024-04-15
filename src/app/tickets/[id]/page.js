@@ -15,6 +15,7 @@ import {
   Chip,
   Backdrop,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useCallback, useEffect, useState } from "react";
@@ -31,17 +32,21 @@ import { DataGrid } from "@mui/x-data-grid";
 import { render } from "react-dom";
 import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
+import { IoReload } from "react-icons/io5";
+import { PulseLoader } from "react-spinners";
 
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [fetching, setFetching] = useState(false);
+  const [search, setSearch] = useState(" ");
 
   const { id } = useParams();
 
   const [files, setFiles] = useState([]);
   const getEventTickets = useCallback(async () => {
+    setFetching(true);
     try {
       const response = await apiHandler("GET", `event/${id}/ticket`, true);
       console.log(response, "check res");
@@ -49,6 +54,8 @@ const Tickets = () => {
     } catch (err) {
       console.log(err);
       toast.error("Error getting tickets!");
+    } finally {
+      setFetching(false);
     }
   }, [id]);
   const handleSubmit = async (values) => {
@@ -126,13 +133,18 @@ const Tickets = () => {
       headerName: "Type",
       width: 110,
       renderCell: ({ row }) => {
+        const typeMap = {
+          normal: "Normal",
+          vip: "VIP",
+        };
         return (
           <Chip
             size="medium"
-            label={row.type}
+            label={typeMap[row.type]}
             variant="outlined"
             // color={row.type === "normal" ? "success" : "warning"}
             style={{
+              width: "100%",
               borderColor: `${row.type === "normal" ? "green" : "gold"}`,
               color: `${row.type === "normal" ? "green" : "gold"}`,
               fontWeight: "bold",
@@ -405,47 +417,81 @@ const Tickets = () => {
             },
           }}
           pageSizeOptions={[5, 10, 15, 20]}
+          loading={fetching}
           slots={{
             toolbar: () => (
-              <Input
-                // variant="soft"
-                placeholder="Search Event"
-                value={search}
-                sx={{
-                  width: 200,
-                  margin: 2,
-                  "--Input-focusedInset": "var(--any, )",
-                  "--Input-focusedThickness": "0.50rem",
-                  "--Input-focusedHighlight": "rgba(13,110,253,.25)",
-                  "&::before": {
-                    transition: "box-shadow .15s ease-in-out",
-                  },
-                  "&:focus-within": {
-                    borderColor: "#86b7fe",
-                  },
-                }}
-                onChange={(e) => setSearch(e.target.value)}
-                endAdornment={
-                  search && search !== " " ? (
-                    <RxCross1
-                      size={25}
-                      style={{
-                        margin: 8,
-                        cursor: "pointer",
-                      }}
-                      onClick={(e) => setSearch("")}
-                    />
-                  ) : (
-                    <IoIosSearch
-                      size={30}
-                      style={{
-                        margin: 8,
-                        cursor: "pointer",
-                      }}
-                    />
-                  )
-                }
-              />
+              <Grid
+                container
+                justifyContent={"space-between"}
+                alignItems={"center"}>
+                <Input
+                  // variant="soft"
+                  placeholder="Search Email"
+                  value={search}
+                  sx={{
+                    width: 200,
+                    margin: 2,
+                    "--Input-focusedInset": "var(--any, )",
+                    "--Input-focusedThickness": "0.50rem",
+                    "--Input-focusedHighlight": "rgba(13,110,253,.25)",
+                    "&::before": {
+                      transition: "box-shadow .15s ease-in-out",
+                    },
+                    "&:focus-within": {
+                      borderColor: "#86b7fe",
+                    },
+                  }}
+                  onChange={(e) => setSearch(e.target.value)}
+                  endAdornment={
+                    search && search !== " " ? (
+                      <RxCross1
+                        size={25}
+                        style={{
+                          margin: 8,
+                          cursor: "pointer",
+                        }}
+                        onClick={(e) => setSearch("")}
+                      />
+                    ) : (
+                      <IoIosSearch
+                        size={30}
+                        style={{
+                          margin: 8,
+                          cursor: "pointer",
+                        }}
+                      />
+                    )
+                  }
+                />
+                <IconButton
+                  title="Refresh"
+                  onClick={getEventTickets}
+                  disabled={fetching}
+                  sx={{ margin: 2 }}>
+                  <IoReload size={30} />
+                </IconButton>
+              </Grid>
+            ),
+            loadingOverlay: () => (
+              <div
+                style={{
+                  height: 300,
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}>
+                <div style={{ display: "flex", alignItems: "flex-end" }}>
+                  <h2>loading </h2>
+                  <PulseLoader
+                    // color="#ffde59"
+                    color="#000000"
+                    margin={2}
+                    size={7}
+                    speedMultiplier={0.5}
+                  />
+                </div>
+              </div>
             ),
           }}
         />
