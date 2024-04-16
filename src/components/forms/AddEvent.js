@@ -19,7 +19,7 @@ import IOSSwitch from "@/components/IOSSwtich";
 import { useEffect, useState } from "react";
 import DropZone from "@/components/DropZone";
 import { toast } from "react-toastify";
-import { addEvent } from "@/RESTAPIs/events";
+import { addEvent, updateEvent, updateEvents } from "@/RESTAPIs/events";
 import { useParams, useRouter } from "next/navigation";
 import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
@@ -43,28 +43,54 @@ function convertTime(minutes) {
 }
 const AddEvent = ({ editMode }) => {
   const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (values) => {
     setLoading(true);
-    try {
-      const res = await addEvent({
-        ...values,
-        eventDate: dayjs(values.eventDate).toISOString(),
-        socialMedia: {
-          fb: values.fbLink,
-          x: values.xLink,
-        },
-        eventName: "test",
-        // eventPrice: {
-        //   $numberDecimal: values.eventPrice,
-        // },
-      });
-      console.log(res, "check res");
-      toast.success("Event Added!!");
-      setLoading(false);
-    } catch (err) {
-      console.log(err);
-      toast.error("Error creating event!!");
-      setLoading(false);
+    if (id) {
+      try {
+        // const res = await apiHandler("PUT", `event/${id}`, true, values);.
+        const res = await updateEvent({
+          ...values,
+          eventDate: dayjs(values.eventDate).toISOString(),
+          socialMedia: {
+            fb: values.fbLink,
+            x: values.xLink,
+          },
+          eventName: "test",
+          // eventPrice: {
+          //   $numberDecimal: values.eventPrice,
+          // },
+        });
+        console.log(res, "check res");
+        toast.success("Event Updated!!");
+        setLoading(false);
+      } catch (err) {
+        console.log(err);
+        toast.error("Error updating event!!");
+        setLoading(false);
+      }
+    } else {
+      try {
+        const res = await addEvent({
+          ...values,
+          eventDate: dayjs(values.eventDate).toISOString(),
+          socialMedia: {
+            fb: values.fbLink,
+            x: values.xLink,
+          },
+          eventName: "test",
+          // eventPrice: {
+          //   $numberDecimal: values.eventPrice,
+          // },
+        });
+        console.log(res, "check res");
+        toast.success("Event Added!!");
+        setLoading(false);
+      } catch (err) {
+        console.log(err);
+        toast.error("Error creating event!!");
+        setLoading(false);
+      }
     }
   };
   const formik = useFormik({
