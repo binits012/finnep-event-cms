@@ -1,32 +1,54 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import apiHandler from "@/RESTAPIs/helper";
 import { useState } from "react";
+import { toast } from "react-toastify";
 import axios from "axios";
 import FormSection from "@/components/FormSection";
-import { Input } from "@mui/base";
-import { FormLabel, Grid, TextField } from "@mui/material";
+import { Button, FormLabel, Grid, TextField } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 
 const page = () => {
-  const [showPassword, setShowPassword] = useState(false);
+  const [show, setShow] = useState(false);
   const changePassword = async () => {
     try {
-      const res = await axios({
-        method: "POST",
-        baseURL: process.env.NEXT_PUBLIC_API_URL,
-        url: "auth/user/changePassword",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: { username, oldPassword, newPassword },
+      // const res = await axios({
+      //   method: "POST",
+      //   baseURL: process.env.NEXT_PUBLIC_API_URL,
+      //   url: "auth/user/changePassword",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   data: { oldPassword, newPassword },
+      // });
+      const res = await apiHandler("POST", "auth/user/changePassword", true, {
+        oldPassword: "oldPassword",
+        newPassword: "newPassword",
       });
+      console.log(res, "check res");
+
+      toast.success("Password Changed!!");
     } catch (err) {
       console.log(err);
-      // toast.error("Error getting events!!");
+      toast.error("Error getting details!!");
     }
   };
+
+  useEffect(() => {
+    changePassword();
+    const getDetails = async () => {
+      try {
+        const response = await apiHandler("GET", "auth/user", true);
+        console.log(response, "check res");
+      } catch (err) {
+        console.log(err);
+        toast.error("Error Getting details");
+      }
+    };
+    getDetails();
+  }, []);
 
   return (
     <>
@@ -34,19 +56,19 @@ const page = () => {
         <FormSection title="Change Password" showSection>
           <Grid container spacing={2} direction={"column"}>
             <Grid item container md={5} direction={"column"}>
-              <FormLabel htmlFor="email" className="label">
+              <FormLabel htmlFor="oldPassword" className="label">
                 Old Password
               </FormLabel>
               <TextField
                 id="oldPassword"
                 name="Old Password"
                 placeholder="Old Password"
-                type={!!showPassword ? "text" : "password"}
+                type={!!show ? "text" : "password"}
                 InputProps={{
-                  endAdornment: !!showPassword ? (
+                  endAdornment: !!show ? (
                     <VisibilityOffIcon
                       onClick={() => {
-                        setShowPassword(false);
+                        setShow(false);
                       }}
                       size={12}
                       style={{ cursor: "pointer" }}
@@ -55,7 +77,7 @@ const page = () => {
                     <VisibilityIcon
                       size={12}
                       onClick={() => {
-                        setShowPassword(true);
+                        setShow(true);
                       }}
                       style={{ cursor: "pointer" }}
                     />
@@ -63,8 +85,8 @@ const page = () => {
                 }}
               />
             </Grid>
-            <Grid item container md={5} direction={"column"}>
-              <FormLabel htmlFor="occupancy" className="label">
+            <Grid item container md={15} direction={"column"}>
+              <FormLabel htmlFor="newPassword" className="label">
                 New Password
               </FormLabel>
               <TextField
@@ -72,9 +94,9 @@ const page = () => {
                 name="phone"
                 placeholder="New Password"
                 fullWidth
-                type={!!showPassword ? "text" : "password"}
+                type={!!show ? "text" : "password"}
                 InputProps={{
-                  endAdornment: !!showPassword ? (
+                  endAdornment: !!show ? (
                     <VisibilityOffIcon
                       onClick={() => {
                         setShowPassword(false);
@@ -95,10 +117,11 @@ const page = () => {
               />
             </Grid>
           </Grid>
-
-          <button type="button" onClick={changePassword}>
-            Change Password
-          </button>
+          <Grid container justifyContent="flex-end" mt={3}>
+            <Button variant="contained" type="button" onClick={changePassword}>
+              Change Password
+            </Button>
+          </Grid>
         </FormSection>
       </form>
     </>
