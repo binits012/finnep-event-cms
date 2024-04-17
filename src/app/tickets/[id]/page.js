@@ -40,7 +40,7 @@ const Tickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
-  const [search, setSearch] = useState(" ");
+  const [search, setSearch] = useState("");
 
   const { id } = useParams();
 
@@ -87,7 +87,7 @@ const Tickets = () => {
         formData
       );
       setFiles([]);
-      toast.success(`Tickets created!`);
+      toast.success(`Wait For 5-10 seconds for tickets to be created!`);
       getEventTickets();
     } catch (err) {
       toast.error("Error Creating tickets!");
@@ -121,7 +121,9 @@ const Tickets = () => {
       field: "sn",
       headerName: "SN",
       width: 50,
-      // renderCell: ()
+      renderCell: ({ row }, index) => {
+        return <span>{index + 1}</span>;
+      },
     },
     {
       field: "ticketFor",
@@ -158,7 +160,24 @@ const Tickets = () => {
       headerName: "Ticket Send",
       width: 100,
       renderCell: ({ row }) => {
-        return <span>{row.isSend ? "Yes" : "No"}</span>;
+        const isSendMap = {
+          true: "Yes",
+          false: "No",
+        };
+        return (
+          <Chip
+            label={isSendMap[row.isSend]}
+            variant="outlined"
+            style={{
+              width: "100%",
+              borderColor: `${row.isSend === "true" ? "red" : "green"}`,
+              color: `${row.isSend === "true" ? "red" : "green"}`,
+              fontWeight: "bold",
+            }}
+          />
+          //   {row.isSend ? "Yes" : "No"}
+          // </Chip>
+        );
       },
     },
   ];
@@ -347,13 +366,38 @@ const Tickets = () => {
                             height: 100,
                           }}>
                           {files.map((doc, i) => (
-                            <div key={i}>
+                            <div
+                              key={i}
+                              style={{
+                                height: 100,
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                border: "1px dashed black",
+                                cursor: "pointer",
+                                borderRadius: 6,
+                              }}>
                               <Link href={doc.preview} target="_blank" passHref>
-                                <GrDocumentExcel size={48} color={"green"} />
+                                <GrDocumentExcel
+                                  size={48}
+                                  color={"green"}
+                                  style={{ margin: 5 }}
+                                />
                               </Link>
-                              <span>{doc.path}</span>
-                              <span>{(doc.size / 1024).toFixed(2)} KB</span>
+                              <div style={{ margin: 5 }}>
+                                <span>{doc.path}</span>
+                                <span
+                                  style={{
+                                    margin: 5,
+                                    border: "1px solid black",
+                                    fontSize: 12,
+                                  }}>
+                                  {(doc.size / 1024).toFixed(2)} KB
+                                </span>
+                              </div>
                               <GrTrash
+                                title="Delete"
                                 onClick={(e) =>
                                   setFiles(
                                     files.filter((x, index) => index !== i)
@@ -363,6 +407,10 @@ const Tickets = () => {
                                 color={"crimson"}
                                 style={{
                                   cursor: "pointer",
+                                  padding: 5,
+                                  margin: 5,
+                                  borderRadius: 4,
+                                  border: "1px solid crimson",
                                 }}
                               />
                             </div>
@@ -406,17 +454,17 @@ const Tickets = () => {
         ))} */}
         <DataGrid
           rows={tickets.filter((ticket) =>
-            ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
+            ticket.type.toLowerCase().includes(search.toLowerCase())
           )}
           columns={COLUMNS}
           initialState={{
             pagination: {
               paginationModel: {
-                pageSize: 5,
+                pageSize: 10,
               },
             },
           }}
-          pageSizeOptions={[5, 10, 15, 20]}
+          pageSizeOptions={[10, 25, 50]}
           loading={fetching}
           slots={{
             toolbar: () => (
@@ -467,8 +515,11 @@ const Tickets = () => {
                   title="Refresh"
                   onClick={getEventTickets}
                   disabled={fetching}
-                  sx={{ margin: 2 }}>
-                  <IoReload size={30} />
+                  sx={{
+                    margin: 2,
+                    cursor: "pointer",
+                  }}>
+                  <IoReload size={28} style={{ margin: 5 }} />
                 </IconButton>
               </Grid>
             ),
