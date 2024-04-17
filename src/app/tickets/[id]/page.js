@@ -454,7 +454,7 @@ const Tickets = () => {
         ))} */}
         <DataGrid
           rows={tickets.filter((ticket) =>
-            ticket.type.toLowerCase().includes(search.toLowerCase())
+            ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
           )}
           columns={COLUMNS}
           initialState={{
