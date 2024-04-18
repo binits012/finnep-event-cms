@@ -46,6 +46,7 @@ const page = () => {
       username: "",
       oldPassword: "",
       newPassword: "",
+      confirmPassword: "",
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -71,7 +72,7 @@ const page = () => {
       <form>
         <FormSection title="Change Password" showSection>
           <Grid container spacing={2} direction={"column"}>
-            <Grid item container md={5} direction={"column"}>
+            {/* <Grid item container md={5} direction={"column"}>
               <FormLabel htmlFor="oldPassword" className="label">
                 User
               </FormLabel>
@@ -79,8 +80,8 @@ const page = () => {
                 id="username"
                 name="username"
                 value={formik.values.username}
-                onChange={formik.handleChange}
                 placeholder="User Name"
+                disabled
                 type="text"
                 // InputProps={{
                 //   endAdornment: !!show ? (
@@ -102,7 +103,7 @@ const page = () => {
                 //   ),
                 // }}
               />
-            </Grid>
+            </Grid> */}
             <Grid item container md={5} direction={"column"}>
               <FormLabel htmlFor="oldPassword" className="label">
                 Old Password
@@ -144,6 +145,40 @@ const page = () => {
                 name="newPassword"
                 placeholder="New Password"
                 value={formik.values.newPassword}
+                onChange={formik.handleChange}
+                // value={setOldPassword}
+                fullWidth
+                type={!!showPassword ? "text" : "password"}
+                InputProps={{
+                  endAdornment: !!showPassword ? (
+                    <VisibilityOffIcon
+                      onClick={() => {
+                        setShowPassword(false);
+                      }}
+                      size={12}
+                      style={{ cursor: "pointer" }}
+                    />
+                  ) : (
+                    <VisibilityIcon
+                      size={12}
+                      onClick={() => {
+                        setShowPassword(true);
+                      }}
+                      style={{ cursor: "pointer" }}
+                    />
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item container md={15} direction={"column"}>
+              <FormLabel htmlFor="newPassword" className="label">
+                Confirm Password
+              </FormLabel>
+              <TextField
+                id="newPassword"
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={formik.values.confirmPassword}
                 onChange={formik.handleChange}
                 // value={setOldPassword}
                 fullWidth
