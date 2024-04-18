@@ -9,46 +9,62 @@ import { Button, FormLabel, Grid, TextField } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
+import { useFormik } from "formik";
 
 const page = () => {
   const [show, setShow] = useState(false);
-  const changePassword = async () => {
-    try {
-      // const res = await axios({
-      //   method: "POST",
-      //   baseURL: process.env.NEXT_PUBLIC_API_URL,
-      //   url: "auth/user/changePassword",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   data: { oldPassword, newPassword },
-      // });
-      const res = await apiHandler("POST", "auth/user/changePassword", true, {
-        oldPassword: "oldPassword",
-        newPassword: "newPassword",
-      });
-      console.log(res, "check res");
+  const [showPassword, setShowPassword] = useState(false);
+  // const [oldPassword, setOldPassword] = useState("");
 
+  // const userName = JSON.parse(localStorage.getItem("user")).name;
+
+  const handleSubmit = async (values) => {
+    console.log(values, "values ayoo....");
+    try {
+      const res = await apiHandler(
+        "POST",
+        "auth/user/changePassword",
+        true,
+        false,
+        {
+          ...values,
+          username: values.username,
+          oldPassword: values.oldPassword,
+          newPassword: values.newPassword,
+        }
+      );
+      console.log(res, "check res");
       toast.success("Password Changed!!");
     } catch (err) {
       console.log(err);
-      toast.error("Error getting details!!");
+      toast.error(err.message);
     }
   };
 
-  useEffect(() => {
-    changePassword();
-    const getDetails = async () => {
-      try {
-        const response = await apiHandler("GET", "auth/user", true);
-        console.log(response, "check res");
-      } catch (err) {
-        console.log(err);
-        toast.error("Error Getting details");
-      }
-    };
-    getDetails();
-  }, []);
+  const formik = useFormik({
+    initialValues: {
+      username: "",
+      oldPassword: "",
+      newPassword: "",
+    },
+    onSubmit: (values) => handleSubmit(values),
+  });
+
+  console.log(formik.values, "valuesss");
+
+  // useEffect(() => {
+  //   changePassword();
+  //   const getDetails = async () => {
+  //     try {
+  //       const response = await apiHandler("GET", "auth/user", true);
+  //       console.log(response, "check res");
+  //     } catch (err) {
+  //       console.log(err);
+  //       toast.error("Error Getting details");
+  //     }
+  //   };
+  //   getDetails();
+  // }, []);
 
   return (
     <>
@@ -57,11 +73,45 @@ const page = () => {
           <Grid container spacing={2} direction={"column"}>
             <Grid item container md={5} direction={"column"}>
               <FormLabel htmlFor="oldPassword" className="label">
+                User
+              </FormLabel>
+              <TextField
+                id="username"
+                name="username"
+                value={formik.values.username}
+                onChange={formik.handleChange}
+                placeholder="User Name"
+                type="text"
+                // InputProps={{
+                //   endAdornment: !!show ? (
+                //     <VisibilityOffIcon
+                //       onClick={() => {
+                //         setShow(false);
+                //       }}
+                //       size={12}
+                //       style={{ cursor: "pointer" }}
+                //     />
+                //   ) : (
+                //     <VisibilityIcon
+                //       size={12}
+                //       onClick={() => {
+                //         setShow(true);
+                //       }}
+                //       style={{ cursor: "pointer" }}
+                //     />
+                //   ),
+                // }}
+              />
+            </Grid>
+            <Grid item container md={5} direction={"column"}>
+              <FormLabel htmlFor="oldPassword" className="label">
                 Old Password
               </FormLabel>
               <TextField
                 id="oldPassword"
-                name="Old Password"
+                name="oldPassword"
+                value={formik.values.oldPassword}
+                onChange={formik.handleChange}
                 placeholder="Old Password"
                 type={!!show ? "text" : "password"}
                 InputProps={{
@@ -90,13 +140,16 @@ const page = () => {
                 New Password
               </FormLabel>
               <TextField
-                id="phone"
-                name="phone"
+                id="newPassword"
+                name="newPassword"
                 placeholder="New Password"
+                value={formik.values.newPassword}
+                onChange={formik.handleChange}
+                // value={setOldPassword}
                 fullWidth
-                type={!!show ? "text" : "password"}
+                type={!!showPassword ? "text" : "password"}
                 InputProps={{
-                  endAdornment: !!show ? (
+                  endAdornment: !!showPassword ? (
                     <VisibilityOffIcon
                       onClick={() => {
                         setShowPassword(false);
@@ -118,7 +171,10 @@ const page = () => {
             </Grid>
           </Grid>
           <Grid container justifyContent="flex-end" mt={3}>
-            <Button variant="contained" type="button" onClick={changePassword}>
+            <Button
+              variant="contained"
+              type="button"
+              onClick={formik.handleSubmit}>
               Change Password
             </Button>
           </Grid>
