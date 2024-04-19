@@ -49,7 +49,7 @@ const AddEvent = ({ editMode }) => {
     if (id) {
       try {
         // const res = await apiHandler("PUT", `event/${id}`, true, values);.
-        const res = await updateEvent({
+        const res = await updateEvent(id, {
           ...values,
           eventDate: dayjs(values.eventDate).toISOString(),
           socialMedia: {
@@ -67,6 +67,7 @@ const AddEvent = ({ editMode }) => {
       } catch (err) {
         console.log(err);
         toast.error("Error updating event!!");
+
         setLoading(false);
       }
     } else {

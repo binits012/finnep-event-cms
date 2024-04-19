@@ -8,6 +8,8 @@ import {
   MdOutlineSettings,
   MdSupervisedUserCircle,
 } from "react-icons/md";
+import { FaUsers } from "react-icons/fa";
+
 import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
 import { BsTicketPerforated } from "react-icons/bs";
@@ -90,6 +92,11 @@ const SideBar = () => {
       link: "/dashboard",
       icon: <MdDashboard size={24} />,
     },
+    {
+      title: "Front Page Details",
+      link: "/frontPage",
+      icon: <MdOutlineSettings size={24} />,
+    },
 
     {
       title: "Event",
@@ -106,16 +113,18 @@ const SideBar = () => {
       link: "/gallery",
       icon: <GrGallery size={24} />,
     },
+
+    {
+      title: "Users",
+      link: "/users",
+      icon: <FaUsers size={24} />,
+    },
     {
       title: "Profile",
       link: "/profile",
       icon: <MdSupervisedUserCircle size={24} />,
     },
-    {
-      title: "Settings",
-      link: "/settings",
-      icon: <MdOutlineSettings size={24} />,
-    },
+
     // {
     //   title: "Logout",
     //   link: "/logout",
@@ -148,8 +157,7 @@ const SideBar = () => {
                 pathname.includes(item.link) ? "active" : ""
               } item-container `}
               id={item.title}
-              key={item.link}
-            >
+              key={item.link}>
               <Link href={item.link} passHref>
                 <span style={{ marginRight: "10px" }}>{item.icon}</span>
                 {item.title}

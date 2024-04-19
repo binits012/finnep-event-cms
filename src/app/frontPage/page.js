@@ -95,18 +95,18 @@ const Settings = () => {
     <FormWrapper>
       {" "}
       <CustomBreadcrumbs
-        title={`Settings / FrontPage Details`}
+        title={`Front Page / Front Page Details`}
         links={[
           {
-            path: "/settings",
-            title: "Settings",
+            path: "/frontPage",
+            title: "Front Page",
             active: true,
           },
         ]}
       />
       <form>
         <Grid container direction="column" spacing={0}>
-          <FormSection title="FrontPage Details">
+          <FormSection title="FrontPage Details" showSection>
             <Grid item md={12} sm={12}>
               <TextEditor
                 name="aboutSection"
@@ -128,7 +128,10 @@ const Settings = () => {
                 </Typography>
               )}
             </Grid>
-            <FormSection title="Contacts" containerCSS={`margin-top: 20px;`}>
+            <FormSection
+              title="Contacts"
+              containerCSS={`margin-top: 20px;`}
+              showSection>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="email" className="label">
@@ -163,6 +166,7 @@ const Settings = () => {
               </Grid>
             </FormSection>
             <FormSection
+              showSection
               title="Social Media"
               containerCSS={`margin-top: 20px;`}>
               <Grid container spacing={2}>
