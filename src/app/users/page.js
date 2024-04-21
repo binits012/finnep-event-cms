@@ -31,7 +31,7 @@ const Users = () => {
     getUserDetails();
   }, []);
 
-  const handleAskForDelete = async (e, row) => {
+  const handleDisable = async (e, row) => {
     console.log(row);
     const res = await apiHandler("DELETE", `/user/${row._id}`, true);
     console.log(res);
@@ -121,7 +121,7 @@ const Users = () => {
               title="Disable User"
               style={{ marginLeft: 10, cursor: "pointer" }}
               // di
-              onClick={(e) => handleAskForDelete(e, row)}
+              onClick={(e) => handleDisable(e, row)}
             />
           </Box>
         );
