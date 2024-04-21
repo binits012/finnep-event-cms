@@ -17,6 +17,7 @@ import { FaPersonArrowUpFromLine } from "react-icons/fa6";
 import usePagination from "@mui/material/usePagination/usePagination";
 import { usePathname } from "next/navigation";
 import Avatar from "@mui/material/Avatar";
+import { RiPagesLine } from "react-icons/ri";
 
 const Wrapper = styled.div`
   .sideBar {
@@ -95,7 +96,7 @@ const SideBar = () => {
     {
       title: "Front Page Details",
       link: "/frontPage",
-      icon: <MdOutlineSettings size={24} />,
+      icon: <RiPagesLine size={24} />,
     },
 
     {
