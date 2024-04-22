@@ -11,6 +11,7 @@ import { RxCross1 } from "react-icons/rx";
 import { PulseLoader } from "react-spinners";
 import { toast } from "react-toastify";
 import styled from "styled-components";
+import { TiTickOutline } from "react-icons/ti";
 
 const Users = () => {
   const [open, setOpen] = useState(false);
@@ -31,8 +32,14 @@ const Users = () => {
     getUserDetails();
   }, []);
 
+  const handleEnable = async (row) => {
+    const res = await apiHandler("PATCH", `/user/${row._id}`, true);
+    console.log(res);
+    if (res.status === 200) {
+      toast.success("User enabled successfully");
+    }
+  };
   const handleDisable = async (row) => {
-    console.log(row);
     const res = await apiHandler("DELETE", `/user/${row._id}`, true);
     console.log(res);
     if (res.status === 204) {
@@ -115,13 +122,24 @@ const Users = () => {
         return (
           <Box>
             {" "}
+            <TiTickOutline
+              size={24}
+              color={`green`}
+              title="Enable User"
+              style={{ cursor: "pointer" }}
+              onClick={(e) => {
+                handleEnable(row);
+              }}
+            />
             <AiOutlineStop
               size={24}
               color={`${"#C73F33"}`}
               title="Disable User"
               style={{ marginLeft: 10, cursor: "pointer" }}
               // di
-              onClick={(e) => handleDisable(e, row)}
+              onClick={(e) => {
+                handleDisable(row);
+              }}
             />
           </Box>
         );
