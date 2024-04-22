@@ -31,7 +31,7 @@ const Users = () => {
     getUserDetails();
   }, []);
 
-  const handleDisable = async (e, row) => {
+  const handleDisable = async (row) => {
     console.log(row);
     const res = await apiHandler("DELETE", `/user/${row._id}`, true);
     console.log(res);
@@ -217,7 +217,6 @@ const Users = () => {
               <div style={{ display: "flex", alignItems: "flex-end" }}>
                 <h2>loading </h2>
                 <PulseLoader
-                  // color="#ffde59"
                   color="#000000"
                   margin={2}
                   size={7}
