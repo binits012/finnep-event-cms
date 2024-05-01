@@ -35,7 +35,8 @@ const Events = () => {
     {
       field: "eventPromotionPhoto",
       headerName: "Thumbnail",
-      width: 100,
+      width: 150,
+      headerClassName: "column-header",
       // editable: true,
       sortable: false,
       renderCell: (abc) => {
@@ -45,13 +46,17 @@ const Events = () => {
     {
       field: "eventTitle",
       headerName: "Title",
-      width: 180,
+      width: 200,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       // editable: true,
     },
     {
       field: "occupancy",
       headerName: "Occupancy",
-      width: 90,
+      width: 150,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       sortable: false,
       // editable: true,
     },
@@ -59,6 +64,8 @@ const Events = () => {
       field: "eventPrice",
       headerName: "Price",
       width: 80,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       // editable: true,
       renderCell: (abc, def) => {
         // console.log(def, abc, "test 123434245");
@@ -69,7 +76,9 @@ const Events = () => {
       field: "eventDate",
       headerName: "Date",
       type: "number",
-      width: 110,
+      width: 120,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       // editable: true,
       renderCell: ({ row }) => (
         <span>{moment(row.eventDate).format("MMM DD YYYY")}</span>
@@ -78,7 +87,8 @@ const Events = () => {
     {
       field: "socialMedia",
       headerName: "Social Media Links",
-      width: 150,
+      width: 200,
+      headerClassName: "column-header",
       editable: false,
       sortable: false,
       renderCell: ({ row }) => (
@@ -86,7 +96,8 @@ const Events = () => {
           direction="row"
           width="100%"
           justify="space-between"
-          className="actions">
+          className="actions"
+        >
           <Link href={`${row.socialMedia.fb}`} target="_blank">
             <FaFacebook
               size={24}
@@ -118,6 +129,7 @@ const Events = () => {
       field: "actions",
       headerName: "Actions",
       width: 150,
+      headerClassName: "column-header",
       editable: false,
       sortable: false,
       renderCell: ({ row }) => (
@@ -125,7 +137,8 @@ const Events = () => {
           direction="row"
           width="100%"
           justify="space-between"
-          className="actions">
+          className="actions"
+        >
           <Link href={`/events/edit/${row._id}`} passHref>
             <MdOutlineEdit
               size={24}
@@ -192,7 +205,8 @@ const Events = () => {
     <>
       <div
         id="event"
-        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}>
+        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
+      >
         <CustomBreadcrumbs
           title={"Events"}
           links={[
@@ -263,7 +277,7 @@ const Events = () => {
         </Grid>
 
         <Box sx={{ height: 400, width: "100%" }}>
-          <DataGrid
+          <StyledDataGrid
             rows={events.filter((event) =>
               event.eventTitle.toLowerCase().includes(search.toLowerCase())
             )}
@@ -329,7 +343,8 @@ const Events = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                  }}>
+                  }}
+                >
                   <div style={{ display: "flex", alignItems: "flex-end" }}>
                     <h2>loading </h2>
                     <PulseLoader
@@ -351,7 +366,8 @@ const Events = () => {
         onClose={() => {
           setShowModal(false);
           setSelectedEvent(null);
-        }}>
+        }}
+      >
         <Styled>
           <div className="content">
             <div className="img">
@@ -408,6 +424,15 @@ export default Events;
 
 // curl --location 'https://eventapp.finnep.fi/api/event' \
 // --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InllbGxvd0JyaWRnZSIsInJvbGUiOiJzdXBlckFkbWluIiwiaWQiOiI2NWZkZWU5NTg0MWJkNjAyYzkwOGExZTIiLCJpYXQiOjE3MTEyOTAzNzYsImV4cCI6MTcxMTQ2MzE3Nn0.Oje0AWz1v0VW3RRfSy7GlJAOlKhXmYhhkl3uAwnLAFw'
+const StyledDataGrid = styled(DataGrid)`
+  .column-header {
+    font-size: 20px;
+  }
+
+  .column-cell {
+    font-size: 18px;
+  }
+`;
 
 const Styled = styled.div`
   .content {

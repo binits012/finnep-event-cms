@@ -44,6 +44,8 @@ const Tickets = () => {
       field: "eventTitle",
       headerName: "Title",
       width: 250,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       // editable: true,
       renderCell: ({ row }) => {
         return <Link href={`/tickets/${row._id}`}>{row.eventTitle}</Link>;
@@ -53,6 +55,8 @@ const Tickets = () => {
       field: "eventPrice",
       headerName: "Price",
       width: 80,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       // editable: true,
       renderCell: (abc, def) => {
         // console.log(def, abc, "test 123434245");
@@ -62,7 +66,9 @@ const Tickets = () => {
     {
       field: "occupancy",
       headerName: "Occupancy",
-      width: 90,
+      width: 130,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       sortable: false,
       // editable: true,
     },
@@ -101,7 +107,7 @@ const Tickets = () => {
           </div>
         ))}
       </div>  */}
-      <DataGrid
+      <StyledDataGrid
         rows={events.filter((event) =>
           event.eventTitle.toLowerCase().includes(search.toLowerCase())
         )}
@@ -162,6 +168,15 @@ const Tickets = () => {
     </FormWrapper>
   );
 };
+const StyledDataGrid = styled(DataGrid)`
+  .column-header {
+    font-size: 20px;
+  }
+
+  .column-cell {
+    font-size: 18px;
+  }
+`;
 const FormWrapper = styled.div`
   width: 100%;
   padding: 30px;
