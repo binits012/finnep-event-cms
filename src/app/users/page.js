@@ -50,13 +50,17 @@ const Users = () => {
   const COLUMN = [
     {
       field: "name",
-      headerName: "Username",
-      width: 150,
+      headerName: "Name",
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+      width: 200,
     },
     {
       field: `role`,
       headerName: "Role",
-      width: 70,
+      width: 200,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       renderCell({ row }) {
         return (
           <div
@@ -166,7 +170,7 @@ const Users = () => {
           </Button>
         </Link>
       </Grid>
-      <DataGrid
+      <StyledDataGrid
         rows={users.filter((user) =>
           user.name.toLowerCase().includes(search.toLowerCase())
         )}
@@ -248,6 +252,16 @@ const Users = () => {
     </FormWrapper>
   );
 };
+
+const StyledDataGrid = styled(DataGrid)`
+  .column-header {
+    font-size: 20px;
+  }
+
+  .column-cell {
+    font-size: 18px;
+  }
+`;
 const FormWrapper = styled.div`
   width: 100%;
   padding: 30px;
