@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import {
   MdDashboard,
   MdEventNote,
@@ -20,7 +20,7 @@ import Avatar from "@mui/material/Avatar";
 
 const Wrapper = styled.div`
   .sideBar {
-    width: 300px;
+    width: ${props => props.isCollapsed ? "0px" : "300px"};
     height: 100vh;
     position: fixed;
     left: 0;
@@ -28,6 +28,7 @@ const Wrapper = styled.div`
     /* background-color: #36454f; */
     background-color: #28282b;
     padding: 10px;
+    transition: width 0.3s ease-in-out; 
     color: beige;
     text-decoration: none;
   }
@@ -86,6 +87,8 @@ const Wrapper = styled.div`
   }
 `;
 const SideBar = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const ITEMS = [
     {
       title: "Dashboard",
@@ -134,9 +137,9 @@ const SideBar = () => {
   const pathname = usePathname();
   // console.log(pathname, "");
   return (
-    <Wrapper>
+    <Wrapper isCollapsed={isCollapsed}>
       <div className="sideBar">
-        <div className="user">
+        <div className="user" onClick={toggleSidebar}>
           {/* <Image
             className="userImage"
             src={"/noavatar.png"}
@@ -145,11 +148,14 @@ const SideBar = () => {
             height="50"
           /> */}
           <Avatar src={"/noavatar.png"} alt="no avatar" />
+          {!isCollapsed && (
           <div className="userDetail">
             <span className="usename">Admin</span>
             <span className="userTittle">Administrator</span>
           </div>
+          )}
         </div>
+        {!isCollapsed && (
         <div className="items">
           {ITEMS.map((item) => (
             <div
@@ -159,12 +165,13 @@ const SideBar = () => {
               id={item.title}
               key={item.link}>
               <Link href={item.link} passHref>
-                <span style={{ marginRight: "10px" }}>{item.icon}</span>
+                <span style={{ marginRight: "10px"}}>{item.icon}</span>
                 {item.title}
               </Link>
             </div>
           ))}
         </div>
+        )}
       </div>
     </Wrapper>
   );
