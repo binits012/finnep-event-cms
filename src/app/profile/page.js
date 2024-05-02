@@ -10,16 +10,20 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 import { useFormik } from "formik";
+import * as Yup from "yup";
 
+// Yup schema to validate the form
+const schema = Yup.object().shape({
+  name: Yup.string().required(),
+  emailAddress: Yup.string().required().email(),
+  phoneNumber: Yup.number().required().min(10),
+});
 const page = () => {
   const [show, setShow] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  // const [oldPassword, setOldPassword] = useState("");
 
-  // const userName = JSON.parse(localStorage.getItem("user")).name;
-
+  const [users, setUsers] = useState([]);
   const handleSubmit = async (values) => {
-    console.log(values, "values ayoo....");
     try {
       const res = await apiHandler(
         "POST",
@@ -51,21 +55,48 @@ const page = () => {
     onSubmit: (values) => handleSubmit(values),
   });
 
-  console.log(formik.values, "valuesss");
+  // const getContact = async () => {
+  //   try {
+  //     const res = await apiHandler(
+  //       "GET",
+  //       `user/${users.id}/contact`,
+  //       true,
+  //       false
+  //     );
+  //     setUsers(res.data.data || []);
+  //     console.log(res, "check res");
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
 
-  // useEffect(() => {
-  //   changePassword();
-  //   const getDetails = async () => {
-  //     try {
-  //       const response = await apiHandler("GET", "auth/user", true);
-  //       console.log(response, "check res");
-  //     } catch (err) {
-  //       console.log(err);
-  //       toast.error("Error Getting details");
-  //     }
-  //   };
-  //   getDetails();
-  // }, []);
+  const createContact = async () => {
+    try {
+      const res = await apiHandler(
+        "POST",
+        `user/${users.id}/contact`,
+        true,
+        false
+      );
+      console.log(res, "check res");
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const contactFormik = useFormik({
+    initialValues: {
+      streetName: "",
+      emailAddress: "",
+      phoneNumber: "",
+    },
+    validationSchema: schema,
+    onSubmit: (values) => {
+      // console.log(values);
+      createContact(values);
+    },
+  });
+  console.log(contactFormik.values, "valuesss");
 
   return (
     <>
@@ -146,7 +177,6 @@ const page = () => {
                 placeholder="New Password"
                 value={formik.values.newPassword}
                 onChange={formik.handleChange}
-                // value={setOldPassword}
                 fullWidth
                 type={!!showPassword ? "text" : "password"}
                 InputProps={{
@@ -211,6 +241,60 @@ const page = () => {
               type="button"
               onClick={formik.handleSubmit}>
               Change Password
+            </Button>
+          </Grid>
+        </FormSection>
+      </form>
+      <form>
+        <FormSection title="Contact Details" showSection>
+          <Grid item container md={8} direction={"column"} mt={2}>
+            <FormLabel htmlFor="Contact" className="label">
+              Street Name
+            </FormLabel>
+            <TextField
+              id="streetName"
+              name="streetName"
+              placeholder="Street Name"
+              value={contactFormik.values.streetName}
+              onChange={contactFormik.handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item container md={8} direction={"column"} mt={2}>
+            <FormLabel htmlFor="Contact" className="label">
+              Phone
+            </FormLabel>
+            <TextField
+              id="phoneNumber"
+              name="phoneNumber"
+              placeholder="Phone Number"
+              value={contactFormik.values.phoneNumber}
+              onChange={contactFormik.handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item container md={8} direction={"column"} mt={2}>
+            <FormLabel htmlFor="Contact" className="label">
+              Email
+            </FormLabel>
+            <TextField
+              id="emailAddress"
+              name="emailAddress"
+              placeholder="Email Address"
+              value={contactFormik.values.emailAddress}
+              onChange={contactFormik.handleChange}
+              fullWidth
+            />
+          </Grid>
+
+          <Grid container justifyContent="flex-end" mt={3}>
+            <Button
+              variant="contained"
+              type="button"
+              onClick={() => {
+                createContact();
+              }}>
+              Submit
             </Button>
           </Grid>
         </FormSection>
