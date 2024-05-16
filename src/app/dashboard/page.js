@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { setUser } from "@/store/reducers/photoTypeSlice";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
+import apiHandler from "@/RESTAPIs/helper";
 const Dashboard = () => {
   const [dashboard, setDashboard] = useState([]);
   useEffect(() => {

@@ -31,7 +31,7 @@ const InnerLayout = ({ children }) => {
         <Navbar />
         <div style={{ padding: 30, width: "100%" }}>{children}</div>
       </div>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
     </div>
   );
 };
