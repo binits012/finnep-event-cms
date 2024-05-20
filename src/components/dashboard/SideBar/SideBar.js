@@ -14,14 +14,14 @@ import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
 import { BsTicketPerforated } from "react-icons/bs";
 import { FaPersonArrowUpFromLine } from "react-icons/fa6";
-import usePagination from "@mui/material/usePagination/usePagination";
+// import usePagination from "@mui/material/usePagination/usePagination";
 import { usePathname } from "next/navigation";
 import Avatar from "@mui/material/Avatar";
 import { RiPagesLine } from "react-icons/ri";
 
 const Wrapper = styled.div`
   .sideBar {
-    width: ${props => props.isCollapsed ? "0px" : "300px"};
+    width: ${(props) => (props.isCollapsed ? "0px" : "300px")};
     height: 100vh;
     position: fixed;
     left: 0;
@@ -29,7 +29,7 @@ const Wrapper = styled.div`
     /* background-color: #36454f; */
     background-color: #28282b;
     padding: 10px;
-    transition: width 0.3s ease-in-out; 
+    transition: width 0.3s ease-in-out;
     color: beige;
     text-decoration: none;
   }
@@ -150,28 +150,28 @@ const SideBar = () => {
           /> */}
           <Avatar src={"/noavatar.png"} alt="no avatar" />
           {!isCollapsed && (
-          <div className="userDetail">
-            <span className="usename">Admin</span>
-            <span className="userTittle">Administrator</span>
-          </div>
+            <div className="userDetail">
+              <span className="usename">Admin</span>
+              <span className="userTittle">Administrator</span>
+            </div>
           )}
         </div>
         {!isCollapsed && (
-        <div className="items">
-          {ITEMS.map((item) => (
-            <div
-              className={`${
-                pathname.includes(item.link) ? "active" : ""
-              } item-container `}
-              id={item.title}
-              key={item.link}>
-              <Link href={item.link} passHref>
-                <span style={{ marginRight: "10px"}}>{item.icon}</span>
-                {item.title}
-              </Link>
-            </div>
-          ))}
-        </div>
+          <div className="items">
+            {ITEMS.map((item) => (
+              <div
+                className={`${
+                  pathname.includes(item.link) ? "active" : ""
+                } item-container `}
+                id={item.title}
+                key={item.link}>
+                <Link href={item.link} passHref>
+                  <span style={{ marginRight: "10px" }}>{item.icon}</span>
+                  {item.title}
+                </Link>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </Wrapper>
