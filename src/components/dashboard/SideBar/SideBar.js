@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import { RiPagesLine } from "react-icons/ri";
 
 const Wrapper = styled.div`
   .sideBar {
@@ -97,7 +98,7 @@ const SideBar = ({ onToggle }) => {
     {
       title: "Front Page Details",
       link: "/frontPage",
-      icon: <MdOutlineSettings size={24} />,
+      icon: <RiPagesLine size={24} />,
     },
 
     {
