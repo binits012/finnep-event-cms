@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import Login from "./Login";
 import Dashboard from "@/app";
@@ -7,27 +8,37 @@ import SideBar from "./dashboard/SideBar/SideBar";
 import Navbar from "./dashboard/NavBar/Navbar";
 import store from "@/store/store";
 import GateWay from "./GateWay";
-import { useRouter } from "next/navigation";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const InnerLayout = ({ children }) => {
   const dispatch = useDispatch();
-  const router = useRouter();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   useEffect(() => {
     const auth = localStorage.getItem("auth");
     if (auth) {
       dispatch(setUser(JSON.parse(auth)));
-    } else {
-      router.push("/");
     }
   }, []);
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <div style={{ display: "flex", width: "100%" }}>
       <div>
-        <SideBar />
+        <SideBar onToggle={toggleSidebarCollapse} />
       </div>
-      <div style={{ marginLeft: 300, width: "calc(100% - 300px)" }}>
+      <div
+        style={{
+          marginLeft: isSidebarCollapsed ? "65px" : "250px",
+          width: isSidebarCollapsed
+            ? "calc(100% - 56px)"
+            : "calc(100% - 250px)",
+        }}
+      >
         <Navbar />
         <div style={{ padding: 30, width: "100%" }}>{children}</div>
       </div>
