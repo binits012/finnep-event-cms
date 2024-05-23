@@ -27,32 +27,33 @@ describe("Login Flow", () => {
   });
 
   const mockPush = jest.fn();
-  const handleLogin = jest.fn((data) => {
-    if (
-      data.username === "yellowBridge" &&
-      data.password === "yellowBridge2024#"
-    ) {
-      return Promise.resolve(true);
-    } else {
-      return Promise.resolve(false);
-    }
-  });
+  // const handleLogin = jest.fn((data) => {
+  //   if (
+  //     data.username === "yellowBridge" &&
+  //     data.password === "yellowBridge2024#"
+  //   ) {
+  //     return Promise.resolve(true);
+  //   } else {
+  //     return Promise.resolve(false);
+  //   }
+  // });
 
-  beforeEach(() => {
-    useRouter.mockImplementation(() => ({
-      push: mockPush,
-    }));
-  });
+  // beforeEach(() => {
+  //   useRouter.mockImplementation(() => ({
+  //     push: mockPush,
+  //   }));
+  // });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  // afterEach(() => {
+  //   jest.clearAllMocks();
+  // });
 
   it("should render login form and submit successfully", async () => {
     const store = mockStore({});
     render(
       <Provider store={store}>
-        <Login onLogin={handleLogin} />
+        <Login />
+        {/* onLogin={handleLogin} */}
       </Provider>
     );
 
@@ -74,15 +75,6 @@ describe("Login Flow", () => {
     const buttonElement = screen.getByRole("button", { name: /Login/i });
     expect(buttonElement).toBeInTheDocument();
 
-    // Simulate form submission
-    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
-
-    // Verify handleLogin was called with correct values
-    // expect(handleLogin).toHaveBeenCalledWith({
-    //   username: "yellowBridge",
-    //   password: "yellowBridge2024#",
-    // });
-
     // Wait for async actions
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith({
@@ -93,8 +85,8 @@ describe("Login Flow", () => {
           "Content-Type": "application/json",
         },
         data: {
-          username: "yellowBridge",
           password: "yellowBridge2024#",
+          username: "yellowBridge",
         },
       });
 
@@ -105,17 +97,26 @@ describe("Login Flow", () => {
       expect(localStorage.getItem("accessToken")).toBe(mockResponse.data.token);
       expect(localStorage.getItem("stamp")).toBe(moment().toISOString());
     });
-    // // Wait for navigation
-    // await waitFor(() => {
-    //   expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    // Wait for navigation
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    });
+
+    // Simulate form submission
+    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
+
+    // Verify handleLogin was called with correct values
+    // expect(handleLogin).toHaveBeenCalledWith({
+    //   username: "yellowBridge",
+    //   password: "yellowBridge2024#",
     // });
   });
 
-  //   it("should render dashboard with sidebar after login", async () => {
-  //     render(<Dashboard />);
+  // it("should render dashboard with sidebar after login", async () => {
+  //   render(<Dashboard />);
 
-  //     // Verify dashboard and sidebar are rendered
-  //     expect(screen.getByText(/dashboard/i)).toBeInTheDocument();
-  //     expect(screen.getByText(/sidebar/i)).toBeInTheDocument();
-  //   });
+  //   // Verify dashboard and sidebar are rendered
+  //   expect(screen.getByText(/dashboard/i)).toBeInTheDocument();
+  //   expect(screen.getByText(/sidebar/i)).toBeInTheDocument();
+  // });
 });
