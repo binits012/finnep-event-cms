@@ -187,7 +187,7 @@ export default function NotificationPage() {
 
   return (
     <>
-      <div>
+      <div id="event" style={{ padding: "20px 0 0 20px" }}>
         <CustomBreadcrumbs
           title={`Notification`}
           links={[
@@ -198,305 +198,306 @@ export default function NotificationPage() {
             },
           ]}
         />
-      </div>
-      <div style={{ margin: "50px 0px", background: "#F6F6F6" }}>
-        <div>
+
+        <div style={{ margin: "50px 0px", background: "#F6F6F6" }}>
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <p style={{ margin: "10px" }}>Notification List</p>
+              <div
+                style={{
+                  display: "flex",
+                  width: "50px",
+                  height: "35px",
+                  borderRadius: "5px",
+                  background: "#007BFF",
+                  color: "white",
+                  justifyContent: "center",
+                  margin: "10px",
+                }}
+              >
+                <FaPlus
+                  style={{
+                    width: "30px",
+                    height: "auto",
+                    padding: "5px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setShowModal(true)}
+                />
+              </div>
+            </div>
+          </div>
+
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
+              border: "1px solid #E0E0E0",
+              alignItems: "center",
+              padding: "10px",
             }}
           >
-            <p style={{ margin: "10px" }}>Notification List</p>
+            <div>
+              Show
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                style={{ height: "40px", padding: "5px" }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>{" "}
+              entries
+            </div>
             <div
               style={{
                 display: "flex",
-                width: "50px",
-                height: "35px",
-                borderRadius: "5px",
-                background: "#007BFF",
-                color: "white",
                 justifyContent: "center",
+                alignItems: "center",
                 margin: "10px",
+                gap: "10px",
               }}
             >
-              <FaPlus
+              Search:
+              <input
+                value={searchText}
+                onChange={handleSearch}
                 style={{
-                  width: "30px",
-                  height: "auto",
+                  width: "200px",
+                  height: "40px",
                   padding: "5px",
-                  cursor: "pointer",
+                  borderRadius: "4px",
+                  border: "1px solid #ccc",
+                  backgroundColor: "#fff",
                 }}
-                onClick={() => setShowModal(true)}
               />
             </div>
           </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            border: "1px solid #E0E0E0",
-            alignItems: "center",
-            padding: "10px",
-          }}
-        >
-          <div>
-            Show
-            <select
-              value={pageSize}
-              onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
-              style={{ height: "40px", padding: "5px" }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-            </select>{" "}
-            entries
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "10px",
-              gap: "10px",
-            }}
-          >
-            Search:
-            <input
-              value={searchText}
-              onChange={handleSearch}
-              style={{
-                width: "200px",
-                height: "40px",
-                padding: "5px",
-                borderRadius: "4px",
-                border: "1px solid #ccc",
-                backgroundColor: "#fff",
-              }}
+          <Box sx={{ margin: "0 10px" }}>
+            <DataGrid
+              rows={filteredRows}
+              columns={columns}
+              pageSize={pageSize}
+              pagination
+              rowsPerPageOptions={[5, 10, 20]}
             />
-          </div>
-        </div>
-        <Box sx={{ margin: "0 10px" }}>
-          <DataGrid
-            rows={filteredRows}
-            columns={columns}
-            pageSize={pageSize}
-            pagination
-            rowsPerPageOptions={[5, 10, 20]}
-          />
-        </Box>
+          </Box>
 
-        <Modal
-          isVisible={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEditMode(false);
-            setSelectedNotification(null);
-          }}
-          selectedNotification={selectedNotification}
-        >
-          <Grid item xs={12} sm={6} md={4}>
-            <form
-              style={{
-                padding: "20px",
-                maxWidth: "600px",
-                margin: "auto",
-                border: "1px solid #E0E0E0",
-                borderRadius: "8px",
-                background: "#f9f9f9",
-              }}
-              onSubmit={formik.handleSubmit}
-            >
-              <Grid container direction="column" spacing={2}>
-                <Grid item>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      paddingBottom: "10px",
-                      borderBottom: "1px solid #E0E0E0",
-                    }}
-                  >
-                    <h1 style={{ margin: 0 }}>
-                      {editMode ? "Update" : "Add"} Notification
-                    </h1>
-                    <RxCross1
-                      style={{ cursor: "pointer" }}
-                      onClick={() => {
-                        setShowModal(false);
-                        setEditMode(false);
-                      }}
-                    />
-                  </div>
-                </Grid>
-
-                <Grid item>
-                  <div>
-                    <h4 style={{ margin: "10px 0" }}>Notification Type</h4>
-                    <select
-                      name="notificationType"
-                      value={formik.values.notificationType}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
+          <Modal
+            isVisible={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setEditMode(false);
+              setSelectedNotification(null);
+            }}
+            selectedNotification={selectedNotification}
+          >
+            <Grid item xs={12} sm={6} md={4}>
+              <form
+                style={{
+                  padding: "20px",
+                  maxWidth: "600px",
+                  margin: "auto",
+                  border: "1px solid #E0E0E0",
+                  borderRadius: "8px",
+                  background: "#f9f9f9",
+                }}
+                onSubmit={formik.handleSubmit}
+              >
+                <Grid container direction="column" spacing={2}>
+                  <Grid item>
+                    <div
                       style={{
-                        width: "100%",
-                        height: "40px",
-                        padding: "5px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        paddingBottom: "10px",
+                        borderBottom: "1px solid #E0E0E0",
                       }}
                     >
-                      {/* <option value="marquee">Marquee</option> */}
-                      <option value="pop-up">Pop-up</option>
-                      <option value="pop-over">Pop-over</option>
-                      <option value="in-between">In-between</option>
-                    </select>
-                  </div>
-                </Grid>
+                      <h1 style={{ margin: 0 }}>
+                        {editMode ? "Update" : "Add"} Notification
+                      </h1>
+                      <RxCross1
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setShowModal(false);
+                          setEditMode(false);
+                        }}
+                      />
+                    </div>
+                  </Grid>
 
-                <Grid item>
-                  <div>
-                    <TextEditor
-                      name="notification"
-                      id="notification"
-                      label="Notification"
-                      placeholder="Enter your notification here..."
-                      handleChange={(text) => {
-                        formik.setFieldValue("notification", text);
-                      }}
-                      value={formik.values.notification}
-                      error={
-                        formik.touched.notification &&
-                        formik.errors.notification
-                      }
-                      required={true}
-                    />
-                  </div>
-                </Grid>
+                  <Grid item>
+                    <div>
+                      <h4 style={{ margin: "10px 0" }}>Notification Type</h4>
+                      <select
+                        name="notificationType"
+                        value={formik.values.notificationType}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "5px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          backgroundColor: "#fff",
+                        }}
+                      >
+                        {/* <option value="marquee">Marquee</option> */}
+                        <option value="pop-up">Pop-up</option>
+                        <option value="pop-over">Pop-over</option>
+                        <option value="in-between">In-between</option>
+                      </select>
+                    </div>
+                  </Grid>
 
-                <Grid item>
-                  <div>
-                    <h4 style={{ margin: "10px 0" }}>Start Date</h4>
-                    <input
-                      type="datetime-local"
-                      name="startDate"
-                      value={formik.values.startDate}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      style={{
-                        width: "100%",
-                        height: "40px",
-                        padding: "5px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                      }}
-                    />
-                  </div>
-                </Grid>
+                  <Grid item>
+                    <div>
+                      <TextEditor
+                        name="notification"
+                        id="notification"
+                        label="Notification"
+                        placeholder="Enter your notification here..."
+                        handleChange={(text) => {
+                          formik.setFieldValue("notification", text);
+                        }}
+                        value={formik.values.notification}
+                        error={
+                          formik.touched.notification &&
+                          formik.errors.notification
+                        }
+                        required={true}
+                      />
+                    </div>
+                  </Grid>
 
-                <Grid item>
-                  <div>
-                    <h4 style={{ margin: "10px 0" }}>End Date</h4>
-                    <input
-                      type="datetime-local"
-                      name="endDate"
-                      value={formik.values.endDate}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      style={{
-                        width: "100%",
-                        height: "40px",
-                        padding: "5px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                      }}
-                    />
-                  </div>
-                </Grid>
+                  <Grid item>
+                    <div>
+                      <h4 style={{ margin: "10px 0" }}>Start Date</h4>
+                      <input
+                        type="datetime-local"
+                        name="startDate"
+                        value={formik.values.startDate}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "5px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          backgroundColor: "#fff",
+                        }}
+                      />
+                    </div>
+                  </Grid>
 
-                <Grid item>
-                  <div>
-                    <h4 style={{ margin: "10px 0" }}>Publish</h4>
-                    <select
-                      name="publish"
-                      value={formik.values.publish}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      style={{
-                        width: "100%",
-                        height: "40px",
-                        padding: "5px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                      }}
-                    >
-                      <option value="true">True</option>
-                      <option value="false">False</option>
-                    </select>
-                  </div>
-                </Grid>
+                  <Grid item>
+                    <div>
+                      <h4 style={{ margin: "10px 0" }}>End Date</h4>
+                      <input
+                        type="datetime-local"
+                        name="endDate"
+                        value={formik.values.endDate}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "5px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          backgroundColor: "#fff",
+                        }}
+                      />
+                    </div>
+                  </Grid>
 
-                <Grid item>
-                  <div>
-                    <h4 style={{ margin: "10px 0" }}>Language</h4>
-                    <select
-                      name="lang"
-                      value={formik.values.lang}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      style={{
-                        width: "100%",
-                        height: "40px",
-                        padding: "5px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                      }}
-                    >
-                      <option value="en">English</option>
-                      <option value="fi">Finnish</option>
-                    </select>
-                  </div>
+                  <Grid item>
+                    <div>
+                      <h4 style={{ margin: "10px 0" }}>Publish</h4>
+                      <select
+                        name="publish"
+                        value={formik.values.publish}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "5px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          backgroundColor: "#fff",
+                        }}
+                      >
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                      </select>
+                    </div>
+                  </Grid>
+
+                  <Grid item>
+                    <div>
+                      <h4 style={{ margin: "10px 0" }}>Language</h4>
+                      <select
+                        name="lang"
+                        value={formik.values.lang}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        style={{
+                          width: "100%",
+                          height: "40px",
+                          padding: "5px",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          backgroundColor: "#fff",
+                        }}
+                      >
+                        <option value="en">English</option>
+                        <option value="fi">Finnish</option>
+                      </select>
+                    </div>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </form>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "28px",
-              }}
-            >
-              <Button
-                id="cancel"
-                variant="outlined"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditMode(false);
+              </form>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "28px",
                 }}
               >
-                Cancel
-              </Button>
+                <Button
+                  id="cancel"
+                  variant="outlined"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditMode(false);
+                  }}
+                >
+                  Cancel
+                </Button>
 
-              <Button
-                id="submit"
-                onClick={formik.handleSubmit}
-                variant="contained"
-                type="submit"
-              >
-                {editMode ? "Update" : "Create"}
-              </Button>
-            </div>
-          </Grid>
-        </Modal>
+                <Button
+                  id="submit"
+                  onClick={formik.handleSubmit}
+                  variant="contained"
+                  type="submit"
+                >
+                  {editMode ? "Update" : "Create"}
+                </Button>
+              </div>
+            </Grid>
+          </Modal>
+        </div>
       </div>
     </>
   );
