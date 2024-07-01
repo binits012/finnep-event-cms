@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // images: {
-  //     domains: [
-
-  //     ],
-  //   },
+  images: {
+    domains: ["weyellowbridge.s3.eu-central-1.amazonaws.com"],
+  },
   compiler: {
     styledComponents: {
       // Enable display of the component name along with the generated className (needed for debugging).
