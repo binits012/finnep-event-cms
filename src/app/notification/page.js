@@ -89,7 +89,7 @@ export default function NotificationPage() {
     setPageSize(pageSize);
   };
 
-  const handleEditNotification = async (id) => {
+  const fetchNotificationById = async (id) => {
     try {
       const response = await apiHandler(
         "get",
@@ -97,11 +97,36 @@ export default function NotificationPage() {
         true,
         false
       );
-      const notification = response.data;
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching notification by id:", error);
+      throw error;
+    }
+  };
+
+  const handleEditNotification = async (id) => {
+    try {
+      const notification = await fetchNotificationById(id);
       setSelectedCategoryId(id);
 
       if (notification) {
         setSelectedNotification(notification);
+
+        const startDate = new Date(notification.data.startDate)
+          .toISOString()
+          .slice(0, 16);
+        const endDate = new Date(notification.data.endDate)
+          .toISOString()
+          .slice(0, 16);
+
+        formik.setValues({
+          notificationType: notification.name,
+          notification: notification.data.notification,
+          startDate: startDate,
+          endDate: endDate,
+          publish: notification.data.publish,
+          lang: notification.data.lang,
+        });
         setEditMode(true);
         setShowModal(true);
       }
@@ -268,6 +293,8 @@ export default function NotificationPage() {
           isVisible={showModal}
           onClose={() => {
             setShowModal(false);
+            setEditMode(false);
+            setSelectedNotification(null);
           }}
           selectedNotification={selectedNotification}
         >
@@ -299,7 +326,10 @@ export default function NotificationPage() {
                     </h1>
                     <RxCross1
                       style={{ cursor: "pointer" }}
-                      onClick={() => setShowModal(false)}
+                      onClick={() => {
+                        setShowModal(false);
+                        setEditMode(false);
+                      }}
                     />
                   </div>
                 </Grid>
@@ -448,10 +478,14 @@ export default function NotificationPage() {
               <Button
                 id="cancel"
                 variant="outlined"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditMode(false);
+                }}
               >
-                Close
+                Cancel
               </Button>
+
               <Button
                 id="submit"
                 onClick={formik.handleSubmit}
