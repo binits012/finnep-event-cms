@@ -11,27 +11,35 @@ import "react-toastify/dist/ReactToastify.css";
 import { Provider, useSelector } from "react-redux";
 import store from "@/store/store";
 import GateWay from "@/components/GateWay";
+import { ErrorBoundary } from "react-error-boundary";
+import ErrorFallback from "@/components/ErrorFallback";
 
 export default function Home() {
   return (
-    <Provider store={store}>
-      <main className={styles.main}>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <GateWay>
-          <Dashboard />
-        </GateWay>
-      </main>
-    </Provider>
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onReset={() => {
+        window.location.href = "/";
+      }}>
+      <Provider store={store}>
+        <main className={styles.main}>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+          <GateWay>
+            <Dashboard />
+          </GateWay>
+        </main>
+      </Provider>
+    </ErrorBoundary>
   );
 }
