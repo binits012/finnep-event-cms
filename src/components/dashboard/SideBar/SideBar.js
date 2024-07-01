@@ -11,10 +11,6 @@ import { FaUsers } from "react-icons/fa";
 import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
 import { BsTicketPerforated } from "react-icons/bs";
-
-import { FaPersonArrowUpFromLine } from "react-icons/fa6";
-// import usePagination from "@mui/material/usePagination/usePagination";
-
 import { usePathname } from "next/navigation";
 import Avatar from "@mui/material/Avatar";
 import {
@@ -29,21 +25,13 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { RiPagesLine } from "react-icons/ri";
+import { IoMdNotificationsOutline } from "react-icons/io";
 
 const Wrapper = styled.div`
   .sideBar {
-
-    width: ${(props) => (props.isCollapsed ? "0px" : "300px")};
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    /* background-color: #36454f; */
-
     display: flex;
     flex-direction: column;
     color: beige;
-
     background-color: #28282b;
     height: 100vh;
   }
@@ -52,11 +40,6 @@ const Wrapper = styled.div`
     align-items: center;
     gap: 20px;
     padding: 10px;
-
-    transition: width 0.3s ease-in-out;
-    color: beige;
-    text-decoration: none;
-
     justify-content: space-between; /* Add this line */
   }
   .userDetail {
@@ -70,7 +53,6 @@ const Wrapper = styled.div`
   .userTitle {
     font-size: 12px;
     color: var(--textSoft);
-
   }
   .items {
     flex-grow: 1;
@@ -129,6 +111,11 @@ const SideBar = ({ onToggle }) => {
       title: "Tickets",
       link: "/tickets",
       icon: <BsTicketPerforated size={24} />,
+    },
+    {
+      title: "Notifications",
+      link: "/notification",
+      icon: <IoMdNotificationsOutline size={24} />,
     },
     {
       title: "Gallery",
@@ -204,7 +191,6 @@ const SideBar = ({ onToggle }) => {
           </List>
         </div>
       </Drawer>
-
     </Wrapper>
   );
 };
