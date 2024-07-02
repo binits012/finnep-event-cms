@@ -2,19 +2,12 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./navbar.module.css";
-import {
-  MdNotifications,
-  MdOutlineChat,
-  MdPublic,
-  MdSearch,
-} from "react-icons/md";
-import { FaUser } from "react-icons/fa";
+import { MdNotifications, MdOutlineChat } from "react-icons/md";
 import { useDispatch } from "react-redux";
 import { logOut, setUser } from "@/store/reducers/userSlice";
 import Cookies from "js-cookie";
 import { GridMenuIcon } from "@mui/x-data-grid";
 import MobileSideBar from "../mobilesidebar/MobileSidebar";
-import { IoLogOutOutline } from "react-icons/io5";
 import { IoMdLogOut } from "react-icons/io";
 // import MobileSideBar from "../MobileSidebar/MobileSidebar";
 
@@ -59,18 +52,18 @@ const Navbar = () => {
       <div className={styles.title}></div>
       <div className={styles.menu}>
         <div className={styles.search}></div>
+        {/* <div className={styles.icons}>
+          <MdOutlineChat size={32} style={{ cursor: "pointer" }} />
+        </div> */}
         <div className={styles.icons}>
           <MdOutlineChat size={32} style={{ cursor: "pointer" }} />
-        </div>
-        <div className={styles.icons}>
+          <MdNotifications size={32} style={{ cursor: "pointer" }} />
           <IoMdLogOut
             size={32}
             title={"Log Out"}
             onClick={handleLogOut}
             style={{ cursor: "pointer" }}
           />
-          <MdOutlineChat size={32} />
-          <MdNotifications size={32} />
           {/* <MdPublic size={20} /> */}
         </div>
       </div>
