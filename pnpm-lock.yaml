@@ -47,6 +47,18 @@ importers:
       dayjs:
         specifier: ^1.11.10
         version: 1.11.11
+      filepond:
+        specifier: ^4.31.1
+        version: 4.31.1
+      filepond-plugin-image-edit:
+        specifier: ^1.6.3
+        version: 1.6.3(filepond@4.31.1)
+      filepond-plugin-image-preview:
+        specifier: ^4.6.12
+        version: 4.6.12(filepond@4.31.1)
+      filepond-plugin-image-transform:
+        specifier: ^3.8.7
+        version: 3.8.7(filepond@4.31.1)
       formik:
         specifier: ^2.4.5
         version: 2.4.6(react@18.3.1)
@@ -77,6 +89,9 @@ importers:
       react-error-boundary:
         specifier: ^4.0.13
         version: 4.0.13(react@18.3.1)
+      react-filepond:
+        specifier: ^7.1.2
+        version: 7.1.2(filepond@4.31.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-icons:
         specifier: ^5.0.1
         version: 5.2.1(react@18.3.1)
@@ -1277,6 +1292,24 @@ packages:
     resolution: {integrity: sha512-QlZ5yJC0VxHxQQsQhXvBaC7VRJ2uaxTf+Tfpu4Z/OcVQJVpZO+DGU0rkoVW5ce2SccxugvpBJoMvUs59iILYdw==}
     engines: {node: '>= 12'}
 
+  filepond-plugin-image-edit@1.6.3:
+    resolution: {integrity: sha512-5q3RDaVlfvyI346ckF1DfKw4uN5rfAmUCv7HCG30jBZcGmepg8hFyjVM71uZXYeb4AgLhpCkSPP8Immwig8bzw==}
+    peerDependencies:
+      filepond: '>=3.7.2 <5.x'
+
+  filepond-plugin-image-preview@4.6.12:
+    resolution: {integrity: sha512-Y8ETX5QVV0mbPB0586UH8AUmG9tZg8PuN5bdEAIlZVJFTct5ebViJ7+Am94/VhTPjLqZjBf1zmDq5JU6XRsZKw==}
+    peerDependencies:
+      filepond: '>=4.x <5.x'
+
+  filepond-plugin-image-transform@3.8.7:
+    resolution: {integrity: sha512-vgKwyIDG2y5twanf7YpqZvxkaLudTjwd9vRcoq5sQDB8egUlX5/NA0bQ0823pocrm0fjbFeetICu44mkqeDkIA==}
+    peerDependencies:
+      filepond: '>=3.6.0 <5.x'
+
+  filepond@4.31.1:
+    resolution: {integrity: sha512-yWYK91Ky72L2AG7BlI8Cb0UjvJz+DjuYdLN1JbkJg8qmoiZ9AU5b5MuOkHmExk/9jQ5R7tRT+H+b8wDiFEJlxQ==}
+
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
@@ -1979,6 +2012,13 @@ packages:
 
   react-fast-compare@2.0.4:
     resolution: {integrity: sha512-suNP+J1VU1MWFKcyt7RtjiSWUjvidmQSlqu+eHslq+342xCbGTYmC0mEhPCOHxlW0CywylOC1u2DFAT+bv4dBw==}
+
+  react-filepond@7.1.2:
+    resolution: {integrity: sha512-vrlx9o/n+jGikh6jLey+PpUGYtEZn8MdeB6JFeX/5/N/Mu75IHG+MFQbv8R27bNXvS41mDtV9Fo5DG+s6siVIA==}
+    peerDependencies:
+      filepond: '>=3.7.x < 5.x'
+      react: 16 - 18
+      react-dom: 16 - 18
 
   react-icons@5.2.1:
     resolution: {integrity: sha512-zdbW5GstTzXaVKvGSyTaBalt7HSfuK5ovrzlpyiWHAFXndXTdd/1hdDHI4xBM1Mn7YriT6aqESucFl9kEXzrdw==}
@@ -3728,6 +3768,20 @@ snapshots:
     dependencies:
       tslib: 2.6.2
 
+  filepond-plugin-image-edit@1.6.3(filepond@4.31.1):
+    dependencies:
+      filepond: 4.31.1
+
+  filepond-plugin-image-preview@4.6.12(filepond@4.31.1):
+    dependencies:
+      filepond: 4.31.1
+
+  filepond-plugin-image-transform@3.8.7(filepond@4.31.1):
+    dependencies:
+      filepond: 4.31.1
+
+  filepond@4.31.1: {}
+
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
@@ -4616,6 +4670,12 @@ snapshots:
       react: 18.3.1
 
   react-fast-compare@2.0.4: {}
+
+  react-filepond@7.1.2(filepond@4.31.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      filepond: 4.31.1
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   react-icons@5.2.1(react@18.3.1):
     dependencies:

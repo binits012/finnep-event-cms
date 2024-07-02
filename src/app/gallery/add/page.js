@@ -1,201 +1,150 @@
 "use client";
 import apiHandler from "@/RESTAPIs/helper";
-import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
-import FormSection from "@/components/FormSection";
-import TextEditor from "@/components/TextEditor";
+import React, { useState, useEffect } from "react";
+import { FilePond, registerPlugin } from "react-filepond";
+import "filepond/dist/filepond.min.css";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+import FilePondPluginImageEdit from "filepond-plugin-image-edit";
+import FilePondPluginImageTransform from "filepond-plugin-image-transform";
+import "react-toastify/dist/ReactToastify.css";
 import {
-  Grid,
-  Typography,
-  FormLabel,
-  TextField,
   Button,
   Select,
   MenuItem,
+  FormControl,
+  InputLabel,
+  Grid,
 } from "@mui/material";
-import { useFormik } from "formik";
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
-import styled from "styled-components";
-import { useParams, useRouter } from "next/navigation";
-import { useDropzone } from "react-dropzone";
-import { BsUpload } from "react-icons/bs";
-import { GrDocumentExcel, GrTrash } from "react-icons/gr";
-import { FaImages } from "react-icons/fa6";
-import {
-  AddAPhotoRounded,
-  PlusOne,
-  PlusOneOutlined,
-} from "@mui/icons-material";
-import { IoAdd } from "react-icons/io5";
+registerPlugin(
+  FilePondPluginImagePreview,
+  FilePondPluginImageEdit,
+  FilePondPluginImageTransform
+);
 
-const AddPhotoPage = ({}) => {
-  const [images, setImages] = useState([]);
-  const onDrop = useCallback(
-    (acceptedFiles) => {
-      //   // console.log(acceptedFiles, "check");
-      setImages([
-        ...images,
-        ...acceptedFiles.map((file) =>
-          Object.assign(file, {
-            preview: URL.createObjectURL(file),
-          })
-        ),
-      ]);
+const AddPhotoPage = ({ onClose }) => {
+  const [files, setFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [albums, setAlbums] = useState([]);
+  const [selectedAlbumId, setSelectedAlbumId] = useState("");
+  const router = useRouter();
 
-      acceptedFiles.forEach((file) => {
-        const reader = new FileReader();
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      try {
+        const response = await apiHandler("GET", "/photo", true);
+        setAlbums(response.data.photoType);
+      } catch (error) {
+        toast.error("Failed to fetch albums.");
+      }
+    };
 
-        reader.onabort = () => console.log("file reading was aborted");
-        reader.onerror = () => console.log("file reading has failed");
-        reader.onload = (event) => {
-          // Do whatever you want with the file contents
-          const image = new Image();
-          const binaryStr = reader.result;
-          // console.log(binaryStr);
-          image.src = event.target.result;
-          // console.log(image, "check imagess");
-          // image.onload = () => {
-          //   console.log(
-          //     // reader,
-          //     image.width,
-          //     image.height,
-          //     image,
-          //     "chck onload",
-          //     file
-          //   );
-          // };
-          // setImages([
-          //   {
-          //     ...file,
-          //     preview: reader.result,
-          //     preview: URL.createObjectURL(file),
-          //   },
-          //   ...files,
-          // ]);
-        };
-        reader.readAsArrayBuffer(file);
-      });
-    },
-    [setImages]
-  );
-  const onDropRejected = useCallback((err) => {
-    console.log("seee", err, err[0].errors[0].message);
-    toast.error(`Error: ${err[0].errors[0].message} !!!!`);
+    fetchAlbums();
   }, []);
-  const { acceptedFiles, getRootProps, getInputProps, ...rest } = useDropzone({
-    onDrop,
-    onDropRejected,
-    maxFiles: 10,
 
-    accept: {
-      "image/*": [],
-    },
-  });
-  const uploadPhotos = async (e) => {
-    const formData = new FormData();
-    formData.append("file", images[0]);
-    try {
-      const response = await apiHandler("POST", `photo`, true, true, formData);
-      setImages([]);
-      toast.success(`Photos uploaded!`);
-      getEventTickets();
-    } catch (err) {
-      toast.error("Error uploading photos!");
+  const uploadImage = async (file) => {
+    if (!selectedAlbumId) {
+      toast.error("Please select an album first.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      const base64data = reader.result.split(",")[1];
+      try {
+        const response = await apiHandler("post", "/photo", true, false, {
+          position: 1,
+          image: `data:image/png;base64,${base64data}`,
+          photoType: selectedAlbumId,
+        });
+        onClose();
+        console.log("Upload success:", response.data);
+        toast.success("Your image has been uploaded successfully");
+        router.back();
+      } catch (error) {
+        console.error("Upload failed:", error);
+        toast.error("Something went wrong");
+      } finally {
+        setIsUploading(false);
+      }
+    };
+  };
+
+  const handleProcessFile = (error, file) => {
+    if (error) {
+      console.error("File processing error:", error);
+      return;
+    }
+    setIsUploading(true);
+    uploadImage(file.file);
+  };
+
+  const handleUploadClick = () => {
+    if (files.length > 0) {
+      handleProcessFile(null, { file: files[0].file });
+    } else {
+      console.error("No file selected");
     }
   };
-  console.log(images, "check");
+
   return (
-    <div style={{ width: "100%", height: "100%" }}>
-      {images.length < 1 ? (
-        <div
-          {...getRootProps()}
-          style={{
-            height: 500,
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            border: "1px dashed black",
-            cursor: "pointer",
-            borderRadius: 6,
-          }}
-        >
-          <input {...getInputProps()} />
-          <FaImages size={256} color="green" />
-          {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
-          <Typography variant="p">Drag and drop</Typography>
-          <Typography variant="p">or</Typography>
-          <Typography variant="p">Select Excel Files</Typography>
-        </div>
-      ) : (
-        <div
-          style={{
-            // height: 100,
-            display: "flex",
-            width: "100%",
-            flexWrap: "wrap",
-          }}
-        >
-          {images.map((image, i) => (
-            <div
-              key={i}
-              style={{
-                margin: 10,
-                border: "1px solid #08080889",
-                borderRadius: 8,
-                maxWidth: 1000,
-                overflowX: "scroll",
-              }}
-            >
-              <Link href={image.preview} target="_blank" passHref>
-                <img src={image.preview} alt={image.path} height={300} />
-              </Link>
-              {/* <span>{image.path}</span> */}
-              <span>{(image.size / 1024).toFixed(2)} KB</span>
-              <GrTrash
-                onClick={(e) =>
-                  setImages(images.filter((x, index) => index !== i))
-                }
-                size={24}
-                color={"crimson"}
-                style={{
-                  cursor: "pointer",
-                }}
-              />
-            </div>
-          ))}
-          <div
-            style={{
-              margin: 10,
-              border: "1px solid #08080889",
-              borderRadius: 8,
-              height: 100,
-              width: 200,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              cursor: "pointer",
-            }}
-            {...getRootProps()}
+    <div>
+      <h1 style={{ margin: "0 0 20px 10px" }}>Upload Image</h1>
+      <form onSubmit={(e) => e.preventDefault()}>
+        <FilePond
+          files={files}
+          onupdatefiles={setFiles}
+          allowMultiple={false}
+          name="file"
+          labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+          stylePanelAspectRatio={0.65}
+          styleItemPanelAspectRatio={0.58}
+        />
+
+        <FormControl style={{ marginBottom: "20px", width: "50%" }}>
+          <InputLabel id="album-select-label">Select Album</InputLabel>
+          <Select
+            labelId="album-select-label"
+            value={selectedAlbumId}
+            onChange={(e) => setSelectedAlbumId(e.target.value)}
           >
-            <input {...getInputProps()} />
-            <IoAdd size={100} />
-          </div>
-        </div>
-      )}
-      <Grid item container md={2.5} direction="column">
-        <Button
-          variant="contained"
-          onClick={uploadPhotos}
-          disabled={!images.length}
-          sx={{ height: 50 }}
-        >
-          Upload Photos
-        </Button>
-      </Grid>
+            {albums.map((album) => (
+              <MenuItem key={album._id} value={album._id}>
+                {album.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Grid>
+          <Button
+            variant="contained"
+            type="button"
+            onClick={handleUploadClick}
+            disabled={isUploading}
+            style={{
+              justifyContent: "center",
+              placeContent: "center",
+              placeItems: "center",
+              marginRight: "10px",
+            }}
+          >
+            {isUploading ? "Uploading..." : "Upload Photo"}
+          </Button>
+          <Button
+            variant="outlined"
+            type="button"
+            onClick={onClose}
+            disabled={isUploading}
+          >
+            Cancel
+          </Button>
+        </Grid>
+      </form>
     </div>
   );
 };
