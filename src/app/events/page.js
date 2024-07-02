@@ -1,212 +1,278 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button, Grid, IconButton, Input } from "@mui/material";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { useDropzone } from "react-dropzone";
-import Link from "next/link";
-import axios from "axios";
-import { toast } from "react-toastify";
-import apiHandler from "@/RESTAPIs/helper";
-import moment from "moment";
-import { MdOutlineEdit, MdOutlineRemoveRedEye } from "react-icons/md";
-import { HiOutlineTrash } from "react-icons/hi";
-import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
-import Modal from "@/components/Modal";
-import styled from "styled-components";
-import { PulseLoader } from "react-spinners";
-import { RxCross1 } from "react-icons/rx";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Button,
+  Grid,
+  Input,
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+  IconButton,
+  Menu,
+  MenuItem,
+  Backdrop,
+  CircularProgress,
+} from "@mui/material";
+import "@/app/events/card.css";
 import { IoIosSearch } from "react-icons/io";
-import { FaFacebook, FaInstagram } from "react-icons/fa6";
-import { RiTwitterXFill } from "react-icons/ri";
-import { BsTicketPerforated } from "react-icons/bs";
-import Backdrop from "@mui/material/Backdrop";
-import CircularProgress from "@mui/material/CircularProgress";
+import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import apiHandler from "@/RESTAPIs/helper";
+import { toast } from "react-toastify";
+import { MdOutlineRemoveRedEye } from "react-icons/md";
+import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
+import { TfiHandDrag } from "react-icons/tfi";
+import Link from "next/link";
+import Modal from "@/components/Modal";
+import DeleteModal from "@/components/DeleteModal";
+import moment from "moment";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  closestCenter,
+  DndContext,
+  useSensor,
+  useSensors,
+  TouchSensor,
+  MouseSensor,
+} from "@dnd-kit/core";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  // console.log(selectedEvent, "check selected event");
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [sortBy, setSortBy] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [showList, setShowList] = useState(false);
+  const [reorderedEvents, setReorderedEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const COLUMNS = [
-    {
-      field: "eventPromotionPhoto",
-      headerName: "Thumbnail",
-      width: 150,
-      headerClassName: "column-header",
-      // editable: true,
-      sortable: false,
-      renderCell: (abc) => {
-        return <img src={abc.row.eventPromotionPhoto} width={50} height={50} />;
-      },
-    },
-    {
-      field: "eventTitle",
-      headerName: "Title",
-      width: 200,
-      headerClassName: "column-header",
-      cellClassName: "column-cell",
-      // editable: true,
-    },
-    {
-      field: "occupancy",
-      headerName: "Occupancy",
-      width: 150,
-      headerClassName: "column-header",
-      cellClassName: "column-cell",
-      sortable: false,
-      // editable: true,
-    },
-    {
-      field: "eventPrice",
-      headerName: "Price",
-      width: 80,
-      headerClassName: "column-header",
-      cellClassName: "column-cell",
-      // editable: true,
-      renderCell: (abc, def) => {
-        // console.log(def, abc, "test 123434245");
-        return <span>{abc.row.eventPrice.$numberDecimal}</span>;
-      },
-    },
-    {
-      field: "eventDate",
-      headerName: "Date",
-      type: "number",
-      width: 120,
-      headerClassName: "column-header",
-      cellClassName: "column-cell",
-      // editable: true,
-      renderCell: ({ row }) => (
-        <span>{moment(row.eventDate).format("MMM DD YYYY")}</span>
-      ),
-    },
-    {
-      field: "socialMedia",
-      headerName: "Social Media Links",
-      width: 200,
-      headerClassName: "column-header",
-      editable: false,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Box
-          direction="row"
-          width="100%"
-          justify="space-between"
-          className="actions"
-        >
-          <Link href={`${row.socialMedia.fb}`} target="_blank">
-            <FaFacebook
-              size={24}
-              color="#4C4C4C"
-              title="Facebook Link"
-              style={{ marginLeft: 10, cursor: "pointer" }}
-            />
-          </Link>
-          <Link href={`${row.socialMedia.x}`} target="_blank">
-            <RiTwitterXFill
-              size={24}
-              color="#4C4C4C"
-              title="X Link"
-              style={{ marginLeft: 10, cursor: "pointer" }}
-            />
-          </Link>
-          <Link href={`${row.socialMedia.ig}`} target="_blank">
-            <FaInstagram
-              size={24}
-              color="#4C4C4C"
-              title="Instagram Link"
-              style={{ marginLeft: 10, cursor: "pointer" }}
-            />
-          </Link>
-        </Box>
-      ),
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 150,
-      headerClassName: "column-header",
-      editable: false,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Box
-          direction="row"
-          width="100%"
-          justify="space-between"
-          className="actions"
-        >
-          <Link href={`/events/edit/${row._id}`} passHref>
-            <MdOutlineEdit
-              size={24}
-              color="#4C4C4C"
-              title="Edit Event"
-              style={{ marginLeft: 10, cursor: "pointer" }}
-            />
-          </Link>
+  const formatDate = (dateString) => {
+    return moment(dateString).format("YYYY-MM-DD");
+  };
 
-          <HiOutlineTrash
-            size={24}
-            color={`${"#C73F33"}`}
-            title="Delete Event"
-            style={{ marginLeft: 10, cursor: "pointer" }}
-            // di
-            // onClick={(e) => handleAskForDelete(e, row)}
-          />
-
-          <MdOutlineRemoveRedEye
-            size={24}
-            color="#4C4C4C"
-            title="View Event"
-            style={{ marginLeft: 5, cursor: "pointer" }}
-            onClick={() => {
-              setShowModal(true);
-              setSelectedEvent(row);
-              console.log(row, "modal");
-            }}
-          />
-          <Link href={`/tickets/${row._id}`} passHref>
-            <BsTicketPerforated
-              size={24}
-              color="#4C4C4C"
-              title="View Tickets"
-              style={{ marginLeft: 10, cursor: "pointer" }}
-            />
-          </Link>
-        </Box>
-      ),
-    },
-  ];
   useEffect(() => {
     const fetchEvents = async () => {
+      setLoading(true);
       try {
-        const res = await apiHandler("GET", "event", true);
-        console.log(res, "check res");
-        setEvents(res.data.data || []);
-      } catch (err) {
-        console.log(err);
-        toast.error("Error getting events!!");
+        const response = await apiHandler("GET", "event", true);
+        setEvents(response.data.data);
+        console.log("Events data:", response.data.data);
+      } catch (error) {
+        console.log("Error getting events data", error);
+        toast.error("Error getting events data");
+      } finally {
+        setLoading(false);
       }
     };
     fetchEvents();
   }, []);
-  // useEffect(() => {
-  //   setEvents(
-  //     events.filter((event) =>
-  //       event.eventTitle.toLowerCase().includes(search.toLowerCase())
-  //     )
-  //   );
-  // }, [search]);
-  // console.log(events, "TESTTTTTTTT");
+
+  const handleDelete = async (id) => {
+    try {
+      const data = { active: false };
+      const response = await apiHandler("PATCH", `/event/${id}`, data);
+      console.log("Event deleted:", response);
+
+      // update your UI to remove the deleted event from the list
+      // setEvents(events.filter((event) => event._id !== id));
+    } catch (error) {
+      console.error("Error deactivating event:", error);
+    }
+  };
+
+  const handleDeleteClick = (event) => {
+    setSelectedEvent(event);
+    setShowDeleteModal(true);
+  };
+
+  const filteredEvents = events.filter((event) =>
+    event.eventName.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const onDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id === over.id) {
+      return;
+    }
+
+    setEvents((events) => {
+      const oldIndex = events.findIndex((event) => event._id === active.id);
+      const newIndex = events.findIndex((event) => event._id === over.id);
+      const reorderedEvents = arrayMove(events, oldIndex, newIndex);
+      setReorderedEvents(reorderedEvents);
+      return reorderedEvents;
+    });
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  const handleSort = (field) => {
+    const newSortOrder =
+      sortBy === field && sortOrder === "ascending"
+        ? "descending"
+        : "ascending";
+
+    setSortBy(field);
+    setSortOrder(newSortOrder);
+
+    const sortedEvents = [...events];
+
+    sortedEvents.sort((a, b) => {
+      let fieldA = a[field];
+      let fieldB = b[field];
+
+      if (typeof fieldA === "string") {
+        fieldA = fieldA.trim().toLowerCase();
+      }
+      if (typeof fieldB === "string") {
+        fieldB = fieldB.trim().toLowerCase();
+      }
+
+      if (newSortOrder === "ascending") {
+        if (fieldA < fieldB) return -1;
+        if (fieldA > fieldB) return 1;
+      } else {
+        if (fieldA < fieldB) return 1;
+        if (fieldA > fieldB) return -1;
+      }
+
+      return 0;
+    });
+
+    setEvents(sortedEvents);
+    handleClose();
+  };
+
+  const SortableItem = ({ event }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } =
+      useSortable({ id: event._id });
+
+    const style = {
+      transition,
+      transform: CSS.Transform.toString(transform),
+    };
+
+    return (
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {event.eventPromotionPhoto && (
+            <img
+              src={event.eventPromotionPhoto}
+              alt={event.eventTitle}
+              style={{ width: "100px", height: "100px", objectFit: "cover" }}
+            />
+          )}
+          <span>{event.eventName}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const handleSave = async () => {
+    const positions = reorderedEvents.map((event, index) => ({
+      id: event._id,
+      position: index + 1,
+    }));
+    console.log("Payload:", { data: positions });
+    setLoading(true);
+
+    try {
+      const response = await apiHandler("PATCH", "event/batch", true, false, {
+        data: positions,
+      });
+      console.log("Updated positions:", response.data);
+      toast.success("Positions updated successfully");
+      setShowList(false);
+    } catch (error) {
+      console.error("Error updating positions:", error);
+      toast.error("Error updating positions");
+    }
+    setLoading(false);
+  };
+
+  const showError = () => (
+    <Box
+      display="flex"
+      flexDirection={"column"}
+      alignItems="center"
+      justifyContent={"center"}
+      mt={2}
+    >
+      <Typography variant="h6" color="textSecondary">
+        Oops! We couldn't find any events matching "{search}". Try another
+        search term.
+      </Typography>
+      <Typography>
+        <img src="/notFound.webp" style={{ width: "300px", height: "300px" }} />
+      </Typography>
+    </Box>
+  );
+
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    })
+  );
+  const handleList = () => {
+    return (
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={filteredEvents}
+          strategy={verticalListSortingStrategy}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "30px",
+              cursor: "grab",
+            }}
+          >
+            {filteredEvents.map((event, index) => (
+              <div
+                key={event._id}
+                style={{
+                  padding: "10px",
+                  border: "1px solid black",
+                }}
+              >
+                <div style={{ marginBottom: "10px" }}>
+                  <strong>{index + 1}</strong> {/* Displaying item number */}
+                </div>
+                <SortableItem key={event._id} event={event} />
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    );
+  };
   return (
     <>
-      <div
-        id="event"
-        style={{ height: 400, width: "100%", padding: "20px 0 0 20px" }}
-      >
+      <div style={{ padding: "20px" }}>
         <CustomBreadcrumbs
           title={"Events"}
           links={[
@@ -217,340 +283,325 @@ const Events = () => {
             },
           ]}
         />
-
-        <Grid container justifyContent="space-between">
-          {/* <Grid container justifyContent="flex-start" mb={2}>
-            <Input
-              // variant="soft"
-              placeholder="Search Event"
-              value={search}
-              sx={{
-                width: 200,
-                "--Input-focusedInset": "var(--any, )",
-                "--Input-focusedThickness": "0.50rem",
-                "--Input-focusedHighlight": "rgba(13,110,253,.25)",
-                "&::before": {
-                  transition: "box-shadow .15s ease-in-out",
-                },
-                "&:focus-within": {
-                  borderColor: "#86b7fe",
-                },
-              }}
-              onChange={(e) => setSearch(e.target.value)}
-              endAdornment={
-                search && search !== " " ? (
-                  <RxCross1
-                    size={25}
-                    style={{
-                      margin: 8,
-                      cursor: "pointer",
-                    }}
-                    onClick={(e) => setSearch("")}
-                  />
-                ) : (
-                  <IoIosSearch
-                    size={30}
-                    style={{
-                      margin: 8,
-                      cursor: "pointer",
-                    }}
-                  />
-                )
-              }
-            />
-          </Grid> */}
-          <Grid container justifyContent="flex-end" mb={2}>
-            <Link passHref href="/events/add">
-              <Button variant="contained" onClick={() => setOpen(true)}>
-                + Add Events
-              </Button>
-            </Link>
-            {/* <Backdrop
-              sx={{
-                color: "#fff",
-                zIndex: (theme) => theme.zIndex.drawer + 1,
-              }}
-              open={open}>
-              <CircularProgress color="inherit" />
-            </Backdrop> */}
-          </Grid>
-        </Grid>
-
-        <Box sx={{ height: 400, width: "100%" }}>
-          <StyledDataGrid
-            rows={events.filter((event) =>
-              event.eventTitle.toLowerCase().includes(search.toLowerCase())
-            )}
-            columns={COLUMNS}
-            initialState={{
-              pagination: {
-                paginationModel: {
-                  pageSize: 4,
-                },
-              },
+        {loading ? (
+          <Backdrop
+            sx={{
+              color: "#fff",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            pageSizeOptions={[1, 2, 4]}
-            disableRowSelectionOnClick
-            getRowId={(row) => row._id}
-            loading={events.length === 0}
-            slots={{
-              toolbar: () => (
-                <Input
-                  // variant="soft"
-                  placeholder="Search Event"
-                  value={search}
-                  sx={{
-                    width: 200,
-                    margin: 2,
-                    "--Input-focusedInset": "var(--any, )",
-                    "--Input-focusedThickness": "0.50rem",
-                    "--Input-focusedHighlight": "rgba(13,110,253,.25)",
-                    "&::before": {
-                      transition: "box-shadow .15s ease-in-out",
-                    },
-                    "&:focus-within": {
-                      borderColor: "#86b7fe",
-                    },
-                  }}
-                  onChange={(e) => setSearch(e.target.value)}
-                  endAdornment={
-                    search && search !== " " ? (
-                      <RxCross1
-                        size={25}
-                        style={{
-                          margin: 8,
-                          cursor: "pointer",
-                        }}
-                        onClick={(e) => setSearch("")}
-                      />
-                    ) : (
-                      <IoIosSearch
-                        size={30}
-                        style={{
-                          margin: 8,
-                          cursor: "pointer",
-                        }}
-                      />
-                    )
-                  }
-                />
-              ),
-              loadingOverlay: () => (
-                <div
+            open={loading}
+          >
+            <CircularProgress color="inherit" />
+          </Backdrop>
+        ) : (
+          <>
+            {!showList && (
+              <Grid
+                container
+                justifyContent="flex-end"
+                mb={2}
+                style={{ justifyContent: "space-between" }}
+              >
+                <div>
+                  <Input
+                    placeholder="Search Event"
+                    value={search}
+                    sx={{
+                      width: 200,
+                      margin: "0 0 20px 0",
+                    }}
+                    onChange={(e) => setSearch(e.target.value)}
+                    endAdornment={
+                      search && search.trim() ? (
+                        <IoIosSearch size={25} style={{ cursor: "pointer" }} />
+                      ) : null
+                    }
+                  />
+                </div>
+
+                <Grid
                   style={{
-                    height: 300,
-                    width: "100%",
                     display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "flex-end" }}>
-                    <h2>loading </h2>
-                    <PulseLoader
-                      // color="#ffde59"
-                      color="#000000"
-                      margin={2}
-                      size={7}
-                      speedMultiplier={0.5}
-                    />
-                  </div>
-                </div>
-              ),
-            }}
-          />
-        </Box>
-      </div>
-      <Modal
-        isVisible={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedEvent(null);
-        }}
-      >
-        <Styled>
-          <div className="content">
-            <div className="img">
-              <img
-                src={selectedEvent?.eventPromotionPhoto}
-                alt={selectedEvent?.eventTitle}
-                width={500}
-                height={600}
-              />
+                  <Button
+                    variant="outlined"
+                    style={{
+                      height: "36px",
+                      marginRight: "10px",
+                    }}
+                    onClick={() => setShowList(!showList)}
+                  >
+                    <TfiHandDrag size={18} />
+                    Arrange
+                  </Button>
+
+                  <Grid
+                    sx={{
+                      marginRight: "20px",
+                    }}
+                  >
+                    <Button variant="outlined" onClick={handleClick}>
+                      <LuArrowUpDown
+                        style={{ marginRight: "10px" }}
+                        size={18}
+                      />
+                      Sort
+                    </Button>
+                    <Menu
+                      anchorEl={anchorEl}
+                      open={Boolean(anchorEl)}
+                      onClose={handleClose}
+                    >
+                      <MenuItem onClick={() => handleSort("position")}>
+                        {sortBy === "position" && sortOrder === "ascending" ? (
+                          <LuArrowUp />
+                        ) : (
+                          <LuArrowDown />
+                        )}
+                        Position
+                      </MenuItem>
+                      <MenuItem onClick={() => handleSort("name")}>
+                        {sortBy === "name" && sortOrder === "ascending" ? (
+                          <LuArrowUp />
+                        ) : (
+                          <LuArrowDown />
+                        )}
+                        Name
+                      </MenuItem>
+                      <MenuItem onClick={() => handleSort("active")}>
+                        {sortBy === "active" && sortOrder === "ascending" ? (
+                          <LuArrowUp />
+                        ) : (
+                          <LuArrowDown />
+                        )}
+                        Type
+                      </MenuItem>
+                    </Menu>
+                  </Grid>
+                  <Link passHref href="/events/add">
+                    <Button variant="contained">+ Add</Button>
+                  </Link>
+                </Grid>
+              </Grid>
+            )}
+          </>
+        )}
+
+        {showList ? (
+          <div>
+            <div
+              style={{
+                // position: "sticky",
+                top: 0,
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "20px",
+              }}
+            >
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                style={{ marginTop: "20px" }}
+              >
+                Save
+                {loading && (
+                  <Backdrop
+                    sx={{
+                      color: "#fff",
+                      zIndex: (theme) => theme.zIndex.drawer + 1,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    }}
+                    open={loading}
+                  >
+                    <CircularProgress color="inherit" />
+                  </Backdrop>
+                )}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setShowList(!showList)}
+                style={{ margin: "20px 0 0 20px" }}
+              >
+                Cancel
+              </Button>
             </div>
-            <div className="info">
-              <h1>{selectedEvent?.eventTitle}</h1>
-              <p className="description">
-                Description <span>{selectedEvent?.eventDescription}</span>
-              </p>
-              <div className="date-time">
-                <p className="time">
-                  Time <span>{selectedEvent?.eventTime}</span>
-                </p>
-                <p className="date">
-                  Date
-                  <span>
-                    {moment(selectedEvent?.eventDate).format("MMM DD YYYY")}
-                  </span>
-                </p>
-              </div>
-              <div className="price-ocupancy">
-                <p className="price">
-                  Price
-                  <span>${selectedEvent?.eventPrice["$numberDecimal"]} </span>
-                </p>
-                <p className="occupancy">
-                  Occupancy <span>{selectedEvent?.occupancy}</span>
-                </p>
-              </div>
-              <div className="address-loaction">
-                <p className="address">
-                  Address
-                  <span>{selectedEvent?.eventLocationAddress}</span>
-                </p>{" "}
-                <p className="location">
-                  Location <span>{selectedEvent?.eventLocationGeoCode}</span>
-                </p>
-              </div>
-            </div>
+            <div style={{ width: "100%" }}>{handleList()}</div>
           </div>
-        </Styled>
-      </Modal>
+        ) : (
+          <Grid container spacing={2}>
+            {filteredEvents.length === 0 && search && search.trim() && (
+              <Grid item xs={12}>
+                {showError()}
+              </Grid>
+            )}
+            {filteredEvents.map((event) => (
+              <Grid item xs={12} sm={6} md={3} key={event._id}>
+                <section class="articles">
+                  <article>
+                    <div class="article-wrapper">
+                      <figure>
+                        <img
+                          src={event.eventPromotionPhoto}
+                          alt={event.name}
+                          style={{ objectFit: "cover" }}
+                        />
+                      </figure>
+                      <div class="article-body">
+                        <h2>{event.eventName}</h2>
+
+                        <Button
+                          style={{
+                            backgroundColor: event.active ? "green" : "yellow",
+                            color: event.active ? "white" : "black",
+                          }}
+                        >
+                          {event.active ? "Active" : "Inactive"}
+                        </Button>
+
+                        <Box mt={1} display="flex" justifyContent="center">
+                          <IconButton
+                            aria-label="edit"
+                            color="primary"
+                            component={Link}
+                            href={`/events/edit/${event._id}`}
+                          >
+                            <EditIcon />
+                          </IconButton>
+
+                          <IconButton aria-label="edit" color="primary">
+                            <MdOutlineRemoveRedEye
+                              size={24}
+                              color="#4C4C4C"
+                              title="View Details"
+                              onClick={() => {
+                                setShowModal(true);
+                                setSelectedEvent(event);
+                              }}
+                            />
+                          </IconButton>
+
+                          <IconButton aria-label="edit" color="primary">
+                            <DeleteIcon
+                              size={24}
+                              color="#4C4C4C"
+                              title="Delete Event"
+                              onClick={() => handleDeleteClick(event)}
+                            />
+                          </IconButton>
+                        </Box>
+                      </div>
+                    </div>
+                  </article>
+                </section>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+        <DeleteModal
+          isVisible={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onDelete={() => {
+            handleDelete(selectedEvent._id);
+            setShowDeleteModal(false);
+          }}
+          eventName={selectedEvent ? selectedEvent.eventName : ""}
+        >
+          <h4>Are you sure you want to delete {selectedEvent?.eventName} ?</h4>
+          <div
+            style={{
+              display: "flex",
+              gap: "20px",
+              justifyContent: "flex-end",
+              marginTop: "20px",
+            }}
+          >
+            <Button
+              variant="contained"
+              onClick={() => {
+                handleDelete(selectedEvent._id);
+                setShowDeleteModal(false);
+              }}
+            >
+              Yes
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              No
+            </Button>
+          </div>
+        </DeleteModal>
+        <Modal
+          isVisible={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedEvent(null);
+          }}
+        >
+          {selectedEvent && (
+            <Grid item xs={12} sm={6} md={4}>
+              <Card>
+                <CardContent>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                  >
+                    <CardMedia
+                      component="img"
+                      image={selectedEvent.eventPromotionPhoto}
+                      alt={selectedEvent.name}
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        marginBottom: 2,
+                      }}
+                    />
+                    <Typography gutterBottom variant="h5" component="div">
+                      {selectedEvent.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedEvent.eventDescription}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Event Price:
+                      {selectedEvent.eventPrice.$numberDecimal}
+                    </Typography>
+
+                    <Typography variant="body2" color="text.secondary">
+                      Event Occupancy:
+                      {selectedEvent.occupancy}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Event Date: {formatDate(selectedEvent.eventDate)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <br />
+                      <img
+                        src={selectedEvent.eventPromotionPhoto}
+                        alt="Event"
+                        width="250px"
+                      />
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+        </Modal>
+      </div>
     </>
   );
 };
 
 export default Events;
-
-// curl --location 'https://eventapp.finnep.fi/api/event' \
-// --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InllbGxvd0JyaWRnZSIsInJvbGUiOiJzdXBlckFkbWluIiwiaWQiOiI2NWZkZWU5NTg0MWJkNjAyYzkwOGExZTIiLCJpYXQiOjE3MTEyOTAzNzYsImV4cCI6MTcxMTQ2MzE3Nn0.Oje0AWz1v0VW3RRfSy7GlJAOlKhXmYhhkl3uAwnLAFw'
-const StyledDataGrid = styled(DataGrid)`
-  .column-header {
-    font-size: 20px;
-  }
-
-  .column-cell {
-    font-size: 18px;
-  }
-`;
-
-const Styled = styled.div`
-  .content {
-    display: flex;
-    flex-direction: row;
-    padding: 20px;
-    /* border: none; */
-  }
-  .info {
-    padding-left: 20px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    h1 {
-      align-self: center;
-      font-size: 45px;
-      margin-bottom: 20px;
-      font-weight: bolder;
-      justify-content: center;
-      text-decoration: underline;
-    }
-    .description {
-      font-size: 16px;
-      margin-bottom: 5px;
-      font-weight: bolder;
-      display: flex;
-      flex-direction: column;
-      span {
-        margin-top: 5px;
-        border-radius: 5px;
-        border: 1px solid #4c4c4c;
-        padding: 5px;
-        font-weight: normal;
-      }
-    }
-    .date-time {
-      display: flex;
-      justify-content: flex-start;
-      flex-direction: row;
-      margin-bottom: 20px;
-      margin-top: 10px;
-      .time {
-        display: flex;
-        flex-direction: column;
-        padding-right: 20px;
-      }
-      .date {
-        display: flex;
-        flex-direction: column;
-        padding-left: 20px;
-      }
-      p {
-        font-weight: bolder;
-        padding: 5px;
-      }
-      span {
-        margin-top: 5px;
-        border-radius: 5px;
-        border: 1px solid #4c4c4c;
-        padding: 5px;
-      }
-    }
-    .price-ocupancy {
-      display: flex;
-      justify-content: flex-start;
-      flex-direction: row;
-      margin-bottom: 20px;
-      margin-top: 10px;
-      .price {
-        display: flex;
-        flex-direction: column;
-        padding-right: 20px;
-      }
-      .occupancy {
-        display: flex;
-        flex-direction: column;
-        padding-left: 20px;
-      }
-      p {
-        font-weight: bolder;
-        padding: 5px;
-      }
-      span {
-        margin-top: 5px;
-        border-radius: 5px;
-        border: 1px solid #4c4c4c;
-        padding: 5px;
-        font-weight: normal;
-      }
-    }
-    .address-loaction {
-      display: flex;
-      justify-content: flex-start;
-      flex-direction: row;
-      margin-bottom: 20px;
-      margin-top: 10px;
-      .address {
-        display: flex;
-        flex-direction: column;
-        padding-right: 20px;
-      }
-      .location {
-        display: flex;
-        flex-direction: column;
-        padding-left: 20px;
-      }
-      p {
-        font-weight: bolder;
-        padding: 5px;
-      }
-      span {
-        margin-top: 5px;
-        border-radius: 5px;
-        border: 1px solid #4c4c4c;
-        padding: 5px;
-        font-weight: normal;
-      }
-    }
-  }
-`;

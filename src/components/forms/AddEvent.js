@@ -234,7 +234,8 @@ const AddEvent = ({ editMode }) => {
                     "days"
                   )} days to go)`
                 : ""
-            }`}>
+            }`}
+          >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
@@ -481,7 +482,8 @@ const AddEvent = ({ editMode }) => {
               color: "#fff",
               zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            open={loading}>
+            open={loading}
+          >
             <CircularProgress color="inherit" />
           </Backdrop>
         </Grid>
