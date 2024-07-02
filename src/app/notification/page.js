@@ -187,7 +187,8 @@ export default function NotificationPage() {
 
   return (
     <>
-      <div id="event" style={{ padding: "20px 0 0 20px" }}>
+      <div>
+        {/* <div id="event" style={{ padding: "20px 0 0 20px" }}> */}
         <CustomBreadcrumbs
           title={`Notification`}
           links={[

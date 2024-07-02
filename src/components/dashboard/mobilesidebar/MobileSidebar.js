@@ -4,14 +4,11 @@ import React, { useState } from "react";
 import {
   MdDashboard,
   MdEventNote,
-  MdOutlineSettings,
   MdSupervisedUserCircle,
-  MdRateReview,
 } from "react-icons/md";
-import { FaChevronLeft, FaUsers } from "react-icons/fa";
+import { FaBell, FaEuroSign, FaHouseUser, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
 import { GrGallery } from "react-icons/gr";
-import { BsTicketPerforated } from "react-icons/bs";
 import { usePathname } from "next/navigation";
 import {
   Drawer,
@@ -23,22 +20,20 @@ import {
   Divider,
   Avatar,
 } from "@mui/material";
+import { FaAngleLeft } from "react-icons/fa";
 
+import { RiPagesLine, RiReservedLine } from "react-icons/ri";
+import { GiHamburgerMenu } from "react-icons/gi";
 import { ImSpoonKnife } from "react-icons/im";
-import { RiPagesLine } from "react-icons/ri";
+import { BsTicketPerforated } from "react-icons/bs";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import { ChevronLeft } from "@mui/icons-material";
-import { ChevronRightOutlined } from "@mui/icons-material";
-import { ChevronLeftOutlined } from "@mui/icons-material";
-import { FaChevronRight } from "react-icons/fa6";
 
-// Define the Wrapper styled component
 const Wrapper = styled.div`
   .sideBar {
     display: flex;
     flex-direction: column;
     color: #ffffff;
-    background-color: ;
+    background-color: #1a1a1a;
     height: 100vh;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -57,6 +52,7 @@ const Wrapper = styled.div`
     background-color: #ff8c00;
     border-radius: 5px;
   }
+
   .sideBar::-webkit-scrollbar-thumb:hover {
     background-color: #ff6a00;
   }
@@ -65,8 +61,7 @@ const Wrapper = styled.div`
     display: flex;
     height: 50px;
     align-items: center;
-
-    /* padding: 5px; */
+    padding: 20px;
     background-color: #222;
     border-bottom: 1px solid #333;
     justify-content: ${({ isCollapsed }) =>
@@ -79,13 +74,11 @@ const Wrapper = styled.div`
     flex-grow: 1;
     align-items: flex-start;
     justify-content: center;
-    padding-left: 8px;
+    padding-left: 10px;
   }
 
   .username {
-    margin-left: 8px;
-    font-weight: 800;
-    font-size: 18px;
+    font-weight: 500;
     color: #ffffff;
   }
 
@@ -112,7 +105,7 @@ const Wrapper = styled.div`
     align-items: center;
     color: #ffffff;
     &:hover {
-      background-color: #2b4864;
+      background-color: #143453;
     }
     &.active {
       background-color: #143453;
@@ -137,13 +130,13 @@ const Wrapper = styled.div`
   }
 `;
 
-const SideBar = ({ onToggle }) => {
+const MobileSideBar = ({ onToggle }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const pathname = usePathname(); // Get the current pathname
+  const pathname = usePathname();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
-    onToggle(!isCollapsed); // Notify the parent component about the change
+    onToggle(!isCollapsed);
   };
 
   const ITEMS = [
@@ -199,7 +192,7 @@ const SideBar = ({ onToggle }) => {
           style: {
             backgroundColor: "#1a1a1a",
             color: "#ffffff",
-            width: isCollapsed ? "60px" : "300px",
+            width: isCollapsed ? "60px" : "100vw",
             transition: "width 0.3s ease-in-out",
           },
         }}
@@ -208,19 +201,13 @@ const SideBar = ({ onToggle }) => {
           <div className="user" isCollapsed={isCollapsed}>
             {!isCollapsed && (
               <>
-                {/* <Avatar src={"/noavatar.png"} alt="no avatar" /> */}
                 <div className="userDetail">
                   <span className="username">Yellow Bridge</span>
-                  {/* <span className="userTitle">Administrator</span> */}
                 </div>
               </>
             )}
             <IconButton className="toggleButton" onClick={toggleSidebar}>
-              {isCollapsed ? (
-                <FaChevronRight className="menuIcon" />
-              ) : (
-                <FaChevronLeft className="menuIcon" />
-              )}
+              {isCollapsed ? <></> : <GiHamburgerMenu className="menuIcon" />}
             </IconButton>
           </div>
           <Divider />
@@ -249,4 +236,4 @@ const SideBar = ({ onToggle }) => {
   );
 };
 
-export default SideBar;
+export default MobileSideBar;
