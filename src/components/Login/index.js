@@ -89,16 +89,16 @@ export default function Login() {
       localStorage.setItem("accessToken", res.data.token);
       localStorage.setItem("stamp", moment().toISOString());
       setLoading(false);
+      setOpen(false);
       dispatch(setUser(res.data));
       toast("Logged In Successfully", {
         autoClose: 5000,
-        // position: toast?.POSITION?.TOP_RIGHT,
       });
     } catch (err) {
       setLoading(false);
+      setOpen(false);
       toast("Invalid email or password", {
         autoClose: 5000,
-        // position: toast?.POSITION?.TOP_RIGHT,
       });
       console.log(err, "check err");
     }
@@ -133,12 +133,14 @@ export default function Login() {
           item
           container
           direction="column"
-          className="field-container login-container">
+          className="field-container login-container"
+        >
           <LoginContainer
             initial={{ opacity: 0.75, translateX: -80, scale: 1 }}
             animate={{ opacity: 1, translateX: 10, scale: 1 }}
             exit={{ opacity: 0, translateX: -24 }}
-            transition={{ duration: 0.5 }}>
+            transition={{ duration: 0.5 }}
+          >
             <div className="login-form-wrap">
               <div className="mb-30">
                 <StyledHeader>Login</StyledHeader>
@@ -239,7 +241,8 @@ export default function Login() {
                   onClick={handleSubmit}
                   style={{
                     width: "100%",
-                  }}>
+                  }}
+                >
                   {loading ? (
                     <BeatLoader color={"#1336f0"} speedMultiplier={0.5} />
                   ) : (
@@ -252,7 +255,6 @@ export default function Login() {
                     zIndex: (theme) => theme.zIndex.drawer + 1,
                   }}
                   open={open}
-                  // onClick={() => handleSubmit}
                 >
                   <CircularProgress color="inherit" />
                 </Backdrop>
