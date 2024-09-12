@@ -43,30 +43,28 @@ const Tickets = () => {
     {
       field: "eventTitle",
       headerName: "Title",
-      width: 250,
+      width: 400,
       headerClassName: "column-header",
       cellClassName: "column-cell",
-      // editable: true,
       renderCell: ({ row }) => {
-        return <Link href={`/tickets/${row._id}`}>{row.eventTitle}</Link>;
+        return <span>{row.eventTitle}</span>;
       },
     },
     {
       field: "eventPrice",
       headerName: "Price",
-      width: 80,
+      width: 200,
       headerClassName: "column-header",
       cellClassName: "column-cell",
       // editable: true,
       renderCell: (abc, def) => {
-        // console.log(def, abc, "test 123434245");
         return <span>{abc.row.eventPrice.$numberDecimal}</span>;
       },
     },
     {
       field: "occupancy",
       headerName: "Occupancy",
-      width: 130,
+      width: 200,
       headerClassName: "column-header",
       cellClassName: "column-cell",
       sortable: false,
@@ -79,9 +77,25 @@ const Tickets = () => {
     //   sortable: false,
     //   // editable: true,
     //   renderCell: ({ row }) => {
-    //     return <CircularProgress variant="determinate" value={row.occupancy} />;
+    //     return <span>{row.occupancy}</span>;
     //   },
     // },
+
+    {
+      field: "action",
+      headerName: "Action",
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+      width: 150,
+      sortable: false,
+      renderCell: ({ row }) => {
+        return (
+          <Link href={`/tickets/${row._id}`}>
+            <Button variant="contained">Issue</Button>
+          </Link>
+        );
+      },
+    },
   ];
   return (
     <FormWrapper>

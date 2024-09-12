@@ -1,19 +1,21 @@
 .container {
-  height: 70px;
-  width: 79vw;
+  height: 50px;
+  width: 100%;
   padding: 15px;
-  border-radius: 10px;
+  padding-bottom: 5px;
+  /* border-radius: 5px; */
   background-color: beige;
+
+  border-bottom: 1px solid #333;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 5px;
+  /* margin: 3px; */
 }
 
 .title {
-  color: var(--textSoft);
+  color: #000000;
   font-weight: bold;
-  text-transform: capitalize;
 }
 
 .menu {
@@ -23,21 +25,60 @@
 }
 
 .search {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 10px;
   background-color: #2e374a;
-  padding: 10px;
-  border-radius: 10px;
+  padding: 8px;
+  border-radius: 5px;
 }
 
 .input {
   background-color: transparent;
   border: none;
-  color: var(--text);
+  color: #000000;
 }
 
 .icons {
   display: flex;
   gap: 20px;
+  color: #000000;
+}
+
+.divider {
+  background-color: #303d02fa;
+  border: 1px solid #a3a2a2;
+  padding: 5px;
+  border-radius: 5px;
+  width: 250px;
+  gap: 10px;
+  position: absolute;
+  top: 45px;
+  right: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  z-index: 10;
+}
+.divider p {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.icon1 {
+  color: #000000;
+  border-top: 1px solid #a3a2a2;
+  border-bottom: 1px solid #a3a2a2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 10px 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.icon2 {
+  cursor: pointer;
+  transition: 0.8s ease-in-out;
+}
+.icon2:hover {
+  color: red;
 }

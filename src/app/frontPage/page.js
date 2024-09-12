@@ -31,7 +31,7 @@ const Settings = () => {
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
-            // insta: values.instaLink,
+            instagram: values.instaLink,
           },
           contactInfo: {
             email: values.email,
@@ -67,7 +67,7 @@ const Settings = () => {
       phone: values.contactInfo.phone,
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
-      instaLink: values.socialMedia.insta,
+      instaLink: values.socialMedia.instagram,
     };
   };
   useEffect(() => {
@@ -131,7 +131,8 @@ const Settings = () => {
             <FormSection
               title="Contacts"
               containerCSS={`margin-top: 20px;`}
-              showSection>
+              showSection
+            >
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="email" className="label">
@@ -168,7 +169,8 @@ const Settings = () => {
             <FormSection
               showSection
               title="Social Media"
-              containerCSS={`margin-top: 20px;`}>
+              containerCSS={`margin-top: 20px;`}
+            >
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
                   <FormLabel htmlFor="email" className="label">
@@ -225,7 +227,8 @@ const Settings = () => {
               color: "#fff",
               zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            open={loading}>
+            open={loading}
+          >
             <CircularProgress color="inherit" />
           </Backdrop>
         </Grid>

@@ -32,6 +32,12 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
+import { FilePond, registerPlugin } from "react-filepond";
+import "filepond/dist/filepond.min.css";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+import FilePondPluginImageEdit from "filepond-plugin-image-edit";
+import FilePondPluginImageTransform from "filepond-plugin-image-transform";
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -43,7 +49,9 @@ function convertTime(minutes) {
 }
 const AddEvent = ({ editMode }) => {
   const [loading, setLoading] = useState(false);
-
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const handleSubmit = async (values) => {
     setLoading(true);
     if (id) {
@@ -56,7 +64,6 @@ const AddEvent = ({ editMode }) => {
             fb: values.fbLink,
             x: values.xLink,
           },
-          eventName: "test",
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
           // },
@@ -97,6 +104,7 @@ const AddEvent = ({ editMode }) => {
   const formik = useFormik({
     initialValues: {
       eventTitle: "",
+      eventName: "",
       eventDescription: "",
       eventTime: "4:44",
       eventDate: null,
@@ -156,13 +164,13 @@ const AddEvent = ({ editMode }) => {
       fetchEventById();
     }
   }, [editMode]);
-  console.log(
-    promotionPhotos,
-    eventPhotos,
-    formik.values,
-    // convertTime(formik.values.eventTime),
-    "testtt"
-  );
+  // console.log(
+  //   promotionPhotos,
+  //   eventPhotos,
+  //   formik.values,
+  //   // convertTime(formik.values.eventTime),
+  //   "testtt"
+  // );
 
   return (
     <FormWrapper>
@@ -197,6 +205,20 @@ const AddEvent = ({ editMode }) => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   placeholder="Event Title"
+                  fullWidth
+                />
+              </Grid>{" "}
+              <Grid item container md={10} direction={"column"}>
+                <FormLabel htmlFor="eventName" className="label">
+                  Event Name
+                </FormLabel>
+                <TextField
+                  id="eventName"
+                  name="eventName"
+                  value={formik.values.eventName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Event Name"
                   fullWidth
                 />
               </Grid>
@@ -234,7 +256,8 @@ const AddEvent = ({ editMode }) => {
                     "days"
                   )} days to go)`
                 : ""
-            }`}>
+            }`}
+          >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
@@ -472,6 +495,7 @@ const AddEvent = ({ editMode }) => {
             </Grid>
           </FormSection>
         </Grid>
+
         <Grid container justifyContent="flex-end">
           <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             {editMode ? "Update " : " Add"} Event
@@ -481,7 +505,8 @@ const AddEvent = ({ editMode }) => {
               color: "#fff",
               zIndex: (theme) => theme.zIndex.drawer + 1,
             }}
-            open={loading}>
+            open={loading}
+          >
             <CircularProgress color="inherit" />
           </Backdrop>
         </Grid>
