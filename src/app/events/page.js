@@ -98,7 +98,7 @@ const Events = () => {
   };
 
   const filteredEvents = events.filter((event) =>
-    event.eventName.toLowerCase().includes(search.toLowerCase())
+    event.eventTitle?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleClick = (event) => {
@@ -449,11 +449,13 @@ const Events = () => {
                         <img
                           src={event.eventPromotionPhoto}
                           alt={event.name}
-                          style={{ objectFit: "cover" }}
+                          style={{ objectFit: "fill" }}
+                          width={"100%"}
+                          height={"100%"}
                         />
                       </figure>
                       <div class="article-body">
-                        <h2>{event.eventName}</h2>
+                        <h2>{event.eventTitle}</h2>
 
                         <Button
                           style={{
