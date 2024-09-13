@@ -5,11 +5,12 @@ import { DataGrid } from "@mui/x-data-grid";
 import { FaPlus } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
 import Modal from "@/components/Modal";
-import { Button, Grid } from "@mui/material";
+import { Button, Grid, MenuItem, Select } from "@mui/material";
 import { useFormik } from "formik";
 import TextEditor from "@/components/TextEditor";
 import apiHandler from "@/RESTAPIs/helper";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
+import toast from "react-hot-toast";
 
 export default function NotificationPage() {
   const [showModal, setShowModal] = useState(false);
@@ -50,7 +51,9 @@ export default function NotificationPage() {
     const method = editMode ? "patch" : "post";
     try {
       const response = await apiHandler(method, endpoint, true, false, values);
+      console.log("Response:", response);
       const newData = response.data;
+
       if (editMode) {
         const updatedNotifications = notifications.map((notification) =>
           notification._id === newData._id ? newData : notification
@@ -59,34 +62,50 @@ export default function NotificationPage() {
       } else {
         setNotifications([...notifications, newData]);
       }
+
       setShowModal(false);
       setEditMode(false);
       setSelectedNotification(null);
+      if (response.status === 201 || response.status === 200) {
+        toast.success(`Notification ${editMode ? "updated" : "added"}`);
+      }
     } catch (error) {
-      console.error("Error mutating notification:", error);
+      console.error("Error:", error);
+      toast.error(`Error ${editMode ? "updating" : "adding"} notification`);
     }
   };
 
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
     setSearchText(value);
-    const filteredData = notifications.filter(
-      (notification) =>
-        notification.notificationType.toLowerCase().includes(value) ||
-        notification.notification.toLowerCase().includes(value)
-    );
+
+    const notificationsArray = Array.isArray(notifications)
+      ? notifications
+      : notifications?.data || [];
+
+    const filteredData = notificationsArray.filter((notification) => {
+      const notificationType = notification.notificationType || "";
+      const notificationText = notification.notification || "";
+
+      return (
+        notificationType.toLowerCase().includes(value) ||
+        notificationText.toLowerCase().includes(value)
+      );
+    });
+
     const formattedRows = filteredData.map((notification) => ({
       id: notification._id,
-      type: notification.notificationType,
+      type: notification.notificationType || "",
       "start date": new Date(notification.startDate).toLocaleDateString(),
       "end date": new Date(notification.endDate).toLocaleDateString(),
-      notification: notification.notification.replace(/<[^>]+>/g, ""),
+      notification: (notification.notification || "").replace(/<[^>]+>/g, ""),
     }));
+
     setFilteredRows(formattedRows);
   };
 
-  const handlePageSizeChange = (pageSize) => {
-    setPageSize(pageSize);
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
   };
 
   const fetchNotificationById = async (id) => {
@@ -99,7 +118,7 @@ export default function NotificationPage() {
       );
       return response.data;
     } catch (error) {
-      console.error("Error fetching notification by id:", error);
+      toast.error("Error fetching notification");
       throw error;
     }
   };
@@ -131,7 +150,7 @@ export default function NotificationPage() {
         setShowModal(true);
       }
     } catch (error) {
-      console.error("Error editing notification:", error);
+      toast.error("Error editing notification !");
     }
   };
 
@@ -161,26 +180,18 @@ export default function NotificationPage() {
       : "notification";
     mutation({
       ...values,
-      notificationType: notificationTypes[values.notificationType],
     });
     fetchNotifications();
-  };
-
-  const notificationTypes = {
-    "pop-up": "65ec9a8dd7e9a45f6f801d22",
-    "pop-over": "65ec9a8dd7e9a45f6f801d22",
-    "marquee-": "65ec9a8dd7e9a45f6f801d22",
-    "in-between": "65ec9a8dd7e9a45f6f801d22",
   };
 
   const formik = useFormik({
     initialValues: {
       notificationType: "",
       notification: "",
-      startDate: new Date().toISOString().slice(0, 16),
-      endDate: new Date().toISOString().slice(0, 16),
+      startDate: "",
+      endDate: "",
       publish: false,
-      lang: "",
+      lang: "en",
     },
     onSubmit: handleSubmit,
   });
@@ -188,7 +199,6 @@ export default function NotificationPage() {
   return (
     <>
       <div>
-        {/* <div id="event" style={{ padding: "20px 0 0 20px" }}> */}
         <CustomBreadcrumbs
           title={`Notification`}
           links={[
@@ -234,59 +244,67 @@ export default function NotificationPage() {
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              border: "1px solid #E0E0E0",
-              alignItems: "center",
-              padding: "10px",
-            }}
-          >
-            <div>
-              Show
-              <select
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
-                style={{ height: "40px", padding: "5px" }}
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-              </select>{" "}
-              entries
-            </div>
+          <Box sx={{ margin: "0 10px" }}>
             <div
               style={{
                 display: "flex",
-                justifyContent: "center",
+                justifyContent: "space-between",
+                border: "1px solid #E0E0E0",
                 alignItems: "center",
-                margin: "10px",
-                gap: "10px",
+                padding: "10px",
               }}
             >
-              Search:
-              <input
-                value={searchText}
-                onChange={handleSearch}
+              <div>
+                Show
+                <Select
+                  value={pageSize}
+                  onChange={(e) =>
+                    handlePageSizeChange(parseInt(e.target.value, 10))
+                  }
+                  style={{ height: "40px", padding: "5px", margin: "0 10px" }}
+                >
+                  <MenuItem value={5}>5</MenuItem>
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                </Select>
+                entries
+              </div>
+              <div
                 style={{
-                  width: "200px",
-                  height: "40px",
-                  padding: "5px",
-                  borderRadius: "4px",
-                  border: "1px solid #ccc",
-                  backgroundColor: "#fff",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  margin: "10px",
+                  gap: "10px",
                 }}
-              />
+              >
+                Search:
+                <input
+                  value={searchText}
+                  onChange={handleSearch}
+                  style={{
+                    width: "200px",
+                    height: "40px",
+                    padding: "5px",
+                    borderRadius: "4px",
+                    border: "1px solid #ccc",
+                    backgroundColor: "#fff",
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          <Box sx={{ margin: "0 10px" }}>
             <DataGrid
               rows={filteredRows}
               columns={columns}
-              pageSize={pageSize}
-              pagination
-              rowsPerPageOptions={[5, 10, 20]}
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: pageSize,
+                  },
+                },
+              }}
+              pageSizeOptions={[5, 10, 20]}
+              autoHeight
             />
           </Box>
 
@@ -352,10 +370,9 @@ export default function NotificationPage() {
                           backgroundColor: "#fff",
                         }}
                       >
-                        {/* <option value="marquee">Marquee</option> */}
-                        <option value="pop-up">Pop-up</option>
-                        <option value="pop-over">Pop-over</option>
-                        <option value="in-between">In-between</option>
+                        <option value="12431f23s1f2">Pop-up</option>
+                        <option value="12431f23s1f3">Pop-over</option>
+                        <option value="12431f23s1f4">In-between</option>
                       </select>
                     </div>
                   </Grid>

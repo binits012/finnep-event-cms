@@ -16,8 +16,8 @@ import {
   InputLabel,
   Grid,
 } from "@mui/material";
-import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 registerPlugin(
   FilePondPluginImagePreview,
