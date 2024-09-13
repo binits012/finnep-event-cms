@@ -126,9 +126,7 @@ const AddEvent = ({ editMode }) => {
     },
     onSubmit: (values) => handleSubmit(values),
   });
-  const [promotionPhotos, setPromotionPhotos] = useState([]);
-  const [eventPhotos, setEventPhotos] = useState([]);
-
+  const [index, setIndex] = useState(0);
   const { id } = useParams();
 
   const transformObtainedValuesToForm = (values, tz) => {
@@ -198,12 +196,9 @@ const AddEvent = ({ editMode }) => {
     }
   };
 
-  const [index, setIndex] = useState(0);
-
   const photoevents = formik.values.eventPhoto;
 
   if (!Array.isArray(photoevents)) {
-    console.error("Expected photoevents to be an array but got:", photoevents);
     return;
   }
 
@@ -317,17 +312,6 @@ const AddEvent = ({ editMode }) => {
                     onBlur={formik.handleBlur}
                   />
                 </Grid>
-                {/* <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="eventTitle" className="label">
-                    Date
-                  </FormLabel>
-                  <StaticDatePicker
-                    id="eventDate"
-                    name="eventDate"
-                    value={dayjs(formik.values.eventDate)}
-                    onChange={(e) => setFieldValue("eventDate", e.target.value)}
-                  />
-                </Grid> */}
               </Grid>
             </LocalizationProvider>
           </FormSection>
@@ -441,32 +425,34 @@ const AddEvent = ({ editMode }) => {
                   stylePanelAspectRatio={0.5}
                   styleItemPanelAspectRatio={0.35}
                 />
+                {photoevents.length > 1 && (
+                  <div
+                    style={{
+                      width: "500px",
+                      height: "400px",
+                      marginTop: "20px",
+                    }}
+                  >
+                    <Lightbox
+                      open={true}
+                      slides={slides}
+                      index={index}
+                      carousel={{
+                        preload: 1,
+                        padding: 0,
+                        imageFit: "contain",
+                      }}
+                      plugins={[Inline]}
+                      inline={{
+                        style: {
+                          width: "100%",
+                          height: "100%",
+                        },
+                      }}
+                    />
+                  </div>
+                )}
 
-                <div
-                  style={{
-                    width: "500px",
-                    height: "400px",
-                    marginTop: "20px",
-                  }}
-                >
-                  <Lightbox
-                    open={true}
-                    slides={slides}
-                    index={index}
-                    carousel={{
-                      preload: 1,
-                      padding: 0,
-                      imageFit: "contain",
-                    }}
-                    plugins={[Inline]}
-                    inline={{
-                      style: {
-                        width: "100%",
-                        height: "100%",
-                      },
-                    }}
-                  />
-                </div>
                 <Button
                   variant="contained"
                   color="primary"

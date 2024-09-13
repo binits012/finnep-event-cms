@@ -40,7 +40,7 @@ export default function NotificationPage() {
       setFilteredRows(formattedRows);
       setNotifications(data);
     } catch (error) {
-      console.error("Error fetching notifications:", error);
+      toast.error("Error fetching notifications");
     }
   };
 
@@ -49,9 +49,9 @@ export default function NotificationPage() {
       ? `notification/${selectedCategoryId}`
       : "notification";
     const method = editMode ? "patch" : "post";
+
     try {
       const response = await apiHandler(method, endpoint, true, false, values);
-      console.log("Response:", response);
       const newData = response.data;
 
       if (editMode) {
@@ -62,16 +62,14 @@ export default function NotificationPage() {
       } else {
         setNotifications([...notifications, newData]);
       }
-
+      toast.success(
+        `Notification ${editMode ? "updated" : "created"} successfully!`
+      );
+    } catch (error) {
+      toast.error("Error saving notification");
       setShowModal(false);
       setEditMode(false);
       setSelectedNotification(null);
-      if (response.status === 201 || response.status === 200) {
-        toast.success(`Notification ${editMode ? "updated" : "added"}`);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error(`Error ${editMode ? "updating" : "adding"} notification`);
     }
   };
 
@@ -150,7 +148,7 @@ export default function NotificationPage() {
         setShowModal(true);
       }
     } catch (error) {
-      toast.error("Error editing notification !");
+      toast.error("Error editing notification");
     }
   };
 
@@ -178,9 +176,11 @@ export default function NotificationPage() {
     const apiEndpoint = editMode
       ? `notification/${selectedNotification._id}`
       : "notification";
+
     mutation({
       ...values,
     });
+
     fetchNotifications();
   };
 
