@@ -9,41 +9,65 @@ import { AiOutlineStop } from "react-icons/ai";
 import { IoIosSearch } from "react-icons/io";
 import { RxCross1 } from "react-icons/rx";
 import { PulseLoader } from "react-spinners";
-import { toast } from "react-toastify";
 import styled from "styled-components";
 import { TiTickOutline } from "react-icons/ti";
+import toast from "react-hot-toast";
 
 const Users = () => {
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getUserDetails = async () => {
+      setLoading(true);
       try {
         const res = await apiHandler("GET", "user/admin", true);
-        console.log(res);
         setUsers(res.data.data || []);
       } catch (err) {
         console.log(err);
         toast.error(err.message);
+      } finally {
+        setLoading(false);
       }
     };
     getUserDetails();
   }, []);
 
-  const handleEnable = async (row) => {
-    const res = await apiHandler("PATCH", `/user/${row._id}`, true);
-    console.log(res);
-    if (res.status === 200) {
-      toast.success("User enabled successfully");
-    }
-  };
-  const handleDisable = async (row) => {
-    const res = await apiHandler("DELETE", `/user/${row._id}`, true);
-    console.log(res);
-    if (res.status === 204) {
-      toast.success("User disabled successfully");
+  const updateUserStatus = async (row, status) => {
+    setLoading(true);
+    try {
+      const payload = { active: status };
+      const res = await apiHandler(
+        "PATCH",
+        `/user/${row._id}`,
+        true,
+        false,
+        payload
+      );
+
+      if (res.status === 200) {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === row._id ? { ...user, active: status } : user
+          )
+        );
+        toast.success(`User ${status ? "enabled" : "disabled"} successfully`);
+      } else {
+        toast.error(`Failed to ${status ? "enable" : "disable"} user`);
+      }
+    } catch (error) {
+      console.error(
+        `An error occurred while ${
+          status ? "enabling" : "disabling"
+        } the user:`,
+        error
+      );
+      toast.error(
+        `An error occurred while ${status ? "enabling" : "disabling"} the user`
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +80,7 @@ const Users = () => {
       width: 200,
     },
     {
-      field: `role`,
+      field: "role",
       headerName: "Role",
       width: 200,
       headerClassName: "column-header",
@@ -68,7 +92,8 @@ const Users = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-            }}>
+            }}
+          >
             {row.role.roleType}
           </div>
         );
@@ -125,25 +150,19 @@ const Users = () => {
       renderCell({ row }) {
         return (
           <Box>
-            {" "}
             <TiTickOutline
               size={24}
               color={`green`}
               title="Enable User"
               style={{ cursor: "pointer" }}
-              onClick={(e) => {
-                handleEnable(row);
-              }}
+              onClick={() => updateUserStatus(row, true)}
             />
             <AiOutlineStop
               size={24}
               color={`${"#C73F33"}`}
               title="Disable User"
               style={{ marginLeft: 10, cursor: "pointer" }}
-              // di
-              onClick={(e) => {
-                handleDisable(row);
-              }}
+              onClick={() => updateUserStatus(row, false)}
             />
           </Box>
         );
@@ -165,9 +184,7 @@ const Users = () => {
       />
       <Grid container justifyContent="flex-end" mb={2}>
         <Link passHref href="/users/add">
-          <Button variant="contained" onClick={() => setOpen(true)}>
-            + Add User
-          </Button>
+          <Button variant="contained">+ Add User</Button>
         </Link>
       </Grid>
       <StyledDataGrid
@@ -178,14 +195,14 @@ const Users = () => {
         initialState={{
           pagination: {
             paginationModel: {
-              pageSize: 5,
+              pageSize: 10,
             },
           },
         }}
-        pageSizeOptions={[5, 10, 20]}
+        pageSizeOptions={[10, 15, 20]}
         getRowId={(row) => row._id}
         disableSelectionOnClick
-        loading={users.length === 0}
+        loading={loading}
         slots={{
           toolbar: () => (
             <Input
@@ -213,7 +230,7 @@ const Users = () => {
                       margin: 8,
                       cursor: "pointer",
                     }}
-                    onClick={(e) => setSearch("")}
+                    onClick={() => setSearch("")}
                   />
                 ) : (
                   <IoIosSearch
@@ -235,9 +252,9 @@ const Users = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-              }}>
+              }}
+            >
               <div style={{ display: "flex", alignItems: "flex-end" }}>
-                <h2>loading </h2>
                 <PulseLoader
                   color="#000000"
                   margin={2}
@@ -262,6 +279,7 @@ const StyledDataGrid = styled(DataGrid)`
     font-size: 18px;
   }
 `;
+
 const FormWrapper = styled.div`
   width: 100%;
   padding: 30px;
@@ -275,4 +293,5 @@ const FormWrapper = styled.div`
     justify-content: flex-start;
   }
 `;
+
 export default Users;

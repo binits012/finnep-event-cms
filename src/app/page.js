@@ -13,6 +13,7 @@ import store from "@/store/store";
 import GateWay from "@/components/GateWay";
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorFallback from "@/components/ErrorFallback";
+import { Toaster } from "react-hot-toast";
 
 export default function Home() {
   return (
@@ -20,7 +21,8 @@ export default function Home() {
       FallbackComponent={ErrorFallback}
       onReset={() => {
         window.location.href = "/";
-      }}>
+      }}
+    >
       <Provider store={store}>
         <main className={styles.main}>
           <ToastContainer

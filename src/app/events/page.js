@@ -21,7 +21,6 @@ import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import apiHandler from "@/RESTAPIs/helper";
-import { toast } from "react-toastify";
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
 import { TfiHandDrag } from "react-icons/tfi";
@@ -44,6 +43,8 @@ import {
   TouchSensor,
   MouseSensor,
 } from "@dnd-kit/core";
+import { updateEvent } from "@/RESTAPIs/events";
+import toast from "react-hot-toast";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -80,15 +81,25 @@ const Events = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    try {
-      const data = { active: false };
-      const response = await apiHandler("PATCH", `/event/${id}`, data);
-      console.log("Event deleted:", response);
+    setLoading(true);
+    if (id) {
+      try {
+        const currentEvent = selectedEvent;
 
-      // update your UI to remove the deleted event from the list
-      // setEvents(events.filter((event) => event._id !== id));
-    } catch (error) {
-      console.error("Error deactivating event:", error);
+        const updatedPayload = {
+          ...currentEvent,
+          active: !currentEvent.active,
+        };
+
+        await toast.promise(updateEvent(id, updatedPayload), {
+          loading: "Updating event status...",
+          success: "Event Status Updated Successfully!",
+          error: "Error updating event status",
+        });
+      } catch (err) {
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -514,7 +525,11 @@ const Events = () => {
           }}
           eventName={selectedEvent ? selectedEvent.eventName : ""}
         >
-          <h4>Are you sure you want to delete {selectedEvent?.eventName} ?</h4>
+          <h4>
+            Are you sure you want to set this {selectedEvent?.eventTitle} as{" "}
+            {selectedEvent?.active ? "inactive" : "active"}?
+          </h4>
+
           <div
             style={{
               display: "flex",
@@ -570,9 +585,14 @@ const Events = () => {
                       }}
                     />
                     <Typography gutterBottom variant="h5" component="div">
-                      {selectedEvent.name}
+                      {selectedEvent.eventTitle}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      align="center"
+                      m={2}
+                    >
                       {selectedEvent.eventDescription}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -587,7 +607,14 @@ const Events = () => {
                     <Typography variant="body2" color="text.secondary">
                       Event Date: {formatDate(selectedEvent.eventDate)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      align="center"
+                      mt={1}
+                    >
+                      Event Promotion Photo
                       <br />
                       <img
                         src={selectedEvent.eventPromotionPhoto}
@@ -595,6 +622,23 @@ const Events = () => {
                         width="250px"
                       />
                     </Typography>
+                    {selectedEvent.eventPhoto.length > 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        Event Photos
+                        {selectedEvent.eventPhoto.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Event Photo ${index + 1}`}
+                            style={{
+                              width: "200px",
+                              height: "auto",
+                              borderRadius: "8px",
+                            }}
+                          />
+                        ))}
+                      </Typography>
+                    )}
                   </Box>
                 </CardContent>
               </Card>

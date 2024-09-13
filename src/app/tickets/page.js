@@ -15,12 +15,12 @@ import {
 import { Field, useFormik } from "formik";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { toast } from "react-toastify";
 import styled from "styled-components";
 import { DataGrid } from "@mui/x-data-grid";
 import { render } from "react-dom";
 import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
+import toast from "react-hot-toast";
 
 const Tickets = () => {
   const [events, setEvents] = useState([]);

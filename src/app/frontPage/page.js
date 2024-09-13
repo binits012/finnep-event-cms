@@ -8,25 +8,17 @@ import { useFormik } from "formik";
 import { useEffect, useState } from "react";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
-// import { useRouter } from "next/router";
-
-import { toast } from "react-toastify";
-
 import styled from "styled-components";
+import toast from "react-hot-toast";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
-  // const router = useRouter();
-  // console.log("da", router);
+
   const handleSubmit = async (values) => {
     setLoading(true);
-    try {
-      const res = await apiHandler(
-        "POST",
-        `setting/${values?._id}`,
-        true,
-        false,
-        {
+    return toast
+      .promise(
+        apiHandler("POST", `setting/${values?._id}`, true, false, {
           ...values,
           socialMedia: {
             fb: values.fbLink,
@@ -37,16 +29,18 @@ const Settings = () => {
             email: values.email,
             phone: values.phone,
           },
+        }),
+        {
+          loading: "Updating settings...",
+          success: "Settings updated successfully!",
+          error: "Error updating settings",
         }
-      );
-      toast.success("Settings updated!!");
-      setLoading(false);
-    } catch (err) {
-      console.log(err);
-      toast.error("Error updaing settings");
-      setLoading(false);
-    }
+      )
+      .finally(() => {
+        setLoading(false);
+      });
   };
+
   const formik = useFormik({
     initialValues: {
       aboutSection: "",
@@ -60,7 +54,6 @@ const Settings = () => {
   });
 
   const transformResponseValuesToForm = (values) => {
-    console.log(values, "resp obt");
     return {
       ...values,
       email: values.contactInfo.email,
@@ -70,11 +63,11 @@ const Settings = () => {
       instaLink: values.socialMedia.instagram,
     };
   };
+
   useEffect(() => {
     const getSettingsData = async () => {
       try {
         const response = await apiHandler("GET", "setting", true);
-        console.log(response, "check res");
         formik.setValues(
           transformResponseValuesToForm(
             response.data?.data &&
@@ -90,10 +83,8 @@ const Settings = () => {
     getSettingsData();
   }, []);
 
-  console.log(formik.values, "valuesss");
   return (
     <FormWrapper>
-      {" "}
       <CustomBreadcrumbs
         title={`Front Page / Front Page Details`}
         links={[
@@ -104,7 +95,7 @@ const Settings = () => {
           },
         ]}
       />
-      <form>
+      <form onSubmit={formik.handleSubmit}>
         <Grid container direction="column" spacing={0}>
           <FormSection title="FrontPage Details" showSection>
             <Grid item md={12} sm={12}>
@@ -150,7 +141,7 @@ const Settings = () => {
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="occupancy" className="label">
+                  <FormLabel htmlFor="phone" className="label">
                     Phone
                   </FormLabel>
                   <TextField
@@ -173,7 +164,7 @@ const Settings = () => {
             >
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="email" className="label">
+                  <FormLabel htmlFor="fbLink" className="label">
                     Facebook Page
                   </FormLabel>
                   <TextField
@@ -187,7 +178,7 @@ const Settings = () => {
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="occupancy" className="label">
+                  <FormLabel htmlFor="xLink" className="label">
                     Twitter/X Handle
                   </FormLabel>
                   <TextField
@@ -201,7 +192,7 @@ const Settings = () => {
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="occupancy" className="label">
+                  <FormLabel htmlFor="instaLink" className="label">
                     Instagram Account
                   </FormLabel>
                   <TextField
@@ -219,7 +210,7 @@ const Settings = () => {
           </FormSection>
         </Grid>
         <Grid container justifyContent={"flex-end"}>
-          <Button id="submit" onClick={formik.handleSubmit} variant="contained">
+          <Button id="submit" type="submit" variant="contained">
             Update Front Page Details
           </Button>
           <Backdrop
@@ -236,6 +227,7 @@ const Settings = () => {
     </FormWrapper>
   );
 };
+
 const FormWrapper = styled.div`
   width: 100%;
   padding: 30px;
@@ -249,4 +241,5 @@ const FormWrapper = styled.div`
     justify-content: flex-start;
   }
 `;
+
 export default Settings;

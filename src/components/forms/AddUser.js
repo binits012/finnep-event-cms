@@ -2,7 +2,6 @@
 import styled from "styled-components";
 import CustomBreadcrumbs from "../CustomBreadcrumbs";
 import FormSection from "../FormSection";
-import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import {
   Backdrop,
@@ -16,6 +15,7 @@ import { useState } from "react";
 import apiHandler from "@/RESTAPIs/helper";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import toast from "react-hot-toast";
 
 const AddUser = () => {
   const [loading, setLoading] = useState(false);
