@@ -6,8 +6,6 @@ import {
   Grid,
   TextField,
 } from "@mui/material";
-// import * as React from "react";
-// import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { StaticTimePicker } from "@mui/x-date-pickers/StaticTimePicker";
@@ -17,10 +15,8 @@ import styled from "styled-components";
 import FormSection from "@/components/FormSection";
 import IOSSwitch from "@/components/IOSSwtich";
 import { useEffect, useState } from "react";
-import DropZone from "@/components/DropZone";
-import { toast } from "react-toastify";
-import { addEvent, updateEvent, updateEvents } from "@/RESTAPIs/events";
-import { useParams, useRouter } from "next/navigation";
+import { addEvent, updateEvent } from "@/RESTAPIs/events";
+import { useParams } from "next/navigation";
 import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
 import dayjs from "dayjs";
@@ -37,7 +33,14 @@ import "filepond/dist/filepond.min.css";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import FilePondPluginImageEdit from "filepond-plugin-image-edit";
-import FilePondPluginImageTransform from "filepond-plugin-image-transform";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+import Inline from "yet-another-react-lightbox/plugins/inline";
+import "yet-another-react-lightbox/plugins/captions.css";
+import "yet-another-react-lightbox/plugins/thumbnails.css";
+import toast from "react-hot-toast";
+
+registerPlugin(FilePondPluginImagePreview, FilePondPluginImageEdit);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -68,7 +71,6 @@ const AddEvent = ({ editMode }) => {
           //   $numberDecimal: values.eventPrice,
           // },
         });
-        console.log(res, "check res");
         toast.success("Event Updated!!");
         setLoading(false);
       } catch (err) {
@@ -91,7 +93,6 @@ const AddEvent = ({ editMode }) => {
           //   $numberDecimal: values.eventPrice,
           // },
         });
-        console.log(res, "check res");
         toast.success("Event Added!!");
         setLoading(false);
       } catch (err) {
@@ -125,13 +126,10 @@ const AddEvent = ({ editMode }) => {
     },
     onSubmit: (values) => handleSubmit(values),
   });
-  const [promotionPhotos, setPromotionPhotos] = useState([]);
-  const [eventPhotos, setEventPhotos] = useState([]);
-
+  const [index, setIndex] = useState(0);
   const { id } = useParams();
 
   const transformObtainedValuesToForm = (values, tz) => {
-    console.log(values);
     return {
       ...values,
       eventDate: dayjs(
@@ -151,7 +149,6 @@ const AddEvent = ({ editMode }) => {
       const fetchEventById = async () => {
         try {
           const res = await apiHandler("GET", `event/${id}`, true);
-          console.log(res, "check res");
           // formik.setValues(res.data.data);
           formik.setValues(
             transformObtainedValuesToForm(res.data.data, res.data.timeZone)
@@ -164,13 +161,50 @@ const AddEvent = ({ editMode }) => {
       fetchEventById();
     }
   }, [editMode]);
-  // console.log(
-  //   promotionPhotos,
-  //   eventPhotos,
-  //   formik.values,
-  //   // convertTime(formik.values.eventTime),
-  //   "testtt"
-  // );
+
+  const uploadFile = async () => {
+    if (files.length === 0) {
+      toast.error("No files to upload");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append("file", files[0]);
+
+    try {
+      const response = await apiHandler(
+        "POST",
+        `event/${id}/eventPhoto`,
+        true,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log("Upload successful:", response.data);
+      toast.success("File uploaded successfully!");
+    } catch (error) {
+      console.error("Upload failed:", error);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const photoevents = formik.values.eventPhoto;
+
+  if (!Array.isArray(photoevents)) {
+    return;
+  }
+
+  const slides = photoevents.map((url, index) => ({
+    src: url,
+  }));
 
   return (
     <FormWrapper>
@@ -273,23 +307,11 @@ const AddEvent = ({ editMode }) => {
                     name="eventDate"
                     value={formik.values.eventDate}
                     onChange={(value) => {
-                      console.log(value);
                       formik.setFieldValue("eventDate", value);
                     }}
                     onBlur={formik.handleBlur}
                   />
                 </Grid>
-                {/* <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="eventTitle" className="label">
-                    Date
-                  </FormLabel>
-                  <StaticDatePicker
-                    id="eventDate"
-                    name="eventDate"
-                    value={dayjs(formik.values.eventDate)}
-                    onChange={(e) => setFieldValue("eventDate", e.target.value)}
-                  />
-                </Grid> */}
               </Grid>
             </LocalizationProvider>
           </FormSection>
@@ -363,7 +385,7 @@ const AddEvent = ({ editMode }) => {
           </FormSection>
           <FormSection showSection title="Photos">
             <Grid container spacing={2}>
-              <Grid item container md={10} direction={"column"}>
+              <Grid item container md={10}>
                 <FormLabel htmlFor="eventPromotionPhoto" className="label">
                   Promotion Photo
                 </FormLabel>
@@ -376,23 +398,73 @@ const AddEvent = ({ editMode }) => {
                   placeholder="Promotion Photo"
                   fullWidth
                 />
-                {/* <DropZone
-                  files={promotionPhotos}
-                  setFiles={setPromotionPhotos}
-                  multiple={false}
-                  maxSize={1024 * 1024 * 2}
-                  accept={{
-                    "image/*": [],
-                  }}
-                /> */}
+                {formik.values.eventPromotionPhoto && (
+                  <img
+                    src={formik.values.eventPromotionPhoto}
+                    alt="Event"
+                    width="350px"
+                    style={{ marginTop: "20px" }}
+                  />
+                )}
               </Grid>
-              {/* <Grid item container md={10} direction={"column"}>
-                <FormLabel htmlFor="eventLocationGeoCode" className="label">
-                  After Event Photos
-                </FormLabel>
-                <DropZone files={eventPhotos} setFiles={setEventPhotos} />
-              </Grid> */}
             </Grid>
+
+            {editMode && (
+              <Grid container md={10} direction={"column"} mt={3}>
+                <FormLabel htmlFor="eventPhoto" className="label">
+                  Event Photo
+                </FormLabel>
+                <FilePond
+                  files={files}
+                  onupdatefiles={(fileItems) => {
+                    setFiles(fileItems.map((fileItem) => fileItem.file));
+                  }}
+                  allowMultiple={true}
+                  name="file"
+                  labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+                  stylePanelAspectRatio={0.5}
+                  styleItemPanelAspectRatio={0.35}
+                />
+                {photoevents.length > 1 && (
+                  <div
+                    style={{
+                      width: "500px",
+                      height: "400px",
+                      marginTop: "20px",
+                    }}
+                  >
+                    <Lightbox
+                      open={true}
+                      slides={slides}
+                      index={index}
+                      carousel={{
+                        preload: 1,
+                        padding: 0,
+                        imageFit: "contain",
+                      }}
+                      plugins={[Inline]}
+                      inline={{
+                        style: {
+                          width: "100%",
+                          height: "100%",
+                        },
+                      }}
+                    />
+                  </div>
+                )}
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={uploadFile}
+                  disabled={uploading}
+                  style={{ marginTop: "20px", width: "fit-content" }}
+                >
+                  {uploading ? "Uploading..." : "Upload"}
+                </Button>
+                {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+              </Grid>
+            )}
           </FormSection>
           <FormSection showSection title="Social Media">
             <Grid container spacing={2}>

@@ -96,7 +96,6 @@ export default TextEditor;
 const StyleLabel = styled.label`
   line-height: 25px;
   font-weight: bold;
-
   span {
     color: red;
   }

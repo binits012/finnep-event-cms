@@ -20,20 +20,17 @@ import {
 import { useFormik } from "formik";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-
-import { toast } from "react-toastify";
-
 import styled from "styled-components";
 import { useParams, useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 import { GrDocumentExcel, GrTrash } from "react-icons/gr";
 import { DataGrid } from "@mui/x-data-grid";
-import { render } from "react-dom";
 import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
 import { IoReload } from "react-icons/io5";
 import { PulseLoader } from "react-spinners";
+import toast from "react-hot-toast";
 
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
@@ -205,7 +202,8 @@ const Tickets = () => {
         <form>
           <FormSection
             showSection
-            title={`Create new ticket for ${formik.values.ticketFor}`}>
+            title={`Create new ticket for ${formik.values.ticketFor}`}
+          >
             <Grid container spacing={2} alignItems={"flex-end"}>
               <Grid item container md={4} direction={"column"}>
                 <FormLabel htmlFor="ticketFor" className="label">
@@ -233,7 +231,8 @@ const Tickets = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   placeholder="Type"
-                  fullWidth>
+                  fullWidth
+                >
                   <MenuItem value="normal">Normal</MenuItem>
                   <MenuItem value="vip">VIP</MenuItem>
                 </Select>
@@ -243,7 +242,8 @@ const Tickets = () => {
                   variant="contained"
                   disabled={!formik.values.ticketFor || !formik.values.type}
                   onClick={formik.handleSubmit}
-                  sx={{ height: 50 }}>
+                  sx={{ height: 50 }}
+                >
                   Create Ticket
                 </Button>
                 <Backdrop
@@ -251,7 +251,8 @@ const Tickets = () => {
                     color: "#fff",
                     zIndex: (theme) => theme.zIndex.drawer + 1,
                   }}
-                  open={loading}>
+                  open={loading}
+                >
                   <CircularProgress color="inherit" />
                 </Backdrop>
               </Grid>
@@ -350,7 +351,8 @@ const Tickets = () => {
                             border: "1px dashed black",
                             cursor: "pointer",
                             borderRadius: 6,
-                          }}>
+                          }}
+                        >
                           <input {...getInputProps()} />
                           <BsUpload size={32} color="green" />
                           {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
@@ -364,7 +366,8 @@ const Tickets = () => {
                         <div
                           style={{
                             height: 100,
-                          }}>
+                          }}
+                        >
                           {files.map((doc, i) => (
                             <div
                               key={i}
@@ -377,7 +380,8 @@ const Tickets = () => {
                                 border: "1px dashed black",
                                 cursor: "pointer",
                                 borderRadius: 6,
-                              }}>
+                              }}
+                            >
                               <Link href={doc.preview} target="_blank" passHref>
                                 <GrDocumentExcel
                                   size={48}
@@ -392,7 +396,8 @@ const Tickets = () => {
                                     margin: 5,
                                     border: "1px solid black",
                                     fontSize: 12,
-                                  }}>
+                                  }}
+                                >
                                   {(doc.size / 1024).toFixed(2)} KB
                                 </span>
                               </div>
@@ -426,7 +431,8 @@ const Tickets = () => {
                   variant="contained"
                   onClick={createMultipleTickets}
                   disabled={!files.length}
-                  sx={{ height: 50 }}>
+                  sx={{ height: 50 }}
+                >
                   Create Multiple Tickets
                 </Button>
                 <Backdrop
@@ -434,7 +440,8 @@ const Tickets = () => {
                     color: "#fff",
                     zIndex: (theme) => theme.zIndex.drawer + 1,
                   }}
-                  open={loading}>
+                  open={loading}
+                >
                   <CircularProgress color="inherit" />
                 </Backdrop>
               </Grid>
@@ -471,7 +478,8 @@ const Tickets = () => {
               <Grid
                 container
                 justifyContent={"space-between"}
-                alignItems={"center"}>
+                alignItems={"center"}
+              >
                 <Input
                   // variant="soft"
                   placeholder="Search Email"
@@ -518,7 +526,8 @@ const Tickets = () => {
                   sx={{
                     margin: 2,
                     cursor: "pointer",
-                  }}>
+                  }}
+                >
                   <IoReload size={28} style={{ margin: 5 }} />
                 </IconButton>
               </Grid>
@@ -531,7 +540,8 @@ const Tickets = () => {
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                }}>
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "flex-end" }}>
                   <h2>loading </h2>
                   <PulseLoader
