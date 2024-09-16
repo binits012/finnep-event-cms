@@ -62,8 +62,6 @@ const AddPhotoPage = ({ onClose }) => {
           image: `data:image/png;base64,${base64data}`,
           photoType: selectedAlbumId,
         });
-        onClose();
-        console.log("Upload success:", response.data);
         toast.success("Your image has been uploaded successfully");
         router.back();
       } catch (error) {
