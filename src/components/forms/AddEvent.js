@@ -54,6 +54,7 @@ const AddEvent = ({ editMode }) => {
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
+            insta:values.igLink
           },
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
@@ -100,7 +101,7 @@ const AddEvent = ({ editMode }) => {
       eventPrice: "",
       occupancy: "",
       lang: "",
-      socialMedia: "",
+      socialMedia: {},
       position: "",
       eventLocationAddress: "",
       eventLocationGeoCode: "",
@@ -129,6 +130,7 @@ const AddEvent = ({ editMode }) => {
       xLink: values.socialMedia.x,
       eventPrice: values.eventPrice["$numberDecimal"],
       timeZone: tz,
+      igLink:values.socialMedia.insta
       //  fbLink: values.socialMedia.fb,
     };
   };
