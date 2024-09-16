@@ -69,9 +69,7 @@ const Events = () => {
       try {
         const response = await apiHandler("GET", "event", true);
         setEvents(response.data.data);
-        console.log("Events data:", response.data.data);
       } catch (error) {
-        console.log("Error getting events data", error);
         toast.error("Error getting events data");
       } finally {
         setLoading(false);
@@ -200,14 +198,12 @@ const Events = () => {
       id: event._id,
       position: index + 1,
     }));
-    console.log("Payload:", { data: positions });
     setLoading(true);
 
     try {
       const response = await apiHandler("PATCH", "event/batch", true, false, {
         data: positions,
       });
-      console.log("Updated positions:", response.data);
       toast.success("Positions updated successfully");
       setShowList(false);
     } catch (error) {
@@ -453,9 +449,9 @@ const Events = () => {
             )}
             {filteredEvents.map((event) => (
               <Grid item xs={12} sm={6} md={3} key={event._id}>
-                <section class="articles">
+                <section className="articles">
                   <article>
-                    <div class="article-wrapper">
+                    <div className="article-wrapper">
                       <figure>
                         <img
                           src={event.eventPromotionPhoto}
@@ -465,7 +461,7 @@ const Events = () => {
                           height={"100%"}
                         />
                       </figure>
-                      <div class="article-body">
+                      <div className="article-body">
                         <h2>{event.eventTitle}</h2>
 
                         <Button
@@ -487,24 +483,30 @@ const Events = () => {
                             <EditIcon />
                           </IconButton>
 
-                          <IconButton aria-label="edit" color="primary">
+                          <IconButton
+                            aria-label="edit"
+                            color="primary"
+                            onClick={() => {
+                              setShowModal(true);
+                              setSelectedEvent(event);
+                            }}
+                          >
                             <MdOutlineRemoveRedEye
                               size={24}
                               color="#4C4C4C"
                               title="View Details"
-                              onClick={() => {
-                                setShowModal(true);
-                                setSelectedEvent(event);
-                              }}
                             />
                           </IconButton>
 
-                          <IconButton aria-label="edit" color="primary">
+                          <IconButton
+                            aria-label="edit"
+                            color="primary"
+                            onClick={() => handleDeleteClick(event)}
+                          >
                             <DeleteIcon
                               size={24}
                               color="#4C4C4C"
                               title="Delete Event"
-                              onClick={() => handleDeleteClick(event)}
                             />
                           </IconButton>
                         </Box>
