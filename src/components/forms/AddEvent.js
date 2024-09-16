@@ -28,7 +28,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -43,6 +43,19 @@ const AddEvent = ({ editMode }) => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
+
   const handleSubmit = async (values) => {
     setLoading(true);
     if (id) {
@@ -54,17 +67,24 @@ const AddEvent = ({ editMode }) => {
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
-            insta:values.igLink
+            insta: values.igLink,
           },
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
           // },
         });
-        toast.success("Event Updated!!");
+
+        Toast.fire({
+          icon: "success",
+          title: "Event Updated !!",
+        });
+
         setLoading(false);
       } catch (err) {
-        console.log(err);
-        toast.error("Error updating event!!");
+        Toast.fire({
+          icon: "error",
+          title: "Error updating event !!",
+        });
 
         setLoading(false);
       }
@@ -82,11 +102,19 @@ const AddEvent = ({ editMode }) => {
           //   $numberDecimal: values.eventPrice,
           // },
         });
-        toast.success("Event Added!!");
+
+        Toast.fire({
+          icon: "success",
+          title: "Event Added !!",
+        });
+
         setLoading(false);
       } catch (err) {
-        console.log(err);
-        toast.error("Error creating event!!");
+        Toast.fire({
+          icon: "error",
+          title: "Error creating event !!",
+        });
+
         setLoading(false);
       }
     }
@@ -130,7 +158,7 @@ const AddEvent = ({ editMode }) => {
       xLink: values.socialMedia.x,
       eventPrice: values.eventPrice["$numberDecimal"],
       timeZone: tz,
-      igLink:values.socialMedia.insta
+      igLink: values.socialMedia.insta,
       //  fbLink: values.socialMedia.fb,
     };
   };
@@ -144,8 +172,10 @@ const AddEvent = ({ editMode }) => {
             transformObtainedValuesToForm(res.data.data, res.data.timeZone)
           );
         } catch (err) {
-          console.log(err);
-          toast.error("Error getting the event details!");
+          Toast.fire({
+            icon: "error",
+            title: "Error getting the event details!",
+          });
         }
       };
       fetchEventById();
