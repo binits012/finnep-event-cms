@@ -23,12 +23,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import apiHandler from "@/RESTAPIs/helper";
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from "react-icons/lu";
-import { TfiHandDrag } from "react-icons/tfi";
 import Link from "next/link";
 import Modal from "@/components/Modal";
 import DeleteModal from "@/components/DeleteModal";
 import moment from "moment";
 import { updateEvent } from "@/RESTAPIs/events";
+import Swal from "sweetalert2";
 import toast from "react-hot-toast";
 
 const Events = () => {
@@ -46,6 +46,18 @@ const Events = () => {
     return moment(dateString).format("YYYY-MM-DD");
   };
 
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
+
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
@@ -53,7 +65,10 @@ const Events = () => {
         const response = await apiHandler("GET", "event", true);
         setEvents(response.data.data);
       } catch (error) {
-        toast.error("Error getting events data");
+        Toast.fire({
+          icon: "error",
+          title: "Error getting events data",
+        });
       } finally {
         setLoading(false);
       }
