@@ -28,19 +28,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
-import { FilePond, registerPlugin } from "react-filepond";
-import "filepond/dist/filepond.min.css";
-import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
-import FilePondPluginImagePreview from "filepond-plugin-image-preview";
-import FilePondPluginImageEdit from "filepond-plugin-image-edit";
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
-import Inline from "yet-another-react-lightbox/plugins/inline";
-import "yet-another-react-lightbox/plugins/captions.css";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
 import toast from "react-hot-toast";
-
-registerPlugin(FilePondPluginImagePreview, FilePondPluginImageEdit);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -66,6 +54,7 @@ const AddEvent = ({ editMode }) => {
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
+            insta:values.igLink
           },
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
@@ -112,14 +101,14 @@ const AddEvent = ({ editMode }) => {
       eventPrice: "",
       occupancy: "",
       lang: "",
-      socialMedia: "",
+      socialMedia: {},
       position: "",
       eventLocationAddress: "",
       eventLocationGeoCode: "",
       eventPromotionPhoto: "",
       eventPhoto: "",
       transportLink: "",
-      active: "",
+      active: false,
       fbLink: "",
       xLink: "",
       igLink: "",
@@ -141,6 +130,7 @@ const AddEvent = ({ editMode }) => {
       xLink: values.socialMedia.x,
       eventPrice: values.eventPrice["$numberDecimal"],
       timeZone: tz,
+      igLink:values.socialMedia.insta
       //  fbLink: values.socialMedia.fb,
     };
   };
@@ -161,50 +151,6 @@ const AddEvent = ({ editMode }) => {
       fetchEventById();
     }
   }, [editMode]);
-
-  const uploadFile = async () => {
-    if (files.length === 0) {
-      toast.error("No files to upload");
-      return;
-    }
-
-    setUploading(true);
-    setUploadError(null);
-
-    const formData = new FormData();
-    formData.append("file", files[0]);
-
-    try {
-      const response = await apiHandler(
-        "POST",
-        `event/${id}/eventPhoto`,
-        true,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      console.log("Upload successful:", response.data);
-      toast.success("File uploaded successfully!");
-    } catch (error) {
-      console.error("Upload failed:", error);
-      setUploadError("Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const photoevents = formik.values.eventPhoto;
-
-  if (!Array.isArray(photoevents)) {
-    return;
-  }
-
-  const slides = photoevents.map((url, index) => ({
-    src: url,
-  }));
 
   return (
     <FormWrapper>
@@ -408,63 +354,6 @@ const AddEvent = ({ editMode }) => {
                 )}
               </Grid>
             </Grid>
-
-            {editMode && (
-              <Grid container md={10} direction={"column"} mt={3}>
-                <FormLabel htmlFor="eventPhoto" className="label">
-                  Event Photo
-                </FormLabel>
-                <FilePond
-                  files={files}
-                  onupdatefiles={(fileItems) => {
-                    setFiles(fileItems.map((fileItem) => fileItem.file));
-                  }}
-                  allowMultiple={true}
-                  name="file"
-                  labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
-                  stylePanelAspectRatio={0.5}
-                  styleItemPanelAspectRatio={0.35}
-                />
-                {photoevents.length > 1 && (
-                  <div
-                    style={{
-                      width: "500px",
-                      height: "400px",
-                      marginTop: "20px",
-                    }}
-                  >
-                    <Lightbox
-                      open={true}
-                      slides={slides}
-                      index={index}
-                      carousel={{
-                        preload: 1,
-                        padding: 0,
-                        imageFit: "contain",
-                      }}
-                      plugins={[Inline]}
-                      inline={{
-                        style: {
-                          width: "100%",
-                          height: "100%",
-                        },
-                      }}
-                    />
-                  </div>
-                )}
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={uploadFile}
-                  disabled={uploading}
-                  style={{ marginTop: "20px", width: "fit-content" }}
-                >
-                  {uploading ? "Uploading..." : "Upload"}
-                </Button>
-                {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-              </Grid>
-            )}
           </FormSection>
           <FormSection showSection title="Social Media">
             <Grid container spacing={2}>

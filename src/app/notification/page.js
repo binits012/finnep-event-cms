@@ -32,7 +32,7 @@ export default function NotificationPage() {
       const data = response.data || [];
       const formattedRows = data.data.map((notification) => ({
         id: notification._id,
-        type: notification.notificationType,
+        type: notification.notificationType.name,
         "start date": new Date(notification.startDate).toLocaleDateString(),
         "end date": new Date(notification.endDate).toLocaleDateString(),
         notification: notification.notification.replace(/<[^>]+>/g, ""),
