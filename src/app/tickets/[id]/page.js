@@ -30,7 +30,7 @@ import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
 import { IoReload } from "react-icons/io5";
 import { PulseLoader } from "react-spinners";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
@@ -38,10 +38,21 @@ const Tickets = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
-
   const { id } = useParams();
-
   const [files, setFiles] = useState([]);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
+
   const getEventTickets = useCallback(async () => {
     setFetching(true);
     try {
@@ -50,7 +61,11 @@ const Tickets = () => {
       setTickets(response.data?.data);
     } catch (err) {
       console.log(err);
-      toast.error("Error getting tickets!");
+
+      Toast.fire({
+        icon: "error",
+        title: "Error Getting details",
+      });
     } finally {
       setFetching(false);
     }
@@ -63,11 +78,20 @@ const Tickets = () => {
         event: id,
       });
       formik.resetForm();
-      toast.success(`Ticket created for ${formik.values.ticketFor}!`);
+
+      Toast.fire({
+        icon: "success",
+        title: `Ticket created for ${formik.values.ticketFor}!`,
+      });
+
       getEventTickets();
       setLoading(false);
     } catch (err) {
-      toast.error("Error Creating ticket!");
+      Toast.fire({
+        icon: "error",
+        title: "Error Creating ticket",
+      });
+
       setLoading(false);
     }
   };
@@ -84,10 +108,18 @@ const Tickets = () => {
         formData
       );
       setFiles([]);
-      toast.success(`Wait For 5-10 seconds for tickets to be created!`);
+
+      Toast.fire({
+        icon: "success",
+        title: "Wait for 5-10 seconds for tickets to be created!",
+      });
+
       getEventTickets();
     } catch (err) {
-      toast.error("Error Creating tickets!");
+      Toast.fire({
+        icon: "error",
+        title: "Error Creating ticket",
+      });
     }
   };
   const formik = useFormik({
@@ -106,7 +138,11 @@ const Tickets = () => {
         setEventDetails(response.data?.data);
       } catch (err) {
         console.log(err);
-        toast.error("Error Getting details");
+
+        Toast.fire({
+          icon: "error",
+          title: "Error Getting details",
+        });
       }
     };
 
@@ -316,7 +352,11 @@ const Tickets = () => {
                   );
                   const onDropRejected = useCallback((err) => {
                     console.log("seee", err, err[0].errors[0].message);
-                    toast.error(`Error: ${err[0].errors[0].message} !!!!`);
+
+                    Toast.fire({
+                      icon: "error",
+                      title,
+                    });
                   }, []);
                   const {
                     acceptedFiles,

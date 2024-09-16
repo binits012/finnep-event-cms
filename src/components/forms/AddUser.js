@@ -16,21 +16,42 @@ import apiHandler from "@/RESTAPIs/helper";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 const AddUser = () => {
   const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
   const handleSubmit = async (values) => {
     setLoading(true);
     console.log(values);
     try {
       const res = await apiHandler("POST", "user/admin", true, false, values);
       console.log(res, "check res");
-      toast.success("User Created!!");
+
+      Toast.fire({
+        icon: "success",
+        title: "User Created Successfully",
+      });
+
       setLoading(false);
     } catch (err) {
       console.log(err);
-      toast.error("Error creating user!!");
+      Toast.fire({
+        icon: "error",
+        title: "Error Creating User",
+      });
       setLoading(false);
     }
   };

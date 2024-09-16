@@ -9,36 +9,52 @@ import { useEffect, useState } from "react";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import styled from "styled-components";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
 
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
+
   const handleSubmit = async (values) => {
     setLoading(true);
-    return toast
-      .promise(
-        apiHandler("POST", `setting/${values?._id}`, true, false, {
-          ...values,
-          socialMedia: {
-            fb: values.fbLink,
-            x: values.xLink,
-            instagram: values.instaLink,
-          },
-          contactInfo: {
-            email: values.email,
-            phone: values.phone,
-          },
-        }),
-        {
-          loading: "Updating settings...",
-          success: "Settings updated successfully!",
-          error: "Error updating settings",
-        }
-      )
-      .finally(() => {
-        setLoading(false);
+    try {
+      const url = values?._id ? `setting/${values._id}` : "setting";
+      const res = await apiHandler("POST", url, true, false, {
+        ...values,
+        socialMedia: {
+          fb: values.fbLink,
+          x: values.xLink,
+          instagram: values.instaLink,
+        },
+        contactInfo: {
+          email: values.email,
+          phone: values.phone,
+        },
       });
+
+      Toast.fire({
+        icon: "success",
+        title: "Settings updated successfully!",
+      });
+    } catch (err) {
+      Toast.fire({
+        icon: "error",
+        title: "Error updating settings",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formik = useFormik({
@@ -63,7 +79,6 @@ const Settings = () => {
       instaLink: values.socialMedia.instagram,
     };
   };
-
   useEffect(() => {
     const getSettingsData = async () => {
       try {
@@ -76,8 +91,10 @@ const Settings = () => {
           )
         );
       } catch (err) {
-        console.log(err);
-        toast.error("Error Getting details");
+        Toast.fire({
+          icon: "error",
+          title: "Error getting settings data",
+        });
       }
     };
     getSettingsData();
@@ -85,6 +102,7 @@ const Settings = () => {
 
   return (
     <FormWrapper>
+      {" "}
       <CustomBreadcrumbs
         title={`Front Page / Front Page Details`}
         links={[
@@ -95,7 +113,7 @@ const Settings = () => {
           },
         ]}
       />
-      <form onSubmit={formik.handleSubmit}>
+      <form>
         <Grid container direction="column" spacing={0}>
           <FormSection title="FrontPage Details" showSection>
             <Grid item md={12} sm={12}>
@@ -141,7 +159,7 @@ const Settings = () => {
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="phone" className="label">
+                  <FormLabel htmlFor="occupancy" className="label">
                     Phone
                   </FormLabel>
                   <TextField
@@ -164,7 +182,7 @@ const Settings = () => {
             >
               <Grid container spacing={2}>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="fbLink" className="label">
+                  <FormLabel htmlFor="email" className="label">
                     Facebook Page
                   </FormLabel>
                   <TextField
@@ -178,7 +196,7 @@ const Settings = () => {
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="xLink" className="label">
+                  <FormLabel htmlFor="occupancy" className="label">
                     Twitter/X Handle
                   </FormLabel>
                   <TextField
@@ -192,7 +210,7 @@ const Settings = () => {
                   />
                 </Grid>
                 <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="instaLink" className="label">
+                  <FormLabel htmlFor="occupancy" className="label">
                     Instagram Account
                   </FormLabel>
                   <TextField
@@ -210,7 +228,7 @@ const Settings = () => {
           </FormSection>
         </Grid>
         <Grid container justifyContent={"flex-end"}>
-          <Button id="submit" type="submit" variant="contained">
+          <Button id="submit" onClick={formik.handleSubmit} variant="contained">
             Update Front Page Details
           </Button>
           <Backdrop
@@ -227,7 +245,6 @@ const Settings = () => {
     </FormWrapper>
   );
 };
-
 const FormWrapper = styled.div`
   width: 100%;
   padding: 30px;
@@ -241,5 +258,4 @@ const FormWrapper = styled.div`
     justify-content: flex-start;
   }
 `;
-
 export default Settings;
