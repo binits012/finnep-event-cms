@@ -16,29 +16,45 @@ export default function NotificationPage() {
   const [showModal, setShowModal] = useState(false);
   const [filteredRows, setFilteredRows] = useState([]);
   const [searchText, setSearchText] = useState("");
-  const [pageSize, setPageSize] = useState(5);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [notificationTypes, setNotificationTypes] = useState([]);
 
   useEffect(() => {
     fetchNotifications();
+    fetchNotificationTypes();
   }, []);
+
+  const fetchNotificationTypes = async () => {
+    try {
+      const response = await apiHandler("get", "dashboard", true, false);
+      const types = response.data.data.notificationType;
+      setNotificationTypes(types);
+    } catch (error) {
+      toast.error("Error fetching notification types");
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
       const response = await apiHandler("get", "notification", true, false);
       const data = response.data || [];
-      const formattedRows = data.data.map((notification) => ({
+
+      const notificationsArray = Array.isArray(data.data) ? data.data : [];
+      const formattedRows = notificationsArray.map((notification) => ({
         id: notification._id,
-        type: notification.notificationType.name,
+        type: notification.notificationType
+          ? notification.notificationType.name
+          : "Unknown",
         "start date": new Date(notification.startDate).toLocaleDateString(),
         "end date": new Date(notification.endDate).toLocaleDateString(),
         notification: notification.notification.replace(/<[^>]+>/g, ""),
       }));
+
       setFilteredRows(formattedRows);
-      setNotifications(data);
+      setNotifications(notificationsArray);
     } catch (error) {
       toast.error("Error fetching notifications");
     }
@@ -54,22 +70,32 @@ export default function NotificationPage() {
       const response = await apiHandler(method, endpoint, true, false, values);
       const newData = response.data;
 
-      if (editMode) {
-        const updatedNotifications = notifications.map((notification) =>
-          notification._id === newData._id ? newData : notification
-        );
-        setNotifications(updatedNotifications);
+      if (Array.isArray(notifications)) {
+        if (editMode) {
+          const updatedNotifications = notifications.map((notification) =>
+            notification._id === newData._id ? newData : notification
+          );
+          setNotifications(updatedNotifications);
+        } else {
+          setNotifications([...notifications, newData]);
+        }
       } else {
-        setNotifications([...notifications, newData]);
+        console.error("Notifications is not an array:", notifications);
       }
+
       toast.success(
         `Notification ${editMode ? "updated" : "created"} successfully!`
       );
-    } catch (error) {
-      toast.error("Error saving notification");
+
+      formik.resetForm();
       setShowModal(false);
       setEditMode(false);
       setSelectedNotification(null);
+
+      fetchNotifications();
+    } catch (error) {
+      console.error("Error details:", error);
+      toast.error("Error saving notification: " + error.message);
     }
   };
 
@@ -82,7 +108,7 @@ export default function NotificationPage() {
       : notifications?.data || [];
 
     const filteredData = notificationsArray.filter((notification) => {
-      const notificationType = notification.notificationType || "";
+      const notificationType = notification.notificationType?.name || "";
       const notificationText = notification.notification || "";
 
       return (
@@ -93,17 +119,13 @@ export default function NotificationPage() {
 
     const formattedRows = filteredData.map((notification) => ({
       id: notification._id,
-      type: notification.notificationType || "",
+      type: notification.notificationType?.name || "Unknown",
       "start date": new Date(notification.startDate).toLocaleDateString(),
       "end date": new Date(notification.endDate).toLocaleDateString(),
       notification: (notification.notification || "").replace(/<[^>]+>/g, ""),
     }));
 
     setFilteredRows(formattedRows);
-  };
-
-  const handlePageSizeChange = (newPageSize) => {
-    setPageSize(newPageSize);
   };
 
   const fetchNotificationById = async (id) => {
@@ -114,7 +136,7 @@ export default function NotificationPage() {
         true,
         false
       );
-      return response.data;
+      return response.data || {};
     } catch (error) {
       toast.error("Error fetching notification");
       throw error;
@@ -137,7 +159,7 @@ export default function NotificationPage() {
           .slice(0, 16);
 
         formik.setValues({
-          notificationType: notification.name,
+          notificationType: notification.data.notificationType?._id || "",
           notification: notification.data.notification,
           startDate: startDate,
           endDate: endDate,
@@ -161,7 +183,7 @@ export default function NotificationPage() {
     },
     { field: "start date", headerName: "Start Date", width: 150 },
     { field: "end date", headerName: "End Date", width: 150 },
-    { field: "notification", headerName: "Notification", width: 500 },
+    { field: "notification", headerName: "Notification", width: 300 },
     {
       field: "actions",
       headerName: "Actions",
@@ -173,15 +195,9 @@ export default function NotificationPage() {
   ];
 
   const handleSubmit = (values) => {
-    const apiEndpoint = editMode
-      ? `notification/${selectedNotification._id}`
-      : "notification";
-
     mutation({
       ...values,
     });
-
-    fetchNotifications();
   };
 
   const formik = useFormik({
@@ -248,27 +264,12 @@ export default function NotificationPage() {
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "flex-end",
                 border: "1px solid #E0E0E0",
                 alignItems: "center",
                 padding: "10px",
               }}
             >
-              <div>
-                Show
-                <Select
-                  value={pageSize}
-                  onChange={(e) =>
-                    handlePageSizeChange(parseInt(e.target.value, 10))
-                  }
-                  style={{ height: "40px", padding: "5px", margin: "0 10px" }}
-                >
-                  <MenuItem value={5}>5</MenuItem>
-                  <MenuItem value={10}>10</MenuItem>
-                  <MenuItem value={20}>20</MenuItem>
-                </Select>
-                entries
-              </div>
               <div
                 style={{
                   display: "flex",
@@ -299,7 +300,7 @@ export default function NotificationPage() {
               initialState={{
                 pagination: {
                   paginationModel: {
-                    pageSize: pageSize,
+                    pageSize: 5,
                   },
                 },
               }}
@@ -370,9 +371,12 @@ export default function NotificationPage() {
                           backgroundColor: "#fff",
                         }}
                       >
-                        <option value="12431f23s1f2">Pop-up</option>
-                        <option value="12431f23s1f3">Pop-over</option>
-                        <option value="12431f23s1f4">In-between</option>
+                        <option value="">Select Notification Type</option>
+                        {notificationTypes.map((type) => (
+                          <option key={type._id} value={type._id}>
+                            {type.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </Grid>
@@ -456,8 +460,8 @@ export default function NotificationPage() {
                           backgroundColor: "#fff",
                         }}
                       >
-                        <option value="true">True</option>
-                        <option value="false">False</option>
+                        <option value={true}>True</option>
+                        <option value={false}>False</option>
                       </select>
                     </div>
                   </Grid>
