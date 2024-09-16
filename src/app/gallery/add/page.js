@@ -80,8 +80,6 @@ const AddPhotoPage = ({ onClose }) => {
           image: `data:image/png;base64,${base64data}`,
           photoType: selectedAlbumId,
         });
-        onClose();
-
         Toast.fire({
           icon: "success",
           title: "Image uploaded successfully.",
