@@ -28,21 +28,6 @@ import Link from "next/link";
 import Modal from "@/components/Modal";
 import DeleteModal from "@/components/DeleteModal";
 import moment from "moment";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  closestCenter,
-  DndContext,
-  useSensor,
-  useSensors,
-  TouchSensor,
-  MouseSensor,
-} from "@dnd-kit/core";
 import { updateEvent } from "@/RESTAPIs/events";
 import toast from "react-hot-toast";
 
@@ -55,8 +40,6 @@ const Events = () => {
   const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
-  const [showList, setShowList] = useState(false);
-  const [reorderedEvents, setReorderedEvents] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const formatDate = (dateString) => {
@@ -114,20 +97,6 @@ const Events = () => {
     setAnchorEl(event.currentTarget);
   };
 
-  const onDragEnd = (event) => {
-    const { active, over } = event;
-    if (active.id === over.id) {
-      return;
-    }
-
-    setEvents((events) => {
-      const oldIndex = events.findIndex((event) => event._id === active.id);
-      const newIndex = events.findIndex((event) => event._id === over.id);
-      const reorderedEvents = arrayMove(events, oldIndex, newIndex);
-      setReorderedEvents(reorderedEvents);
-      return reorderedEvents;
-    });
-  };
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -168,51 +137,6 @@ const Events = () => {
     handleClose();
   };
 
-  const SortableItem = ({ event }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } =
-      useSortable({ id: event._id });
-
-    const style = {
-      transition,
-      transform: CSS.Transform.toString(transform),
-    };
-
-    return (
-      <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {event.eventPromotionPhoto && (
-            <img
-              src={event.eventPromotionPhoto}
-              alt={event.eventTitle}
-              style={{ width: "100px", height: "100px", objectFit: "cover" }}
-            />
-          )}
-          <span>{event.eventName}</span>
-        </div>
-      </div>
-    );
-  };
-
-  const handleSave = async () => {
-    const positions = reorderedEvents.map((event, index) => ({
-      id: event._id,
-      position: index + 1,
-    }));
-    setLoading(true);
-
-    try {
-      const response = await apiHandler("PATCH", "event/batch", true, false, {
-        data: positions,
-      });
-      toast.success("Positions updated successfully");
-      setShowList(false);
-    } catch (error) {
-      console.error("Error updating positions:", error);
-      toast.error("Error updating positions");
-    }
-    setLoading(false);
-  };
-
   const showError = () => (
     <Box
       display="flex"
@@ -231,52 +155,6 @@ const Events = () => {
     </Box>
   );
 
-  const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    })
-  );
-  const handleList = () => {
-    return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={onDragEnd}
-      >
-        <SortableContext
-          items={filteredEvents}
-          strategy={verticalListSortingStrategy}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "30px",
-              cursor: "grab",
-            }}
-          >
-            {filteredEvents.map((event, index) => (
-              <div
-                key={event._id}
-                style={{
-                  padding: "10px",
-                  border: "1px solid black",
-                }}
-              >
-                <div style={{ marginBottom: "10px" }}>
-                  <strong>{index + 1}</strong> {/* Displaying item number */}
-                </div>
-                <SortableItem key={event._id} event={event} />
-              </div>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    );
-  };
   return (
     <>
       <div style={{ padding: "20px" }}>
@@ -302,222 +180,159 @@ const Events = () => {
           </Backdrop>
         ) : (
           <>
-            {!showList && (
-              <Grid
-                container
-                justifyContent="flex-end"
-                mb={2}
-                style={{ justifyContent: "space-between" }}
-              >
-                <div>
-                  <Input
-                    placeholder="Search Event"
-                    value={search}
-                    sx={{
-                      width: 200,
-                      margin: "0 0 20px 0",
-                    }}
-                    onChange={(e) => setSearch(e.target.value)}
-                    endAdornment={
-                      search && search.trim() ? (
-                        <IoIosSearch size={25} style={{ cursor: "pointer" }} />
-                      ) : null
-                    }
-                  />
-                </div>
+            <Grid
+              container
+              justifyContent="flex-end"
+              mb={2}
+              style={{ justifyContent: "space-between" }}
+            >
+              <div>
+                <Input
+                  placeholder="Search Event"
+                  value={search}
+                  sx={{
+                    width: 200,
+                    margin: "0 0 20px 0",
+                  }}
+                  onChange={(e) => setSearch(e.target.value)}
+                  endAdornment={
+                    search && search.trim() ? (
+                      <IoIosSearch size={25} style={{ cursor: "pointer" }} />
+                    ) : null
+                  }
+                />
+              </div>
 
+              <Grid
+                style={{
+                  display: "flex",
+                }}
+              >
                 <Grid
-                  style={{
-                    display: "flex",
+                  sx={{
+                    marginRight: "20px",
                   }}
                 >
-                  <Button
-                    variant="outlined"
-                    style={{
-                      height: "36px",
-                      marginRight: "10px",
-                    }}
-                    onClick={() => setShowList(!showList)}
-                  >
-                    <TfiHandDrag size={18} />
-                    Arrange
+                  <Button variant="outlined" onClick={handleClick}>
+                    <LuArrowUpDown style={{ marginRight: "10px" }} size={18} />
+                    Sort
                   </Button>
-
-                  <Grid
-                    sx={{
-                      marginRight: "20px",
-                    }}
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleClose}
                   >
-                    <Button variant="outlined" onClick={handleClick}>
-                      <LuArrowUpDown
-                        style={{ marginRight: "10px" }}
-                        size={18}
-                      />
-                      Sort
-                    </Button>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={Boolean(anchorEl)}
-                      onClose={handleClose}
-                    >
-                      <MenuItem onClick={() => handleSort("position")}>
-                        {sortBy === "position" && sortOrder === "ascending" ? (
-                          <LuArrowUp />
-                        ) : (
-                          <LuArrowDown />
-                        )}
-                        Position
-                      </MenuItem>
-                      <MenuItem onClick={() => handleSort("name")}>
-                        {sortBy === "name" && sortOrder === "ascending" ? (
-                          <LuArrowUp />
-                        ) : (
-                          <LuArrowDown />
-                        )}
-                        Name
-                      </MenuItem>
-                      <MenuItem onClick={() => handleSort("active")}>
-                        {sortBy === "active" && sortOrder === "ascending" ? (
-                          <LuArrowUp />
-                        ) : (
-                          <LuArrowDown />
-                        )}
-                        Type
-                      </MenuItem>
-                    </Menu>
-                  </Grid>
-                  <Link passHref href="/events/add">
-                    <Button variant="contained">+ Add</Button>
-                  </Link>
+                    <MenuItem onClick={() => handleSort("position")}>
+                      {sortBy === "position" && sortOrder === "ascending" ? (
+                        <LuArrowUp />
+                      ) : (
+                        <LuArrowDown />
+                      )}
+                      Position
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSort("eventTitle")}>
+                      {sortBy === "eventTitle" && sortOrder === "ascending" ? (
+                        <LuArrowUp />
+                      ) : (
+                        <LuArrowDown />
+                      )}
+                      Name
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSort("active")}>
+                      {sortBy === "active" && sortOrder === "ascending" ? (
+                        <LuArrowUp />
+                      ) : (
+                        <LuArrowDown />
+                      )}
+                      Type
+                    </MenuItem>
+                  </Menu>
                 </Grid>
+                <Link passHref href="/events/add">
+                  <Button variant="contained">+ Add</Button>
+                </Link>
               </Grid>
-            )}
+            </Grid>
           </>
         )}
 
-        {showList ? (
-          <div>
-            <div
-              style={{
-                // position: "sticky",
-                top: 0,
-                display: "flex",
-                justifyContent: "flex-end",
-                marginBottom: "20px",
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={handleSave}
-                style={{ marginTop: "20px" }}
-              >
-                Save
-                {loading && (
-                  <Backdrop
-                    sx={{
-                      color: "#fff",
-                      zIndex: (theme) => theme.zIndex.drawer + 1,
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    }}
-                    open={loading}
-                  >
-                    <CircularProgress color="inherit" />
-                  </Backdrop>
-                )}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => setShowList(!showList)}
-                style={{ margin: "20px 0 0 20px" }}
-              >
-                Cancel
-              </Button>
-            </div>
-            <div style={{ width: "100%" }}>{handleList()}</div>
-          </div>
-        ) : (
-          <Grid container spacing={2}>
-            {filteredEvents.length === 0 && search && search.trim() && (
-              <Grid item xs={12}>
-                {showError()}
-              </Grid>
-            )}
-            {filteredEvents.map((event) => (
-              <Grid item xs={12} sm={6} md={3} key={event._id}>
-                <section className="articles">
-                  <article>
-                    <div className="article-wrapper">
-                      <figure>
-                        <img
-                          src={event.eventPromotionPhoto}
-                          alt={event.name}
-                          style={{ objectFit: "fill" }}
-                          width={"100%"}
-                          height={"100%"}
-                        />
-                      </figure>
-                      <div className="article-body">
-                        <h2>{event.eventTitle}</h2>
+        <Grid container spacing={2}>
+          {filteredEvents.length === 0 && search && search.trim() && (
+            <Grid item xs={12}>
+              {showError()}
+            </Grid>
+          )}
+          {filteredEvents.map((event) => (
+            <Grid item xs={12} sm={6} md={3} key={event._id}>
+              <section className="articles">
+                <article>
+                  <div className="article-wrapper">
+                    <figure>
+                      <img
+                        src={event.eventPromotionPhoto}
+                        alt={event.name}
+                        style={{ objectFit: "fill" }}
+                        width={"100%"}
+                        height={"100%"}
+                      />
+                    </figure>
+                    <div className="article-body">
+                      <h2>{event.eventTitle}</h2>
 
-                        <Button
-                          style={{
-                            backgroundColor: event.active ? "green" : "yellow",
-                            color: event.active ? "white" : "black",
+                      <Button
+                        style={{
+                          backgroundColor: event.active ? "green" : "yellow",
+                          color: event.active ? "white" : "black",
+                        }}
+                      >
+                        {event.active ? "Active" : "Inactive"}
+                      </Button>
+
+                      <Box mt={1} display="flex" justifyContent="center">
+                        <IconButton
+                          aria-label="edit"
+                          color="primary"
+                          component={Link}
+                          href={`/events/edit/${event._id}`}
+                        >
+                          <EditIcon />
+                        </IconButton>
+
+                        <IconButton
+                          aria-label="edit"
+                          color="primary"
+                          onClick={() => {
+                            setShowModal(true);
+                            setSelectedEvent(event);
                           }}
                         >
-                          {event.active ? "Active" : "Inactive"}
-                        </Button>
+                          <MdOutlineRemoveRedEye
+                            size={24}
+                            color="#4C4C4C"
+                            title="View Details"
+                          />
+                        </IconButton>
 
-                        <Box mt={1} display="flex" justifyContent="center">
-                          <IconButton
-                            aria-label="edit"
-                            color="primary"
-                            component={Link}
-                            href={`/events/edit/${event._id}`}
-                          >
-                            <EditIcon />
-                          </IconButton>
-
-                          <IconButton
-                            aria-label="edit"
-                            color="primary"
-                            onClick={() => {
-                              setShowModal(true);
-                              setSelectedEvent(event);
-                            }}
-                          >
-                            <MdOutlineRemoveRedEye
-                              size={24}
-                              color="#4C4C4C"
-                              title="View Details"
-                            />
-                          </IconButton>
-
-                          <IconButton
-                            aria-label="edit"
-                            color="primary"
-                            onClick={() => handleDeleteClick(event)}
-                          >
-                            <DeleteIcon
-                              size={24}
-                              color="#4C4C4C"
-                              title="Delete Event"
-                            />
-                          </IconButton>
-                        </Box>
-                      </div>
+                        <IconButton
+                          aria-label="edit"
+                          color="primary"
+                          onClick={() => handleDeleteClick(event)}
+                        >
+                          <DeleteIcon
+                            size={24}
+                            color="#4C4C4C"
+                            title="Delete Event"
+                          />
+                        </IconButton>
+                      </Box>
                     </div>
-                  </article>
-                </section>
-              </Grid>
-            ))}
-          </Grid>
-        )}
+                  </div>
+                </article>
+              </section>
+            </Grid>
+          ))}
+        </Grid>
+
         <DeleteModal
           isVisible={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
