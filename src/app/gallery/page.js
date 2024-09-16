@@ -35,7 +35,6 @@ const GalleryPage = () => {
       setIsLoading(true);
       try {
         const res = await apiHandler("GET", "/photo", true);
-        console.log(res);
         if (res.data && res.data.photo) {
           setImages(
             res.data.photo.map((item, index) => ({
@@ -50,7 +49,6 @@ const GalleryPage = () => {
         if (res.data && res.data.photoType) {
           const typeName = res.data.photoType;
           setAlbums(typeName);
-          console.log("Saved photoType name:", typeName);
         }
         setIsLoading(false);
       } catch (error) {
