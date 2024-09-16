@@ -20,11 +20,23 @@ import { DataGrid } from "@mui/x-data-grid";
 import { render } from "react-dom";
 import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 const Tickets = () => {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState("");
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   useEffect(() => {
     const getEvents = async () => {
@@ -34,7 +46,11 @@ const Tickets = () => {
         setEvents(response.data?.data);
       } catch (err) {
         console.log(err);
-        toast.error("Error Getting details");
+
+        Toast.fire({
+          icon: "error",
+          title: "Error Getting details",
+        });
       }
     };
     getEvents();

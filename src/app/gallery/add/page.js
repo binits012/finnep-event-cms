@@ -17,7 +17,7 @@ import {
   Grid,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 registerPlugin(
   FilePondPluginImagePreview,
@@ -33,13 +33,27 @@ const AddPhotoPage = ({ onClose }) => {
   const [selectedAlbumId, setSelectedAlbumId] = useState("");
   const router = useRouter();
 
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
   useEffect(() => {
     const fetchAlbums = async () => {
       try {
         const response = await apiHandler("GET", "/photo", true);
         setAlbums(response.data.photoType);
       } catch (error) {
-        toast.error("Failed to fetch albums.");
+        Toast.fire({
+          icon: "error",
+          title: "Failed to fetch albums.",
+        });
       }
     };
 
@@ -48,7 +62,11 @@ const AddPhotoPage = ({ onClose }) => {
 
   const uploadImage = async (file) => {
     if (!selectedAlbumId) {
-      toast.error("Please select an album first.");
+      Swal.fire({
+        icon: "error",
+        title: "Please select an album first.",
+      });
+
       return;
     }
 
@@ -63,12 +81,18 @@ const AddPhotoPage = ({ onClose }) => {
           photoType: selectedAlbumId,
         });
         onClose();
-        console.log("Upload success:", response.data);
-        toast.success("Your image has been uploaded successfully");
+
+        Toast.fire({
+          icon: "success",
+          title: "Image uploaded successfully.",
+        });
+
         router.back();
       } catch (error) {
-        console.error("Upload failed:", error);
-        toast.error("Something went wrong");
+        Toast.fire({
+          icon: "error",
+          title: "Failed to upload image.",
+        });
       } finally {
         setIsUploading(false);
       }
@@ -77,7 +101,10 @@ const AddPhotoPage = ({ onClose }) => {
 
   const handleProcessFile = (error, file) => {
     if (error) {
-      console.error("File processing error:", error);
+      Toast.fire({
+        icon: "error",
+        title: "File processing error.",
+      });
       return;
     }
     setIsUploading(true);
@@ -88,7 +115,10 @@ const AddPhotoPage = ({ onClose }) => {
     if (files.length > 0) {
       handleProcessFile(null, { file: files[0].file });
     } else {
-      console.error("No file selected");
+      Swal.fire({
+        icon: "error",
+        title: "Please select an image first.",
+      });
     }
   };
 

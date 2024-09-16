@@ -10,7 +10,7 @@ import { useFormik } from "formik";
 import TextEditor from "@/components/TextEditor";
 import apiHandler from "@/RESTAPIs/helper";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 export default function NotificationPage() {
   const [showModal, setShowModal] = useState(false);
@@ -21,6 +21,18 @@ export default function NotificationPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [notificationTypes, setNotificationTypes] = useState([]);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   useEffect(() => {
     fetchNotifications();
@@ -33,7 +45,10 @@ export default function NotificationPage() {
       const types = response.data.data.notificationType;
       setNotificationTypes(types);
     } catch (error) {
-      toast.error("Error fetching notification types");
+      Toast.fire({
+        icon: "error",
+        title: "Error fetching notification types",
+      });
     }
   };
 
@@ -56,7 +71,10 @@ export default function NotificationPage() {
       setFilteredRows(formattedRows);
       setNotifications(notificationsArray);
     } catch (error) {
-      toast.error("Error fetching notifications");
+      Toast.fire({
+        icon: "error",
+        title: "Error fetching notifications",
+      });
     }
   };
 
@@ -82,10 +100,10 @@ export default function NotificationPage() {
       } else {
         console.error("Notifications is not an array:", notifications);
       }
-
-      toast.success(
-        `Notification ${editMode ? "updated" : "created"} successfully!`
-      );
+      Toast.fire({
+        icon: "success",
+        title: `Notification ${editMode ? "updated" : "created"} successfully!`,
+      });
 
       formik.resetForm();
       setShowModal(false);
@@ -95,7 +113,10 @@ export default function NotificationPage() {
       fetchNotifications();
     } catch (error) {
       console.error("Error details:", error);
-      toast.error("Error saving notification: " + error.message);
+      Toast.fire({
+        icon: "error",
+        title: "Error saving notification",
+      });
     }
   };
 
@@ -138,7 +159,6 @@ export default function NotificationPage() {
       );
       return response.data || {};
     } catch (error) {
-      toast.error("Error fetching notification");
       throw error;
     }
   };
@@ -170,7 +190,10 @@ export default function NotificationPage() {
         setShowModal(true);
       }
     } catch (error) {
-      toast.error("Error editing notification");
+      Toast.fire({
+        icon: "error",
+        title: "Error editing notification",
+      });
     }
   };
 

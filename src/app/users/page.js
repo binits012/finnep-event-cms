@@ -11,12 +11,24 @@ import { RxCross1 } from "react-icons/rx";
 import { PulseLoader } from "react-spinners";
 import styled from "styled-components";
 import { TiTickOutline } from "react-icons/ti";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 const Users = () => {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   useEffect(() => {
     const getUserDetails = async () => {
@@ -25,8 +37,10 @@ const Users = () => {
         const res = await apiHandler("GET", "user/admin", true);
         setUsers(res.data.data || []);
       } catch (err) {
-        console.log(err);
-        toast.error(err.message);
+        Toast.fire({
+          icon: "error",
+          title: err.message,
+        });
       } finally {
         setLoading(false);
       }
@@ -52,20 +66,24 @@ const Users = () => {
             user._id === row._id ? { ...user, active: status } : user
           )
         );
-        toast.success(`User ${status ? "enabled" : "disabled"} successfully`);
+
+        Toast.fire({
+          icon: "success",
+          title: `User ${status ? "enabled" : "disabled"} successfully`,
+        });
       } else {
-        toast.error(`Failed to ${status ? "enable" : "disable"} user`);
+        Toast.fire({
+          icon: "error",
+          title: `Failed to ${status ? "enable" : "disable"} user`,
+        });
       }
     } catch (error) {
-      console.error(
-        `An error occurred while ${
+      Toast.fire({
+        icon: "error",
+        title: `An error occurred while ${
           status ? "enabling" : "disabling"
-        } the user:`,
-        error
-      );
-      toast.error(
-        `An error occurred while ${status ? "enabling" : "disabling"} the user`
-      );
+        } the user`,
+      });
     } finally {
       setLoading(false);
     }

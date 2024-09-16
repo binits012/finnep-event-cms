@@ -8,7 +8,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 // Yup schema to validate the form
 const schema = Yup.object().shape({
@@ -19,8 +19,19 @@ const schema = Yup.object().shape({
 const page = () => {
   const [show, setShow] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
   const [users, setUsers] = useState([]);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   const handleSubmit = async (values) => {
     try {
@@ -36,10 +47,17 @@ const page = () => {
         }
       );
       console.log(res, "check res");
-      toast.success("Password Changed Successfully!!");
+
+      Toast.fire({
+        icon: "success",
+        title: "Password Changed Successfully !!",
+      });
     } catch (err) {
       console.log(err);
-      toast.error("Changing Password Failed!!");
+      Toast.fire({
+        icon: "error",
+        title: "Changing Password Failed !!",
+      });
     }
   };
 
