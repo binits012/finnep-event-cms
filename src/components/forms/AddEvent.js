@@ -151,7 +151,7 @@ const AddEvent = ({ editMode }) => {
       eventLocationAddress: "",
       eventLocationGeoCode: "",
       eventPromotionPhoto: "",
-      eventPhoto: "",
+      eventPhoto: [],
       transportLink: "",
       active: false,
       fbLink: "",
@@ -205,7 +205,6 @@ const AddEvent = ({ editMode }) => {
         icon: "error",
         title: "No file selected",
       });
-
       return;
     }
 
@@ -216,17 +215,11 @@ const AddEvent = ({ editMode }) => {
     formData.append("file", files[0]);
 
     try {
-      const response = await apiHandler(
-        "POST",
-        `event/${id}/eventPhoto`,
-        true,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await apiHandler("POST", `event/${id}/eventPhoto`, true, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       Toast.fire({
         icon: "success",
         title: "File uploaded successfully!",
@@ -242,7 +235,28 @@ const AddEvent = ({ editMode }) => {
     }
   };
 
+  // const photoevents = Array.isArray(formik.values.eventPhoto)
+  //   ? formik.values.eventPhoto
+  //   : [];
+
+  // if (photoevents.length === 0 && !editMode) return null;
+
+  // const slides = photoevents.map((url, index) => ({
+  //   src: url,
+  // }));
+
   const photoevents = formik.values.eventPhoto;
+
+  if (!Array.isArray(photoevents)) {
+    console.error("Expected photoevents to be an array but got:", photoevents);
+    return;
+  }
+
+  const slides = photoevents.map((url, index) => ({
+    src: url,
+  }));
+
+  console.log(slides, "slides");
 
   return (
     <FormWrapper>
@@ -473,7 +487,7 @@ const AddEvent = ({ editMode }) => {
               >
                 <Lightbox
                   open={true}
-                  slides={photoevents}
+                  slides={slides}
                   index={index}
                   carousel={{
                     preload: 1,
