@@ -114,7 +114,7 @@ const AddEvent = ({ editMode }) => {
             fb: values.fbLink,
             x: values.xLink,
           },
-          eventName: "test",
+         // eventName: values.eventName,
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
           // },
