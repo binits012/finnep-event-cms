@@ -235,16 +235,6 @@ const AddEvent = ({ editMode }) => {
     }
   };
 
-  // const photoevents = Array.isArray(formik.values.eventPhoto)
-  //   ? formik.values.eventPhoto
-  //   : [];
-
-  // if (photoevents.length === 0 && !editMode) return null;
-
-  // const slides = photoevents.map((url, index) => ({
-  //   src: url,
-  // }));
-
   const photoevents = formik.values.eventPhoto;
 
   if (!Array.isArray(photoevents)) {
@@ -252,11 +242,11 @@ const AddEvent = ({ editMode }) => {
     return;
   }
 
-  const slides = photoevents.map((url, index) => ({
+  const validPhotoevents = photoevents.filter(Boolean);
+
+  const slides = validPhotoevents.map((url) => ({
     src: url,
   }));
-
-  console.log(slides, "slides");
 
   return (
     <FormWrapper>
@@ -461,60 +451,62 @@ const AddEvent = ({ editMode }) => {
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection showSection title="Event Photos">
-            <FormLabel htmlFor="eventPhotos" className="label">
-              Event Photos
-            </FormLabel>
-            <FilePond
-              files={files}
-              onupdatefiles={(fileItems) => {
-                setFiles(fileItems.map((fileItem) => fileItem.file));
-              }}
-              allowMultiple={true}
-              name="file"
-              labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
-              stylePanelAspectRatio={0.5}
-              styleItemPanelAspectRatio={0.35}
-            />
-
-            {editMode && photoevents.length > 0 && (
-              <div
-                style={{
-                  width: "500px",
-                  height: "400px",
-                  marginTop: "20px",
+          {editMode && (
+            <FormSection showSection title="Event Photos">
+              <FormLabel htmlFor="eventPhotos" className="label">
+                Event Photos
+              </FormLabel>
+              <FilePond
+                files={files}
+                onupdatefiles={(fileItems) => {
+                  setFiles(fileItems.map((fileItem) => fileItem.file));
                 }}
+                allowMultiple={true}
+                name="file"
+                labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+                stylePanelAspectRatio={0.5}
+                styleItemPanelAspectRatio={0.35}
+              />
+
+              {validPhotoevents.length > 0 && (
+                <div
+                  style={{
+                    width: "500px",
+                    height: "400px",
+                    marginTop: "20px",
+                  }}
+                >
+                  <Lightbox
+                    open={true}
+                    slides={slides}
+                    index={index}
+                    carousel={{
+                      preload: 1,
+                      padding: 0,
+                      imageFit: "contain",
+                    }}
+                    plugins={[Inline]}
+                    inline={{
+                      style: {
+                        width: "100%",
+                        height: "100%",
+                      },
+                    }}
+                  />
+                </div>
+              )}
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={uploadFile}
+                disabled={uploading}
+                style={{ marginTop: "20px", width: "fit-content" }}
               >
-                <Lightbox
-                  open={true}
-                  slides={slides}
-                  index={index}
-                  carousel={{
-                    preload: 1,
-                    padding: 0,
-                    imageFit: "contain",
-                  }}
-                  plugins={[Inline]}
-                  inline={{
-                    style: {
-                      width: "100%",
-                      height: "100%",
-                    },
-                  }}
-                />
-              </div>
-            )}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={uploadFile}
-              disabled={uploading}
-              style={{ marginTop: "20px", width: "fit-content" }}
-            >
-              {uploading ? "Uploading..." : "Upload"}
-            </Button>
-            {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-          </FormSection>
+                {uploading ? "Uploading..." : "Upload"}
+              </Button>
+              {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+            </FormSection>
+          )}
           <FormSection showSection title="Social Media">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
