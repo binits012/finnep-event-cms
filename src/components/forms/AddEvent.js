@@ -203,7 +203,7 @@ const AddEvent = ({ editMode }) => {
     if (files.length === 0) {
       Toast.fire({
         icon: "error",
-        title: "No file selected",
+        title: "No files selected",
       });
       return;
     }
@@ -211,19 +211,27 @@ const AddEvent = ({ editMode }) => {
     setUploading(true);
     setUploadError(null);
 
-    const formData = new FormData();
-    formData.append("file", files[0]);
-
     try {
-      await apiHandler("POST", `event/${id}/eventPhoto`, true, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("files", file);
       });
+
+      const response = await apiHandler(
+        "POST",
+        `event/${id}/eventPhoto`,
+        true,
+        true,
+        formData,
+        {}
+      );
+
       Toast.fire({
         icon: "success",
-        title: "File uploaded successfully!",
+        title: "Files uploaded successfully!",
       });
+
+      setFiles([]);
     } catch (error) {
       Toast.fire({
         icon: "error",
@@ -468,6 +476,17 @@ const AddEvent = ({ editMode }) => {
                 styleItemPanelAspectRatio={0.35}
               />
 
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={uploadFile}
+                disabled={uploading}
+                style={{ marginTop: "20px", width: "fit-content" }}
+              >
+                {uploading ? "Uploading..." : "Upload"}
+              </Button>
+              {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+
               {validPhotoevents.length > 0 && (
                 <div
                   style={{
@@ -495,16 +514,6 @@ const AddEvent = ({ editMode }) => {
                   />
                 </div>
               )}
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={uploadFile}
-                disabled={uploading}
-                style={{ marginTop: "20px", width: "fit-content" }}
-              >
-                {uploading ? "Uploading..." : "Upload"}
-              </Button>
-              {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
             </FormSection>
           )}
           <FormSection showSection title="Social Media">
