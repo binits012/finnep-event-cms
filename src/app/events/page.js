@@ -446,7 +446,9 @@ const Events = () => {
                       align="center"
                       mt={1}
                     >
-                      Event Promotion Photo
+                      <p style={{ fontWeight: "bold" }}>
+                        Event Promotion Photos
+                      </p>
                       <br />
                       <img
                         src={selectedEvent.eventPromotionPhoto}
@@ -455,8 +457,15 @@ const Events = () => {
                       />
                     </Typography>
                     {selectedEvent.eventPhoto.length > 0 && (
-                      <Typography variant="body2" color="text.secondary">
-                        Event Photos
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        align="center"
+                      >
+                        <p style={{ fontWeight: "bold", marginTop: "20px" }}>
+                          Event Photos
+                        </p>
+                        <br />
                         {selectedEvent.eventPhoto.map((url, index) => (
                           <img
                             key={index}
@@ -466,6 +475,7 @@ const Events = () => {
                               width: "200px",
                               height: "auto",
                               borderRadius: "8px",
+                              margin: "10px",
                             }}
                           />
                         ))}
