@@ -35,7 +35,6 @@ import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import FilePondPluginImageEdit from "filepond-plugin-image-edit";
 import FilePondPluginImageTransform from "filepond-plugin-image-transform";
-import toast from "react-hot-toast";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Inline from "yet-another-react-lightbox/plugins/inline";
@@ -202,7 +201,11 @@ const AddEvent = ({ editMode }) => {
 
   const uploadFile = async () => {
     if (files.length === 0) {
-      toast.error("No files to upload");
+      Toast.fire({
+        icon: "error",
+        title: "No file selected",
+      });
+
       return;
     }
 
@@ -224,10 +227,15 @@ const AddEvent = ({ editMode }) => {
           },
         }
       );
-      console.log("Upload successful:", response.data);
-      toast.success("File uploaded successfully!");
+      Toast.fire({
+        icon: "success",
+        title: "File uploaded successfully!",
+      });
     } catch (error) {
-      console.error("Upload failed:", error);
+      Toast.fire({
+        icon: "error",
+        title: "Upload failed. Please try again.",
+      });
       setUploadError("Upload failed. Please try again.");
     } finally {
       setUploading(false);
