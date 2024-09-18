@@ -33,19 +33,14 @@ import { FilePond, registerPlugin } from "react-filepond";
 import "filepond/dist/filepond.min.css";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
-import FilePondPluginImageEdit from "filepond-plugin-image-edit";
-import FilePondPluginImageTransform from "filepond-plugin-image-transform";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Inline from "yet-another-react-lightbox/plugins/inline";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-registerPlugin(
-  FilePondPluginImagePreview,
-  FilePondPluginImageEdit,
-  FilePondPluginImageTransform
-);
+registerPlugin(FilePondPluginImagePreview);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -453,7 +448,7 @@ const AddEvent = ({ editMode }) => {
                     src={formik.values.eventPromotionPhoto}
                     alt="Event"
                     width="350px"
-                    style={{ marginTop: "20px" }}
+                    style={{ margin: "20px auto" }}
                   />
                 )}
               </Grid>
@@ -464,56 +459,55 @@ const AddEvent = ({ editMode }) => {
               <FormLabel htmlFor="eventPhotos" className="label">
                 Event Photos
               </FormLabel>
-              <FilePond
-                files={files}
-                onupdatefiles={(fileItems) => {
-                  setFiles(fileItems.map((fileItem) => fileItem.file));
-                }}
-                allowMultiple={true}
-                name="file"
-                labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
-                stylePanelAspectRatio={0.5}
-                styleItemPanelAspectRatio={0.35}
-              />
-
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={uploadFile}
-                disabled={uploading}
-                style={{ marginTop: "20px", width: "fit-content" }}
-              >
-                {uploading ? "Uploading..." : "Upload"}
-              </Button>
-              {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-
-              {validPhotoevents.length > 0 && (
-                <div
-                  style={{
-                    width: "500px",
-                    height: "400px",
-                    marginTop: "20px",
+              <Grid sx={{ margin: "0 auto", width: "500px" }}>
+                <FilePond
+                  files={files}
+                  onupdatefiles={(fileItems) => {
+                    setFiles(fileItems.map((fileItem) => fileItem.file));
                   }}
+                  allowMultiple={true}
+                  name="file"
+                  labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={uploadFile}
+                  disabled={uploading}
+                  style={{ marginTop: "20px", width: "100%" }}
                 >
-                  <Lightbox
-                    open={true}
-                    slides={slides}
-                    index={index}
-                    carousel={{
-                      preload: 1,
-                      padding: 0,
-                      imageFit: "contain",
+                  {uploading ? "Uploading..." : "Upload"}
+                </Button>
+                {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+
+                {validPhotoevents.length > 0 && (
+                  <div
+                    style={{
+                      width: "500px",
+                      height: "400px",
+                      marginTop: "20px",
                     }}
-                    plugins={[Inline]}
-                    inline={{
-                      style: {
-                        width: "100%",
-                        height: "100%",
-                      },
-                    }}
-                  />
-                </div>
-              )}
+                  >
+                    <Lightbox
+                      open={true}
+                      slides={slides}
+                      index={index}
+                      carousel={{
+                        preload: 1,
+                        padding: 0,
+                        imageFit: "contain",
+                      }}
+                      plugins={[Inline]}
+                      inline={{
+                        style: {
+                          width: "100%",
+                          height: "100%",
+                        },
+                      }}
+                    />
+                  </div>
+                )}
+              </Grid>
             </FormSection>
           )}
           <FormSection showSection title="Social Media">
