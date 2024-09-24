@@ -154,9 +154,6 @@ const Tickets = () => {
       field: "sn",
       headerName: "SN",
       width: 50,
-      renderCell: ({ row }, index) => {
-        return <span>{index + 1}</span>;
-      },
     },
     {
       field: "ticketFor",
@@ -500,9 +497,14 @@ const Tickets = () => {
           </div>
         ))} */}
         <DataGrid
-          rows={tickets.filter((ticket) =>
-            ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
-          )}
+          rows={tickets
+            .filter((ticket) =>
+              ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((ticket, index) => ({
+              ...ticket,
+              sn: index + 1,
+            }))}
           columns={COLUMNS}
           initialState={{
             pagination: {
