@@ -55,6 +55,7 @@ const AddEvent = ({ editMode }) => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [ticketInfo, setTicketInfo] = useState([]);
 
   const Toast = Swal.mixin({
     toast: true,
@@ -68,6 +69,16 @@ const AddEvent = ({ editMode }) => {
     },
   });
 
+  const addTicketRow = () => {
+    setTicketInfo([...ticketInfo, { name: "", price: "", quantity: "" }]);
+  };
+
+  const handleTicketChange = (index, field, value) => {
+    const newTickets = [...ticketInfo];
+    newTickets[index][field] = value;
+    setTicketInfo(newTickets);
+  };
+
   const handleSubmit = async (values) => {
     setLoading(true);
     if (id) {
@@ -76,6 +87,7 @@ const AddEvent = ({ editMode }) => {
         const res = await updateEvent(id, {
           ...values,
           eventDate: dayjs(values.eventDate).toISOString(),
+          ticketInfo,
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
@@ -109,7 +121,7 @@ const AddEvent = ({ editMode }) => {
             fb: values.fbLink,
             x: values.xLink,
           },
-          eventName: "test",
+          // eventName: values.eventName,
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
           // },
@@ -168,7 +180,7 @@ const AddEvent = ({ editMode }) => {
       eventTime: null,
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
-      eventPrice: values.eventPrice["$numberDecimal"],
+      eventPrice: values.eventPrice,
       timeZone: tz,
       igLink: values.socialMedia.insta,
       //  fbLink: values.socialMedia.fb,
@@ -183,10 +195,11 @@ const AddEvent = ({ editMode }) => {
           formik.setValues(
             transformObtainedValuesToForm(res.data.data, res.data.timeZone)
           );
+          setTicketInfo(res.data.data.ticketInfo || []);
         } catch (err) {
           Toast.fire({
             icon: "error",
-            title: "Error getting the event details!",
+            title: `Error fetching event: ${err.message}`,
           });
         }
       };
@@ -361,23 +374,55 @@ const AddEvent = ({ editMode }) => {
             </LocalizationProvider>
           </FormSection>
 
+          <FormSection showSection title="Tickets">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={addTicketRow}
+              style={{ marginBottom: "20px" }}
+            >
+              + Add Ticket
+            </Button>
+            {ticketInfo.map((ticket, index) => (
+              <Grid container spacing={2} key={index}>
+                <Grid item container md={3}>
+                  <TextField
+                    placeholder="Name"
+                    value={ticket.name}
+                    onChange={(e) =>
+                      handleTicketChange(index, "name", e.target.value)
+                    }
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item container md={3}>
+                  <TextField
+                    placeholder="Price"
+                    value={ticket.price}
+                    onChange={(e) =>
+                      handleTicketChange(index, "price", e.target.value)
+                    }
+                    fullWidth
+                    type="number"
+                  />
+                </Grid>
+                <Grid item container md={3}>
+                  <TextField
+                    placeholder="Quantity"
+                    value={ticket.quantity}
+                    onChange={(e) =>
+                      handleTicketChange(index, "quantity", e.target.value)
+                    }
+                    fullWidth
+                    type="number"
+                  />
+                </Grid>
+              </Grid>
+            ))}
+          </FormSection>
+
           <FormSection showSection title="Business">
             <Grid container spacing={2}>
-              <Grid item container md={5} direction={"column"}>
-                <FormLabel htmlFor="eventPrice" className="label">
-                  Ticket Price
-                </FormLabel>
-                <TextField
-                  id="eventPrice"
-                  name="eventPrice"
-                  value={formik.values.eventPrice}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Ticket Price"
-                  fullWidth
-                  type="number"
-                />
-              </Grid>
               <Grid item container md={5} direction={"column"}>
                 <FormLabel htmlFor="occupancy" className="label">
                   Occupancy
