@@ -1,15 +1,16 @@
 .dashboard-container {
   padding: 20px;
-  font-family: Arial, sans-serif;
 }
 
 .cards-container {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   gap: 20px;
 }
 
-.card {
+.card,
+.sales-insight-card {
   flex: 1;
   background-color: #f9f9f9;
   border: 1px solid #ddd;
@@ -18,12 +19,53 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   height: fit-content;
   min-height: 120px;
+  min-width: 350px;
 }
 
-.event-card,
-.ticket-card {
-  margin-bottom: 15px;
-  padding: 10px;
+.sales-insight-card p {
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+  margin: 5px 0;
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.sales-insight-card h2 {
+  margin: 10px auto;
+}
+
+.card .info {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.card .ticket-type-list {
+  font-weight: bold;
+  color: #333;
+  margin-top: 10px;
+}
+
+.card .ticket-type-list p {
+  font-size: 14px;
+  margin: 5px 0;
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.card .ticket-type-list p:last-child {
+  border-bottom: none;
+}
+.eventCard-wrapper {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px auto;
+}
+.event-card {
+  width: fit-content;
+  padding: 20px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
