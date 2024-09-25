@@ -20,7 +20,6 @@ const GateWay = ({ children }) => {
       router.push("/");
     }
   }, []);
-  console.log(user, "check abc");
   return !user?.token ? <Login /> : <InnerLayout>{children}</InnerLayout>;
 };
 

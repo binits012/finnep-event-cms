@@ -76,7 +76,6 @@ export default function Login() {
         },
         data: { username, password },
       });
-      console.log(res, "check response");
       if (!!res.data.result) {
         if (keepSignedIn === "yes") {
           localStorage.setItem("auth", JSON.stringify(res.data));

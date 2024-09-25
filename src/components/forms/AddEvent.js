@@ -33,19 +33,14 @@ import { FilePond, registerPlugin } from "react-filepond";
 import "filepond/dist/filepond.min.css";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
-import FilePondPluginImageEdit from "filepond-plugin-image-edit";
-import FilePondPluginImageTransform from "filepond-plugin-image-transform";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Inline from "yet-another-react-lightbox/plugins/inline";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-registerPlugin(
-  FilePondPluginImagePreview,
-  FilePondPluginImageEdit,
-  FilePondPluginImageTransform
-);
+registerPlugin(FilePondPluginImagePreview);
 function convertTime(minutes) {
   // Create a moment duration from minutes
   const duration = moment.duration(minutes, "minutes");
@@ -60,6 +55,7 @@ const AddEvent = ({ editMode }) => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [ticketInfo, setTicketInfo] = useState([]);
 
   const Toast = Swal.mixin({
     toast: true,
@@ -73,6 +69,16 @@ const AddEvent = ({ editMode }) => {
     },
   });
 
+  const addTicketRow = () => {
+    setTicketInfo([...ticketInfo, { name: "", price: "", quantity: "" }]);
+  };
+
+  const handleTicketChange = (index, field, value) => {
+    const newTickets = [...ticketInfo];
+    newTickets[index][field] = value;
+    setTicketInfo(newTickets);
+  };
+
   const handleSubmit = async (values) => {
     setLoading(true);
     if (id) {
@@ -81,6 +87,7 @@ const AddEvent = ({ editMode }) => {
         const res = await updateEvent(id, {
           ...values,
           eventDate: dayjs(values.eventDate).toISOString(),
+          ticketInfo,
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
@@ -114,7 +121,7 @@ const AddEvent = ({ editMode }) => {
             fb: values.fbLink,
             x: values.xLink,
           },
-         // eventName: values.eventName,
+          // eventName: values.eventName,
           // eventPrice: {
           //   $numberDecimal: values.eventPrice,
           // },
@@ -173,7 +180,7 @@ const AddEvent = ({ editMode }) => {
       eventTime: null,
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
-      eventPrice: values.eventPrice["$numberDecimal"],
+      eventPrice: values.eventPrice,
       timeZone: tz,
       igLink: values.socialMedia.insta,
       //  fbLink: values.socialMedia.fb,
@@ -188,10 +195,11 @@ const AddEvent = ({ editMode }) => {
           formik.setValues(
             transformObtainedValuesToForm(res.data.data, res.data.timeZone)
           );
+          setTicketInfo(res.data.data.ticketInfo || []);
         } catch (err) {
           Toast.fire({
             icon: "error",
-            title: "Error getting the event details!",
+            title: `Error fetching event: ${err.message}`,
           });
         }
       };
@@ -366,23 +374,55 @@ const AddEvent = ({ editMode }) => {
             </LocalizationProvider>
           </FormSection>
 
+          <FormSection showSection title="Tickets">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={addTicketRow}
+              style={{ marginBottom: "20px" }}
+            >
+              + Add Ticket
+            </Button>
+            {ticketInfo.map((ticket, index) => (
+              <Grid container spacing={2} key={index}>
+                <Grid item container md={3}>
+                  <TextField
+                    placeholder="Name"
+                    value={ticket.name}
+                    onChange={(e) =>
+                      handleTicketChange(index, "name", e.target.value)
+                    }
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item container md={3}>
+                  <TextField
+                    placeholder="Price"
+                    value={ticket.price}
+                    onChange={(e) =>
+                      handleTicketChange(index, "price", e.target.value)
+                    }
+                    fullWidth
+                    type="number"
+                  />
+                </Grid>
+                <Grid item container md={3}>
+                  <TextField
+                    placeholder="Quantity"
+                    value={ticket.quantity}
+                    onChange={(e) =>
+                      handleTicketChange(index, "quantity", e.target.value)
+                    }
+                    fullWidth
+                    type="number"
+                  />
+                </Grid>
+              </Grid>
+            ))}
+          </FormSection>
+
           <FormSection showSection title="Business">
             <Grid container spacing={2}>
-              <Grid item container md={5} direction={"column"}>
-                <FormLabel htmlFor="eventPrice" className="label">
-                  Ticket Price
-                </FormLabel>
-                <TextField
-                  id="eventPrice"
-                  name="eventPrice"
-                  value={formik.values.eventPrice}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Ticket Price"
-                  fullWidth
-                  type="number"
-                />
-              </Grid>
               <Grid item container md={5} direction={"column"}>
                 <FormLabel htmlFor="occupancy" className="label">
                   Occupancy
@@ -453,7 +493,7 @@ const AddEvent = ({ editMode }) => {
                     src={formik.values.eventPromotionPhoto}
                     alt="Event"
                     width="350px"
-                    style={{ marginTop: "20px" }}
+                    style={{ margin: "20px auto" }}
                   />
                 )}
               </Grid>
@@ -464,56 +504,55 @@ const AddEvent = ({ editMode }) => {
               <FormLabel htmlFor="eventPhotos" className="label">
                 Event Photos
               </FormLabel>
-              <FilePond
-                files={files}
-                onupdatefiles={(fileItems) => {
-                  setFiles(fileItems.map((fileItem) => fileItem.file));
-                }}
-                allowMultiple={true}
-                name="file"
-                labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
-                stylePanelAspectRatio={0.5}
-                styleItemPanelAspectRatio={0.35}
-              />
-
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={uploadFile}
-                disabled={uploading}
-                style={{ marginTop: "20px", width: "fit-content" }}
-              >
-                {uploading ? "Uploading..." : "Upload"}
-              </Button>
-              {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-
-              {validPhotoevents.length > 0 && (
-                <div
-                  style={{
-                    width: "500px",
-                    height: "400px",
-                    marginTop: "20px",
+              <Grid sx={{ margin: "0 auto", width: "500px" }}>
+                <FilePond
+                  files={files}
+                  onupdatefiles={(fileItems) => {
+                    setFiles(fileItems.map((fileItem) => fileItem.file));
                   }}
+                  allowMultiple={true}
+                  name="file"
+                  labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={uploadFile}
+                  disabled={uploading}
+                  style={{ marginTop: "20px", width: "100%" }}
                 >
-                  <Lightbox
-                    open={true}
-                    slides={slides}
-                    index={index}
-                    carousel={{
-                      preload: 1,
-                      padding: 0,
-                      imageFit: "contain",
+                  {uploading ? "Uploading..." : "Upload"}
+                </Button>
+                {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+
+                {validPhotoevents.length > 0 && (
+                  <div
+                    style={{
+                      width: "500px",
+                      height: "400px",
+                      marginTop: "20px",
                     }}
-                    plugins={[Inline]}
-                    inline={{
-                      style: {
-                        width: "100%",
-                        height: "100%",
-                      },
-                    }}
-                  />
-                </div>
-              )}
+                  >
+                    <Lightbox
+                      open={true}
+                      slides={slides}
+                      index={index}
+                      carousel={{
+                        preload: 1,
+                        padding: 0,
+                        imageFit: "contain",
+                      }}
+                      plugins={[Inline]}
+                      inline={{
+                        style: {
+                          width: "100%",
+                          height: "100%",
+                        },
+                      }}
+                    />
+                  </div>
+                )}
+              </Grid>
             </FormSection>
           )}
           <FormSection showSection title="Social Media">

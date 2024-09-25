@@ -74,7 +74,7 @@ const Tickets = () => {
       cellClassName: "column-cell",
       // editable: true,
       renderCell: (abc, def) => {
-        return <span>{abc.row.eventPrice.$numberDecimal}</span>;
+        return <span>{abc.row.eventPrice?.$numberDecimal}</span>;
       },
     },
     {

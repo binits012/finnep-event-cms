@@ -10,9 +10,15 @@ import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import styled from "styled-components";
 import Swal from "sweetalert2";
+import dynamic from "next/dynamic";
+const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
+  const [isEditingJson, setIsEditingJson] = useState(false);
+  const [settingsId, setSettingsId] = useState(null);
+  const [jsonContent, setJsonContent] = useState("");
+  const [initialData, setInitialData] = useState({});
 
   const Toast = Swal.mixin({
     toast: true,
@@ -100,6 +106,65 @@ const Settings = () => {
     getSettingsData();
   }, []);
 
+  useEffect(() => {
+    if (isEditingJson) {
+      const fetchJsonData = async () => {
+        setLoading(true);
+        try {
+          const response = await apiHandler("GET", "setting", true);
+          const data = response.data.data[0];
+          setSettingsId(data._id);
+          setJsonContent(JSON.stringify(data, null, 2));
+          setInitialData(data);
+        } catch (err) {
+          Toast.fire({
+            icon: "error",
+            title: `Error fetching JSON data ${err}`,
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchJsonData();
+    }
+  }, [isEditingJson]);
+
+  const handleJsonSave = () => {
+    try {
+      const updatedData = {
+        ...initialData,
+        ...JSON.parse(jsonContent),
+      };
+
+      setLoading(true);
+
+      apiHandler("POST", `/setting/${settingsId}`, true, false, updatedData)
+        .then(() => {
+          Toast.fire({
+            icon: "success",
+            title: "JSON data updated successfully!",
+          });
+          setInitialData(updatedData);
+        })
+        .catch((error) => {
+          Toast.fire({
+            icon: "error",
+            title: "Error updating JSON data",
+          });
+        })
+        .finally(() => {
+          setLoading(false);
+          setIsEditingJson(false);
+        });
+    } catch (err) {
+      Toast.fire({
+        icon: "error",
+        title: "Invalid JSON format",
+      });
+    }
+  };
+
   return (
     <FormWrapper>
       {" "}
@@ -113,135 +178,186 @@ const Settings = () => {
           },
         ]}
       />
-      <form>
-        <Grid container direction="column" spacing={0}>
-          <FormSection title="FrontPage Details" showSection>
-            <Grid item md={12} sm={12}>
-              <TextEditor
-                name="aboutSection"
-                id="aboutSection"
-                value={formik.values.aboutSection}
-                label="About YellowBridge"
-                handleChange={(text) => {
-                  formik.setFieldValue("aboutSection", text);
-                }}
-                error={
-                  formik.touched.aboutSection && formik.errors.aboutSection
-                }
-                required={true}
-                setImageId={() => {}}
-              />
-              {formik.touched.aboutSection && formik.errors.aboutSection && (
-                <Typography color="red" sx={{ mt: 1 }}>
-                  {formik.errors.aboutSection}
-                </Typography>
-              )}
+      <>
+        {isEditingJson ? (
+          <>
+            <h2>Edit JSON Data</h2>
+            <ReactJson
+              src={jsonContent ? JSON.parse(jsonContent) : {}}
+              onEdit={(edit) =>
+                setJsonContent(JSON.stringify(edit.updated_src))
+              }
+              onAdd={(add) => setJsonContent(JSON.stringify(add.updated_src))}
+              onDelete={(del) =>
+                setJsonContent(JSON.stringify(del.updated_src))
+              }
+              style={{
+                fontFamily: "monospace",
+                backgroundColor: "#f5f5f5",
+                padding: "20px",
+                borderRadius: "5px",
+              }}
+            />
+            <Grid container spacing={2} mt={2} gap={2}>
+              <Button
+                onClick={handleJsonSave}
+                color="primary"
+                variant="contained"
+              >
+                Save JSON
+              </Button>
+              <Button
+                onClick={() => setIsEditingJson(false)}
+                variant="outlined"
+              >
+                Back to Settings
+              </Button>
             </Grid>
-            <FormSection
-              title="Contacts"
-              containerCSS={`margin-top: 20px;`}
-              showSection
-            >
-              <Grid container spacing={2}>
-                <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="email" className="label">
-                    Email
-                  </FormLabel>
-                  <TextField
-                    id="email"
-                    name="email"
-                    value={formik.values.email}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Email"
-                    fullWidth
-                    type="email"
+          </>
+        ) : (
+          <form>
+            <Grid container direction="column" spacing={0}>
+              <FormSection title="FrontPage Details" showSection>
+                <Grid item md={12} sm={12}>
+                  <TextEditor
+                    name="aboutSection"
+                    id="aboutSection"
+                    value={formik.values.aboutSection}
+                    label="About YellowBridge"
+                    handleChange={(text) => {
+                      formik.setFieldValue("aboutSection", text);
+                    }}
+                    error={
+                      formik.touched.aboutSection && formik.errors.aboutSection
+                    }
+                    required={true}
+                    setImageId={() => {}}
                   />
+                  {formik.touched.aboutSection &&
+                    formik.errors.aboutSection && (
+                      <Typography color="red" sx={{ mt: 1 }}>
+                        {formik.errors.aboutSection}
+                      </Typography>
+                    )}
                 </Grid>
-                <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="occupancy" className="label">
-                    Phone
-                  </FormLabel>
-                  <TextField
-                    id="phone"
-                    name="phone"
-                    value={formik.values.phone}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Phone"
-                    fullWidth
-                    type="tel"
-                  />
-                </Grid>
-              </Grid>
-            </FormSection>
-            <FormSection
-              showSection
-              title="Social Media"
-              containerCSS={`margin-top: 20px;`}
-            >
-              <Grid container spacing={2}>
-                <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="email" className="label">
-                    Facebook Page
-                  </FormLabel>
-                  <TextField
-                    id="fbLink"
-                    name="fbLink"
-                    value={formik.values.fbLink}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Facebook Page"
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="occupancy" className="label">
-                    Twitter/X Handle
-                  </FormLabel>
-                  <TextField
-                    id="xLink"
-                    name="xLink"
-                    value={formik.values.xLink}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Twitter/X Handle"
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="occupancy" className="label">
-                    Instagram Account
-                  </FormLabel>
-                  <TextField
-                    id="instaLink"
-                    name="instaLink"
-                    value={formik.values.instaLink}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Instagram Account"
-                    fullWidth
-                  />
-                </Grid>
-              </Grid>
-            </FormSection>
-          </FormSection>
-        </Grid>
-        <Grid container justifyContent={"flex-end"}>
-          <Button id="submit" onClick={formik.handleSubmit} variant="contained">
-            Update Front Page Details
-          </Button>
-          <Backdrop
-            sx={{
-              color: "#fff",
-              zIndex: (theme) => theme.zIndex.drawer + 1,
-            }}
-            open={loading}
-          >
-            <CircularProgress color="inherit" />
-          </Backdrop>
-        </Grid>
-      </form>
+                <FormSection
+                  title="Contacts"
+                  containerCSS={`margin-top: 20px;`}
+                  showSection
+                >
+                  <Grid container spacing={2}>
+                    <Grid item container md={5} direction={"column"}>
+                      <FormLabel htmlFor="email" className="label">
+                        Email
+                      </FormLabel>
+                      <TextField
+                        id="email"
+                        name="email"
+                        value={formik.values.email}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="Email"
+                        fullWidth
+                        type="email"
+                      />
+                    </Grid>
+                    <Grid item container md={5} direction={"column"}>
+                      <FormLabel htmlFor="occupancy" className="label">
+                        Phone
+                      </FormLabel>
+                      <TextField
+                        id="phone"
+                        name="phone"
+                        value={formik.values.phone}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="Phone"
+                        fullWidth
+                        type="tel"
+                      />
+                    </Grid>
+                  </Grid>
+                </FormSection>
+                <FormSection
+                  showSection
+                  title="Social Media"
+                  containerCSS={`margin-top: 20px;`}
+                >
+                  <Grid container spacing={2}>
+                    <Grid item container md={5} direction={"column"}>
+                      <FormLabel htmlFor="email" className="label">
+                        Facebook Page
+                      </FormLabel>
+                      <TextField
+                        id="fbLink"
+                        name="fbLink"
+                        value={formik.values.fbLink}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="Facebook Page"
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item container md={5} direction={"column"}>
+                      <FormLabel htmlFor="occupancy" className="label">
+                        Twitter/X Handle
+                      </FormLabel>
+                      <TextField
+                        id="xLink"
+                        name="xLink"
+                        value={formik.values.xLink}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="Twitter/X Handle"
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item container md={5} direction={"column"}>
+                      <FormLabel htmlFor="occupancy" className="label">
+                        Instagram Account
+                      </FormLabel>
+                      <TextField
+                        id="instaLink"
+                        name="instaLink"
+                        value={formik.values.instaLink}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        placeholder="Instagram Account"
+                        fullWidth
+                      />
+                    </Grid>
+                  </Grid>
+                </FormSection>
+              </FormSection>
+            </Grid>
+            <Grid container justifyContent={"flex-end"} gap={4}>
+              <Button
+                onClick={() => setIsEditingJson(true)}
+                variant="outlined"
+                color="primary"
+              >
+                Edit JSON Data
+              </Button>
+              <Button
+                id="submit"
+                onClick={formik.handleSubmit}
+                variant="contained"
+              >
+                Update Front Page Details
+              </Button>
+              <Backdrop
+                sx={{
+                  color: "#fff",
+                  zIndex: (theme) => theme.zIndex.drawer + 1,
+                }}
+                open={loading}
+              >
+                <CircularProgress color="inherit" />
+              </Backdrop>
+            </Grid>
+          </form>
+        )}
+      </>
     </FormWrapper>
   );
 };

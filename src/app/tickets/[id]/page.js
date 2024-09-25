@@ -35,6 +35,7 @@ import Swal from "sweetalert2";
 const Tickets = () => {
   const [eventDetails, setEventDetails] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [ticketInfo, setTicketInfo] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
@@ -57,7 +58,7 @@ const Tickets = () => {
     setFetching(true);
     try {
       const response = await apiHandler("GET", `event/${id}/ticket`, true);
-      console.log(response, "check res");
+      // console.log(response, "check res");
       setTickets(response.data?.data);
     } catch (err) {
       console.log(err);
@@ -125,7 +126,7 @@ const Tickets = () => {
   const formik = useFormik({
     initialValues: {
       ticketFor: "",
-      type: "normal",
+      type: "Normal",
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -136,6 +137,7 @@ const Tickets = () => {
         const response = await apiHandler("GET", `event/${id}`, true);
         console.log(response, "check res");
         setEventDetails(response.data?.data);
+        setTicketInfo(response.data?.data.ticketInfo || []);
       } catch (err) {
         console.log(err);
 
@@ -149,14 +151,17 @@ const Tickets = () => {
     getEventDetails();
     getEventTickets();
   }, [getEventTickets]);
+
+  const ticketTypeMap = ticketInfo.reduce((acc, ticket) => {
+    acc[ticket._id] = ticket.name;
+    return acc;
+  }, {});
+
   const COLUMNS = [
     {
       field: "sn",
       headerName: "SN",
       width: 50,
-      renderCell: ({ row }, index) => {
-        return <span>{index + 1}</span>;
-      },
     },
     {
       field: "ticketFor",
@@ -168,20 +173,16 @@ const Tickets = () => {
       headerName: "Type",
       width: 110,
       renderCell: ({ row }) => {
-        const typeMap = {
-          normal: "Normal",
-          vip: "VIP",
-        };
+        const typeName = row.type;
         return (
           <Chip
             size="medium"
-            label={typeMap[row.type]}
+            label={typeName.toUpperCase()}
             variant="outlined"
-            // color={row.type === "normal" ? "success" : "warning"}
             style={{
               width: "100%",
-              borderColor: `${row.type === "normal" ? "green" : "gold"}`,
-              color: `${row.type === "normal" ? "green" : "gold"}`,
+              borderColor: `${typeName === "normal" ? "green" : "gold"}`,
+              color: `${typeName === "normal" ? "green" : "gold"}`,
               fontWeight: "bold",
             }}
           />
@@ -214,6 +215,8 @@ const Tickets = () => {
       },
     },
   ];
+
+  console.log(ticketInfo, "check ticketInfo");
 
   return (
     <FormWrapper>
@@ -269,8 +272,11 @@ const Tickets = () => {
                   placeholder="Type"
                   fullWidth
                 >
-                  <MenuItem value="normal">Normal</MenuItem>
-                  <MenuItem value="vip">VIP</MenuItem>
+                  {ticketInfo.map((ticket) => (
+                    <MenuItem key={ticket._id} value={ticket.name}>
+                      {ticket.name} - ${ticket.price}
+                    </MenuItem>
+                  ))}
                 </Select>
               </Grid>
               <Grid item container md={4} spacing={0}>
@@ -376,7 +382,7 @@ const Tickets = () => {
                     ],
                     ...props,
                   });
-                  console.log(files, "check");
+                  // console.log(files, "check");
                   return (
                     <div style={{}}>
                       {files.length < 1 ? (
@@ -500,9 +506,14 @@ const Tickets = () => {
           </div>
         ))} */}
         <DataGrid
-          rows={tickets.filter((ticket) =>
-            ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
-          )}
+          rows={tickets
+            .filter((ticket) =>
+              ticket.ticketFor.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((ticket, index) => ({
+              ...ticket,
+              sn: index + 1,
+            }))}
           columns={COLUMNS}
           initialState={{
             pagination: {
