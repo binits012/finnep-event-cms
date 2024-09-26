@@ -63,8 +63,8 @@ export default function NotificationPage() {
         type: notification.notificationType
           ? notification.notificationType.name
           : "Unknown",
-        "start date": new Date(notification.startDate).toLocaleDateString(),
-        "end date": new Date(notification.endDate).toLocaleDateString(),
+        "start date": new Date(notification.startDate).toISOString(),
+        "end date": new Date(notification.endDate).toISOString(),
         notification: notification.notification.replace(/<[^>]+>/g, ""),
       }));
 
@@ -204,8 +204,18 @@ export default function NotificationPage() {
       width: 110,
       align: "left",
     },
-    { field: "start date", headerName: "Start Date", width: 150 },
-    { field: "end date", headerName: "End Date", width: 150 },
+    {
+      field: "start date",
+      headerName: "Start Date",
+      width: 150,
+      valueFormatter: ({ value }) => new Date(value).toLocaleDateString(),
+    },
+    {
+      field: "end date",
+      headerName: "End Date",
+      width: 150,
+      valueFormatter: ({ value }) => new Date(value).toLocaleDateString(),
+    },
     { field: "notification", headerName: "Notification", width: 300 },
     {
       field: "actions",
@@ -323,11 +333,11 @@ export default function NotificationPage() {
               initialState={{
                 pagination: {
                   paginationModel: {
-                    pageSize: 5,
+                    pageSize: 10,
                   },
                 },
               }}
-              pageSizeOptions={[5, 10, 20]}
+              pageSizeOptions={[10, 15, 20]}
               autoHeight
             />
           </Box>
