@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import apiHandler from "@/RESTAPIs/helper";
-import "./Dashboard.css";
+import "./dashboard.css";
 import Swal from "sweetalert2";
 import { Bar, Line } from "react-chartjs-2";
 import {
