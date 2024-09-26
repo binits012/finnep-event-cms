@@ -15,6 +15,8 @@ import {
   FormControl,
   InputLabel,
   Grid,
+  Backdrop,
+  CircularProgress,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
@@ -46,6 +48,7 @@ const AddPhotoPage = ({ onClose }) => {
   });
   useEffect(() => {
     const fetchAlbums = async () => {
+      setIsLoading(true);
       try {
         const response = await apiHandler("GET", "/photo", true);
         setAlbums(response.data.photoType);
@@ -55,6 +58,8 @@ const AddPhotoPage = ({ onClose }) => {
           title: "Failed to fetch albums.",
         });
       }
+
+      setIsLoading(false);
     };
 
     fetchAlbums();
@@ -62,6 +67,7 @@ const AddPhotoPage = ({ onClose }) => {
 
   const uploadImage = async (file) => {
     if (!selectedAlbumId) {
+      setIsUploading(false);
       Swal.fire({
         icon: "error",
         title: "Please select an album first.",
@@ -122,57 +128,75 @@ const AddPhotoPage = ({ onClose }) => {
 
   return (
     <div>
-      <h1 style={{ margin: "0 0 20px 10px" }}>Upload Image</h1>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <FilePond
-          files={files}
-          onupdatefiles={setFiles}
-          allowMultiple={false}
-          name="file"
-          labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
-          stylePanelAspectRatio={0.65}
-          styleItemPanelAspectRatio={0.58}
-        />
+      {isLoading ? (
+        <Backdrop
+          sx={{
+            color: "#fff",
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
+          open={isLoading}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+      ) : (
+        <>
+          <h1 style={{ margin: "0 0 20px 10px" }}>Upload Image</h1>
+          <form onSubmit={(e) => e.preventDefault()}>
+            <FilePond
+              files={files}
+              onupdatefiles={setFiles}
+              allowMultiple={false}
+              name="file"
+              labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+              stylePanelAspectRatio={0.65}
+              styleItemPanelAspectRatio={0.58}
+            />
 
-        <FormControl style={{ marginBottom: "20px", width: "50%" }}>
-          <InputLabel id="album-select-label">Select Album</InputLabel>
-          <Select
-            labelId="album-select-label"
-            value={selectedAlbumId}
-            onChange={(e) => setSelectedAlbumId(e.target.value)}
-          >
-            {albums.map((album) => (
-              <MenuItem key={album._id} value={album._id}>
-                {album.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <Grid>
-          <Button
-            variant="contained"
-            type="button"
-            onClick={handleUploadClick}
-            disabled={isUploading}
-            style={{
-              justifyContent: "center",
-              placeContent: "center",
-              placeItems: "center",
-              marginRight: "10px",
-            }}
-          >
-            {isUploading ? "Uploading..." : "Upload Photo"}
-          </Button>
-          <Button
-            variant="outlined"
-            type="button"
-            onClick={onClose}
-            disabled={isUploading}
-          >
-            Cancel
-          </Button>
-        </Grid>
-      </form>
+            <FormControl style={{ marginBottom: "20px", width: "50%" }}>
+              <Select
+                labelId="album-select-label"
+                value={selectedAlbumId}
+                onChange={(e) => setSelectedAlbumId(e.target.value)}
+                displayEmpty
+              >
+                <MenuItem value="" disabled>
+                  Select an album
+                </MenuItem>
+                {albums.map((album) => (
+                  <MenuItem key={album._id} value={album._id}>
+                    {album.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Grid>
+              <Button
+                variant="contained"
+                type="button"
+                onClick={handleUploadClick}
+                disabled={isUploading}
+                style={{
+                  justifyContent: "center",
+                  placeContent: "center",
+                  placeItems: "center",
+                  marginRight: "10px",
+                }}
+              >
+                {isUploading ? "Uploading..." : "Upload Photo"}
+              </Button>
+              <Button
+                variant="outlined"
+                type="button"
+                onClick={onClose}
+                disabled={isUploading}
+              >
+                Cancel
+              </Button>
+            </Grid>
+          </form>
+        </>
+      )}
     </div>
   );
 };
