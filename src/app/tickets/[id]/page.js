@@ -400,10 +400,16 @@ const Tickets = () => {
                           }}
                         >
                           <input {...getInputProps()} />
-                          <BsUpload size={32} color="green" />
+                          <BsUpload
+                            size={32}
+                            color="green"
+                            style={{ marginRight: 20 }}
+                          />
                           {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
-                          <Typography variant="p">Drag and drop</Typography>
-                          <Typography variant="p">or</Typography>
+                          <Typography variant="p">Drag and drop </Typography>
+                          <Typography variant="p" style={{ margin: 3 }}>
+                            or
+                          </Typography>
                           <Typography variant="p">
                             Select Excel Files
                           </Typography>
@@ -472,12 +478,19 @@ const Tickets = () => {
                   );
                 })({ files, setFiles })}
               </Grid>
-              <Grid item container md={2.5} direction="column">
+              <Grid
+                item
+                container
+                md={2.5}
+                direction="column"
+                justifyContent={"center"}
+                margin={2}
+              >
                 <Button
                   variant="contained"
                   onClick={createMultipleTickets}
                   disabled={!files.length}
-                  sx={{ height: 50 }}
+                  sx={{ height: "fit-content", width: "fit-content" }}
                 >
                   Create Multiple Tickets
                 </Button>
