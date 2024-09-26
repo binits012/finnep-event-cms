@@ -83,7 +83,6 @@ const AddEvent = ({ editMode }) => {
     setLoading(true);
     if (id) {
       try {
-        // const res = await apiHandler("PUT", `event/${id}`, true, values);.
         const res = await updateEvent(id, {
           ...values,
           eventDate: dayjs(values.eventDate).toISOString(),
@@ -93,9 +92,6 @@ const AddEvent = ({ editMode }) => {
             x: values.xLink,
             insta: values.igLink,
           },
-          // eventPrice: {
-          //   $numberDecimal: values.eventPrice,
-          // },
         });
 
         Toast.fire({
@@ -117,14 +113,11 @@ const AddEvent = ({ editMode }) => {
         const res = await addEvent({
           ...values,
           eventDate: dayjs(values.eventDate).toISOString(),
+          ticketInfo,
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
           },
-          // eventName: values.eventName,
-          // eventPrice: {
-          //   $numberDecimal: values.eventPrice,
-          // },
         });
 
         Toast.fire({

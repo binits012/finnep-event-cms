@@ -428,11 +428,6 @@ const Events = () => {
                       {selectedEvent.eventDescription}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Event Price:
-                      {selectedEvent.eventPrice.$numberDecimal}
-                    </Typography>
-
-                    <Typography variant="body2" color="text.secondary">
                       Event Occupancy:
                       {selectedEvent.occupancy}
                     </Typography>
