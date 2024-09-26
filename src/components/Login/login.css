@@ -1,0 +1,79 @@
+.page {
+  width: 100%;
+}
+
+.login-form-wrap {
+  width: 410px;
+}
+
+.login-container {
+  width: 50%;
+  height: 100vh;
+  display: flex;
+}
+
+.main-container {
+  background: url("/login_background.jpg") no-repeat;
+  background-size: cover;
+  width: 100%;
+  display: flex;
+  margin: 0 auto;
+  height: auto;
+}
+
+.logo {
+  margin-left: 50px;
+  margin-top: 32px;
+}
+
+.aircraft-img-container {
+  width: 50%;
+}
+
+.aircraft {
+  object-fit: cover;
+  width: 100%;
+  height: calc(100vh);
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+  position: relative;
+  align-items: center;
+}
+
+.login-form-wrap {
+  width: 432px;
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.keepLogin span {
+  padding: 0;
+  margin-right: 8px;
+}
+
+.styled-header {
+  font-family: "Roboto" !important;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 52px;
+  text-align: center;
+  color: #000000;
+}
+
+.styled-sub-header {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #4c4c4c;
+}
+
+/* Add additional styles as needed for buttons, text fields, etc. */
