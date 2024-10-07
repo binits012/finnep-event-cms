@@ -4,6 +4,7 @@ import {
   FormControlLabel,
   FormLabel,
   Grid,
+  InputAdornment,
   TextField,
 } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -397,8 +398,19 @@ const AddEvent = ({ editMode }) => {
                     }
                     fullWidth
                     type="number"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment
+                          position="end"
+                          sx={{ marginLeft: "-210px" }}
+                        >
+                          €
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                 </Grid>
+
                 <Grid item container md={3}>
                   <TextField
                     placeholder="Quantity"

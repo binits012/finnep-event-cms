@@ -237,6 +237,21 @@ const Tickets = () => {
           },
         ]}
       />
+      <div>
+        {tickets?.length == eventDetails?.occupancy && (
+          <Chip
+            label="Tickets Sold Out"
+            variant="outlined"
+            style={{
+              borderColor: "red",
+              color: "red",
+              fontWeight: "bold",
+              width: "fit-content",
+              marginBottom: "10px",
+            }}
+          />
+        )}
+      </div>
       <Grid container direction="column">
         <form>
           <FormSection
@@ -274,7 +289,7 @@ const Tickets = () => {
                 >
                   {ticketInfo.map((ticket) => (
                     <MenuItem key={ticket._id} value={ticket.name}>
-                      {ticket.name} - ${ticket.price}
+                      {ticket.name} - {ticket.price}€
                     </MenuItem>
                   ))}
                 </Select>
@@ -282,11 +297,17 @@ const Tickets = () => {
               <Grid item container md={4} spacing={0}>
                 <Button
                   variant="contained"
-                  disabled={!formik.values.ticketFor || !formik.values.type}
+                  disabled={
+                    !formik.values.ticketFor ||
+                    !formik.values.type ||
+                    tickets?.length == eventDetails?.occupancy
+                  }
                   onClick={formik.handleSubmit}
                   sx={{ height: 50 }}
                 >
-                  Create Ticket
+                  {tickets?.length == eventDetails?.occupancy
+                    ? "Tickets Sold Out"
+                    : "Create Ticket"}
                 </Button>
                 <Backdrop
                   sx={{
@@ -489,10 +510,18 @@ const Tickets = () => {
                 <Button
                   variant="contained"
                   onClick={createMultipleTickets}
-                  disabled={!files.length}
-                  sx={{ height: "fit-content", width: "fit-content" }}
+                  disabled={
+                    !files.length || tickets?.length == eventDetails?.occupancy
+                  }
+                  sx={{
+                    height: "fit-content",
+                    width: "fit-content",
+                    padding: "15px",
+                  }}
                 >
-                  Create Multiple Tickets
+                  {tickets?.length == eventDetails?.occupancy
+                    ? "Tickets Sold Out"
+                    : "Create Multiple Tickets"}
                 </Button>
                 <Backdrop
                   sx={{
