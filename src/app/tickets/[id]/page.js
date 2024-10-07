@@ -274,7 +274,7 @@ const Tickets = () => {
                 >
                   {ticketInfo.map((ticket) => (
                     <MenuItem key={ticket._id} value={ticket.name}>
-                      {ticket.name} - ${ticket.price}
+                      {ticket.name} - {ticket.price}€
                     </MenuItem>
                   ))}
                 </Select>
