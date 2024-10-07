@@ -402,7 +402,7 @@ const AddEvent = ({ editMode }) => {
                       endAdornment: (
                         <InputAdornment
                           position="end"
-                          sx={{ marginLeft: "-210px" }}
+                          sx={{ marginLeft: "-190px" }}
                         >
                           €
                         </InputAdornment>
