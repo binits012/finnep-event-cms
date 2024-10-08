@@ -1,23 +1,11 @@
 "use client";
 import apiHandler from "@/RESTAPIs/helper";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
-import FormSection from "@/components/FormSection";
-import TextEditor from "@/components/TextEditor";
-import {
-  Grid,
-  Typography,
-  FormLabel,
-  TextField,
-  Button,
-  CircularProgress,
-  Input,
-} from "@mui/material";
-import { Field, useFormik } from "formik";
+import { Input, Button, CircularProgress } from "@mui/material";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { DataGrid } from "@mui/x-data-grid";
-import { render } from "react-dom";
 import { RxCross1 } from "react-icons/rx";
 import { IoIosSearch } from "react-icons/io";
 import Swal from "sweetalert2";
@@ -42,7 +30,6 @@ const Tickets = () => {
     const getEvents = async () => {
       try {
         const response = await apiHandler("GET", "event", true);
-        console.log(response, "check res");
         setEvents(response.data?.data);
       } catch (err) {
         console.log(err);
@@ -59,24 +46,29 @@ const Tickets = () => {
     {
       field: "eventTitle",
       headerName: "Title",
-      width: 400,
+      width: 300,
       headerClassName: "column-header",
       cellClassName: "column-cell",
       renderCell: ({ row }) => {
         return <span>{row.eventTitle}</span>;
       },
     },
-    {
-      field: "eventPrice",
-      headerName: "Price",
-      width: 200,
-      headerClassName: "column-header",
-      cellClassName: "column-cell",
-      // editable: true,
-      renderCell: (abc, def) => {
-        return <span>{abc.row.eventPrice.$numberDecimal}</span>;
-      },
-    },
+    // {
+    //   field: "ticketSold",
+    //   headerName: "Ticket Sold",
+    //   width: 130,
+    //   headerClassName: "column-header",
+    //   cellClassName: "column-cell",
+    //   align: "center",
+    //   renderCell: ({ row }) => {
+    //     const isLoading = loadingTickets.has(row._id);
+    //     return isLoading ? (
+    //       <BeatLoader size={14} />
+    //     ) : (
+    //       <span>{ticketCounts[row._id] || 0}</span>
+    //     );
+    //   },
+    // },
     {
       field: "occupancy",
       headerName: "Occupancy",
@@ -84,19 +76,7 @@ const Tickets = () => {
       headerClassName: "column-header",
       cellClassName: "column-cell",
       sortable: false,
-      // editable: true,
     },
-    // {
-    //   field: "status",
-    //   headerName: "Tickets Sold",
-    //   width: 90,
-    //   sortable: false,
-    //   // editable: true,
-    //   renderCell: ({ row }) => {
-    //     return <span>{row.occupancy}</span>;
-    //   },
-    // },
-
     {
       field: "action",
       headerName: "Action",
@@ -115,7 +95,6 @@ const Tickets = () => {
   ];
   return (
     <FormWrapper>
-      {" "}
       <CustomBreadcrumbs
         title={`Tickets `}
         links={[
