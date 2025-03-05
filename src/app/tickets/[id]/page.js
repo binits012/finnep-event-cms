@@ -288,7 +288,7 @@ const Tickets = () => {
                   fullWidth
                 >
                   {ticketInfo.map((ticket) => (
-                    <MenuItem key={ticket._id} value={ticket.name}>
+                    <MenuItem key={ticket._id} value={ticket._id}>
                       {ticket.name} - {ticket.price}€
                     </MenuItem>
                   ))}
@@ -322,7 +322,7 @@ const Tickets = () => {
             </Grid>
           </FormSection>
         </form>
-
+      {/*
         <form>
           <FormSection showSection title={`Create Multiple Tickets`}>
             <Grid container spacing={2} alignItems={"flex-end"}>
@@ -425,8 +425,8 @@ const Tickets = () => {
                             size={32}
                             color="green"
                             style={{ marginRight: 20 }}
-                          />
-                          {/* <p>Drag 'n' drop some files here, or click to select files</p> */}
+                          />  
+                           
                           <Typography variant="p">Drag and drop </Typography>
                           <Typography variant="p" style={{ margin: 3 }}>
                             or
@@ -536,7 +536,7 @@ const Tickets = () => {
             </Grid>
           </FormSection>
         </form>
-
+        */}
         {/* {tickets.map((ticket, index) => (
           <div key={ticket._id} style={{ display: "flex", margin: 10 }}>
             <h2>
