@@ -18,10 +18,14 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
 import Link from "next/link";
 import styled from "styled-components";
 import apiHandler from "@/RESTAPIs/helper";
-import Image from "next/image";
+import Image from "next/image"; 
+import PhotoModal from "@/components/PhotoModal"; 
+import CopyToClipboard from "react-copy-to-clipboard";
+import UpdatePhotoModal from "@/components/updatephoto";
 
 const GalleryPage = () => {
   const [images, setImages] = useState([]);
@@ -29,6 +33,10 @@ const GalleryPage = () => {
   const [selectedAlbum, setSelectedAlbum] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: "", type: "" });
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -40,9 +48,12 @@ const GalleryPage = () => {
             res.data.photo.map((item, index) => ({
               id: index + 1,
               src: item.photoLink,
-              albumId: item.photoType[0]._id,
+              albumId: item.photoType[0]?._id,
               width: 800,
               height: 900,
+              publish: item.publish || false,
+              position: item.position || "",
+              photoId: item._id || ""
             }))
           );
         }
@@ -67,6 +78,104 @@ const GalleryPage = () => {
   const filteredImages = selectedAlbum
     ? images.filter((image) => image.albumId === selectedAlbum)
     : images;
+
+  const handleUpdatePhoto = async (updatedData) => {
+    if (selectedPhoto) {
+      try {
+        const photoId = selectedPhoto.photoId; 
+        const response = await apiHandler(
+          "patch", 
+          `/photo/${photoId}`,
+          true,
+          false,
+          {
+            photoType: updatedData.photoType,
+            publish: updatedData.publish,
+            position: updatedData.position
+          },
+          null
+        );
+         
+        if (response.status === 200) {
+          // Update the local state directly
+          setImages(prevImages => 
+            prevImages.map(img => 
+              img.photoId === photoId 
+                ? { 
+                    ...img, 
+                    albumId: updatedData.photoType,
+                    publish: updatedData.publish,
+                    position: updatedData.position
+                  }
+                : img
+            )
+          );
+          
+          // Show success notification
+          setNotification({
+            show: true,
+            message: "Photo updated successfully!",
+            type: "success"
+          });
+          
+          // Hide notification after 3 seconds
+          setTimeout(() => {
+            setNotification({ show: false, message: "", type: "" });
+          }, 3000);
+          
+          // Close the modal
+          setUpdateModalOpen(false);
+        }
+      } catch (error) {
+        console.error("Error updating photo:", error);
+        // Show error notification
+        setNotification({
+          show: true,
+          message: "Failed to update photo. Please try again.",
+          type: "error"
+        });
+        
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "" });
+        }, 3000);
+        
+        throw error; // Propagate error to be handled by the modal
+      }
+    }
+  };
+
+  // Add this function at the beginning of your component to determine colors based on photo type
+  const getPhotoStatusColor = (image, albums) => {
+    // First determine if image is published
+    if (image.publish === false) {
+      return {
+        filter: "grayscale(80%)",
+        badgeText: "Unpublished",
+        badgeColor: "rgba(244, 67, 54, 0.85)" // Red for unpublished
+      };
+    }
+    
+    // For published images, determine color by photo type/album
+    const albumType = albums.find(album => album._id === image.albumId);
+    const typeName = albumType?.name?.toLowerCase() || "";
+    
+    switch (typeName) {
+      case "Gallery":
+        return { 
+          filter: "none", 
+          badgeText: "Normal",
+          badgeColor: "rgba(76, 175, 80, 0.85)" // Green
+        };
+      
+      default:
+        return { 
+          filter: "none", 
+          badgeText: albumType?.name || "Other",
+          badgeColor: "rgba(158, 158, 158, 0.85)" // Gray for other/unknown types
+        };
+    }
+  };
 
   if (isLoading) {
     return (
@@ -133,17 +242,42 @@ const GalleryPage = () => {
       )}
       <GalleryWrapper>
         <ImageGrid>
-          {filteredImages.map((image, index) => (
-            <ImageItem key={index} onClick={() => setSelectedImageIndex(index)}>
-              <Image
-                src={image.src}
-                alt={`Image ${index + 1}`}
-                width={image.width}
-                height={image.height}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </ImageItem>
-          ))}
+          {filteredImages.map((image, index) => {
+            const { filter, badgeText, badgeColor } = getPhotoStatusColor(image, albums);
+            
+            return (
+              <ImageItem key={index} onClick={() => setSelectedImageIndex(index)}>
+                <div className="image-container" style={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <Image
+                    src={image.src}
+                    alt={`Image ${index + 1}`}
+                    width={image.width}
+                    height={image.height}
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      objectFit: "cover",
+                      filter: filter
+                    }}
+                  />
+                  <StatusBadge style={{ backgroundColor: badgeColor }}>
+                    {badgeText}
+                  </StatusBadge>
+                </div>
+
+                <EditButton
+                  className="edit-button-container"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPhoto(image);
+                    setUpdateModalOpen(true);
+                  }}
+                >
+                  <EditIcon />
+                </EditButton>
+              </ImageItem>
+            );
+          })}
         </ImageGrid>
       </GalleryWrapper>
       <Lightbox
@@ -156,11 +290,28 @@ const GalleryPage = () => {
         }))}
         close={() => setSelectedImageIndex(-1)}
       />
+
+      {notification.show && (
+        <NotificationBar type={notification.type}>
+          {notification.message}
+        </NotificationBar>
+      )}
+
+      <UpdatePhotoModal
+        open={updateModalOpen}
+        onClose={() => setUpdateModalOpen(false)}
+        photo={selectedPhoto}
+        photoTypes={albums}
+        onSubmit={handleUpdatePhoto}
+      />
     </GalleryContainer>
   );
 };
 
-const GalleryContainer = styled.div``;
+const GalleryContainer = styled.div` 
+  margin: 20px;
+  color: black;
+`;
 
 const GalleryWrapper = styled.div`
   padding: 20px;
@@ -186,6 +337,71 @@ const ImageItem = styled.div`
   overflow: hidden;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  
+  &:hover {
+    .edit-button-container {
+      opacity: 1;
+    }
+  }
+`;
+
+const EditButton = styled(Button)`
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #333;
+  min-width: unset;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  opacity: 0.7;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.95);
+    transform: scale(1.05);
+    opacity: 1;
+  }
+`;
+
+const NotificationBar = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background-color: ${props => props.type === 'success' ? '#4caf50' : '#f44336'};
+  color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
+
+const StatusBadge = styled.div`
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 5;
 `;
 
 export default GalleryPage;

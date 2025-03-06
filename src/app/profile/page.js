@@ -45,15 +45,13 @@ const page = () => {
           oldPassword: values.oldPassword,
           newPassword: values.newPassword,
         }
-      );
-      console.log(res, "check res");
+      ); 
 
       Toast.fire({
         icon: "success",
         title: "Password Changed Successfully !!",
       });
-    } catch (err) {
-      console.log(err);
+    } catch (err) { 
       Toast.fire({
         icon: "error",
         title: "Changing Password Failed !!",
@@ -78,10 +76,8 @@ const page = () => {
         `user/${users.id}/contact`,
         true,
         false
-      );
-      console.log(res, "check res");
-    } catch (err) {
-      console.log(err);
+      ); 
+    } catch (err) { 
     }
   };
 

@@ -132,7 +132,7 @@ export default function Login() {
           >
             <h1 className="styled-header">Login</h1>
             <p className="styled-sub-header">
-              Enter your email and password to login
+              Enter your username and password to login
             </p>
             <TextField
               label="Username"
