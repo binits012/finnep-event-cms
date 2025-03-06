@@ -84,9 +84,10 @@ const AddEvent = ({ editMode }) => {
     setLoading(true);
     if (id) {
       try {
+        
         const res = await updateEvent(id, {
           ...values,
-          eventDate: dayjs(values.eventDate).toISOString(),
+          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki').format(),
           ticketInfo,
           socialMedia: {
             fb: values.fbLink,
@@ -113,7 +114,7 @@ const AddEvent = ({ editMode }) => {
       try {
         const res = await addEvent({
           ...values,
-          eventDate: dayjs(values.eventDate).toISOString(),
+          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki').format(),
           ticketInfo,
           socialMedia: {
             fb: values.fbLink,
@@ -143,7 +144,7 @@ const AddEvent = ({ editMode }) => {
       eventName: "",
       eventDescription: "",
       eventTime: "4:44",
-      eventDate: null,
+      eventDate: dayjs().toISOString(),
       eventPrice: "",
       occupancy: "",
       lang: "",
@@ -332,40 +333,41 @@ const AddEvent = ({ editMode }) => {
             showSection
             title={`When? ${
               formik.values.eventDate
-                ? dayjs(formik.values.eventDate).format("MMMM DD, YYYY hh:mm A")
-                : ""
-            }${
-              formik.values.eventDate &&
-              dayjs(formik.values.eventDate).isAfter(dayjs())
-                ? `(${dayjs(formik.values.eventDate).diff(
-                    dayjs(),
-                    "days"
-                  )} days to go)`
+                ? dayjs(formik.values.eventDate).tz("Europe/Helsinki").format("MMMM DD, YYYY hh:mm A")
                 : ""
             }`}
           >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <Grid container spacing={2}>
-                <Grid item container md={5} direction={"column"}>
-                  <FormLabel htmlFor="eventTitle" className="label">
-                    Event Date/ Time
-                  </FormLabel>
-                  <DateTimePicker
-                    disablePast
-                    sx={{
-                      margin: 0,
-                    }}
-                    id="eventDate"
-                    name="eventDate"
-                    value={formik.values.eventDate}
-                    onChange={(value) => {
-                      formik.setFieldValue("eventDate", value);
-                    }}
-                    onBlur={formik.handleBlur}
-                  />
-                </Grid>
-              </Grid>
-            </LocalizationProvider>
+  <Grid container spacing={2}>
+    <Grid item container md={5} direction={"column"}>
+      <FormLabel htmlFor="eventTitle" className="label">
+        Event Date/ Time
+      </FormLabel>
+      <DateTimePicker
+        disablePast
+        sx={{
+          margin: 0,
+        }}
+        id="eventDate"
+        name="eventDate"
+        value={
+          formik.values.eventDate
+            ?  dayjs(formik.values.eventDate).tz("Europe/Helsinki")// Ensure it's a Day.js UTC object
+            : null
+        }
+        onChange={(value) => {
+          // Convert selected date to UTC ISO string and store in Formik
+          formik.setFieldValue(
+            "eventDate",
+            value ? dayjs(value).utc().toISOString() : null
+          );
+        }}
+        onBlur={formik.handleBlur}
+      />
+    </Grid>
+  </Grid>
+</LocalizationProvider>
+
           </FormSection>
 
           <FormSection showSection title="Tickets">

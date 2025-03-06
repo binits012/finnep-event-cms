@@ -11,7 +11,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import styled from "styled-components";
 import Swal from "sweetalert2";
 import dynamic from "next/dynamic";
-const ReactJson = dynamic(() => import("react-json-view"), { ssr: false });
+import MonacoEditor from "@monaco-editor/react"; 
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
@@ -71,6 +71,9 @@ const Settings = () => {
       fbLink: "",
       xLink: "",
       instaLink: "",
+      android:"",
+      ios:"",
+      windows:""
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -83,6 +86,9 @@ const Settings = () => {
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
       instaLink: values.socialMedia.instagram,
+      android: values?.otherInfo?.apps?.android,
+      ios: values?.otherInfo?.apps?.ios,
+      windows: values?.otherInfo?.apps?.windows
     };
   };
   useEffect(() => {
@@ -165,6 +171,12 @@ const Settings = () => {
     }
   };
 
+  // Add download handler function
+  const handleDownload = (url) => {
+    if (!url) return;
+    window.open(url, '_blank');
+  };
+
   return (
     <FormWrapper>
       {" "}
@@ -182,22 +194,17 @@ const Settings = () => {
         {isEditingJson ? (
           <>
             <h2>Edit JSON Data</h2>
-            <ReactJson
-              src={jsonContent ? JSON.parse(jsonContent) : {}}
-              onEdit={(edit) =>
-                setJsonContent(JSON.stringify(edit.updated_src))
-              }
-              onAdd={(add) => setJsonContent(JSON.stringify(add.updated_src))}
-              onDelete={(del) =>
-                setJsonContent(JSON.stringify(del.updated_src))
-              }
-              style={{
-                fontFamily: "monospace",
-                backgroundColor: "#f5f5f5",
-                padding: "20px",
-                borderRadius: "5px",
-              }}
-            />
+
+              <MonacoEditor
+                height="100vh"
+                language="json"
+                // theme="vs-dark"
+                value={jsonContent}
+                onChange={(value) => setJsonContent(value)}
+                options={{
+                  selectOnLineNumbers: true,
+                }}
+              />
             <Grid container spacing={2} mt={2} gap={2}>
               <Button
                 onClick={handleJsonSave}
@@ -325,6 +332,105 @@ const Settings = () => {
                         placeholder="Instagram Account"
                         fullWidth
                       />
+                    </Grid>
+                  </Grid>
+                </FormSection>
+
+                <FormSection
+                  showSection
+                  title="Mobile Apps"
+                  containerCSS={`margin-top: 20px;`}
+                >
+                  <Grid container spacing={3}>
+                    <Grid item container md={6} xs={12} direction={"column"} sx={{ marginBottom: 2 }}>
+                      <FormLabel htmlFor="android" className="label">
+                        Android 
+                      </FormLabel>
+                      <Grid container spacing={1} alignItems="center">
+                        <Grid item xs={8}>
+                          <TextField
+                            id="android"
+                            name="android"
+                            value={formik.values.android}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            placeholder="Android Link"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Button 
+                            variant="contained" 
+                            color="primary"
+                            disabled={!formik.values.android}
+                            onClick={() => handleDownload(formik.values.android)}
+                            fullWidth
+                            size="medium"
+                          >
+                            Download
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </Grid>
+                    <Grid item container md={6} xs={12} direction={"column"} sx={{ marginBottom: 2 }}>
+                      <FormLabel htmlFor="ios" className="label">
+                        iOS
+                      </FormLabel>
+                      <Grid container spacing={1} alignItems="center">
+                        <Grid item xs={8}>
+                          <TextField
+                            id="ios"
+                            name="ios"
+                            value={formik.values.ios}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            placeholder="iOS Link"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Button 
+                            variant="contained" 
+                            color="primary"
+                            disabled={!formik.values.ios}
+                            onClick={() => handleDownload(formik.values.ios)}
+                            fullWidth
+                            size="medium"
+                          >
+                            Download
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </Grid>
+                    <Grid item container md={6} xs={12} direction={"column"}>
+                      <FormLabel htmlFor="windows" className="label">
+                        Windows
+                      </FormLabel>
+                      <Grid container spacing={1} alignItems="center">
+                        <Grid item xs={8}>
+                          <TextField
+                            id="windows"
+                            name="windows"
+                            value={formik.values.windows}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            placeholder="Windows Link"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Button 
+                            variant="contained" 
+                            color="primary"
+                            disabled={!formik.values.windows}
+                            onClick={() => handleDownload(formik.values.windows)}
+                            fullWidth
+                            size="medium"
+                          >
+                            Download
+                          </Button>
+                        </Grid>
+                      </Grid>
                     </Grid>
                   </Grid>
                 </FormSection>

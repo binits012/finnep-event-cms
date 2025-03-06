@@ -42,6 +42,7 @@ const Tickets = () => {
     };
     getEvents();
   }, []);
+  console.log(events)
   const COLUMNS = [
     {
       field: "eventTitle",
@@ -82,12 +83,12 @@ const Tickets = () => {
       headerName: "Action",
       headerClassName: "column-header",
       cellClassName: "column-cell",
-      width: 150,
+      width: 250,
       sortable: false,
       renderCell: ({ row }) => {
         return (
           <Link href={`/tickets/${row._id}`}>
-            <Button variant="contained">Issue</Button>
+            <Button variant="contained" sx={{background: row.active ? "": "gray" }}>Issue</Button> <span> {row.active?"":"currenlty inactive"}</span>
           </Link>
         );
       },
