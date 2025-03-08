@@ -42,15 +42,7 @@ import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
 registerPlugin(FilePondPluginImagePreview);
-function convertTime(minutes) {
-  // Create a moment duration from minutes
-  const duration = moment.duration(minutes, "minutes");
-
-  // Format the duration as H:mm
-  const formattedTime = moment.utc(duration.asMilliseconds()).format("H:mm");
-
-  return formattedTime;
-}
+ 
 const AddEvent = ({ editMode }) => {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState([]);
@@ -87,7 +79,7 @@ const AddEvent = ({ editMode }) => {
         
         const res = await updateEvent(id, {
           ...values,
-          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki').format(),
+          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki', true).format(),
           ticketInfo,
           socialMedia: {
             fb: values.fbLink,
@@ -114,7 +106,7 @@ const AddEvent = ({ editMode }) => {
       try {
         const res = await addEvent({
           ...values,
-          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki').format(),
+          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki', true).format(),
           ticketInfo,
           socialMedia: {
             fb: values.fbLink,
@@ -168,19 +160,18 @@ const AddEvent = ({ editMode }) => {
   const transformObtainedValuesToForm = (values, tz) => {
     return {
       ...values,
-      eventDate: dayjs(
-        moment.utc(values.eventDate).format("YYYY-MM-DDTHH:mm:sss")
-      ),
-      // eventTime: convertTime(values.eventTime),
-      eventTime: null,
-      fbLink: values.socialMedia.fb,
-      xLink: values.socialMedia.x,
-      eventPrice: values.eventPrice,
-      timeZone: tz,
-      igLink: values.socialMedia.insta,
-      //  fbLink: values.socialMedia.fb,
+      eventDate: values.eventDate
+        ? dayjs(values.eventDate).tz(tz).toISOString() // Ensure eventDate is properly handled with timezone
+        : null,
+      eventTime: null, // Convert or set as required later
+      fbLink: values.socialMedia?.fb || "", // Fallback to empty string if missing
+      xLink: values.socialMedia?.x || "",
+      igLink: values.socialMedia?.insta || "",
+      eventPrice: values.eventPrice || 0, // Fallback in case eventPrice is undefined
+      timeZone: tz, // Preserve passed timezone
     };
   };
+  
   useEffect(() => {
     if (editMode) {
       const fetchEventById = async () => {
@@ -333,41 +324,40 @@ const AddEvent = ({ editMode }) => {
             showSection
             title={`When? ${
               formik.values.eventDate
-                ? dayjs(formik.values.eventDate).tz("Europe/Helsinki").format("MMMM DD, YYYY hh:mm A")
-                : ""
+                ? dayjs(formik.values.eventDate).tz("Europe/Helsinki").format("ddd, DD MMM YYYY HH:mm")
+                : null
             }`}
           >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-  <Grid container spacing={2}>
-    <Grid item container md={5} direction={"column"}>
-      <FormLabel htmlFor="eventTitle" className="label">
-        Event Date/ Time
-      </FormLabel>
-      <DateTimePicker
-        disablePast
-        sx={{
-          margin: 0,
-        }}
-        id="eventDate"
-        name="eventDate"
-        value={
-          formik.values.eventDate
-            ?  dayjs(formik.values.eventDate).tz("Europe/Helsinki")// Ensure it's a Day.js UTC object
-            : null
-        }
-        onChange={(value) => {
-          // Convert selected date to UTC ISO string and store in Formik
-          formik.setFieldValue(
-            "eventDate",
-            value ? dayjs(value).utc().toISOString() : null
-          );
-        }}
-        onBlur={formik.handleBlur}
-      />
-    </Grid>
-  </Grid>
-</LocalizationProvider>
-
+              <Grid container spacing={2}>
+                <Grid item container md={5} direction={"column"}>
+                  <FormLabel htmlFor="eventTitle" className="label">
+                    Event Date/ Time
+                  </FormLabel>
+                  <DateTimePicker
+                    disablePast
+                    sx={{
+                      margin: 0,
+                    }}
+                    id="eventDate"
+                    name="eventDate"
+                    value={
+                      formik.values.eventDate
+                        ? dayjs(formik.values.eventDate).tz("Europe/Helsinki")
+                        : null
+                    }      
+                    onChange={(value) => {
+                      // Convert selected date to local time before saving to Formik
+                      formik.setFieldValue(
+                        "eventDate",
+                        value ? dayjs(value).tz("Europe/Helsinki").format() : null
+                      );
+                    }}
+                    onBlur={formik.handleBlur}
+                  />
+                </Grid>
+              </Grid>
+            </LocalizationProvider>
           </FormSection>
 
           <FormSection showSection title="Tickets">
