@@ -5,7 +5,7 @@ import {
   FormLabel,
   Grid,
   InputAdornment,
-  TextField,
+  TextField
 } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -79,13 +79,16 @@ const AddEvent = ({ editMode }) => {
         
         const res = await updateEvent(id, {
           ...values,
-          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki', true).format(),
+          eventDate: dayjs(values.eventDate),
           ticketInfo,
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
             insta: values.igLink,
           },
+          otherInfo:{
+            emailTemplate:values?.emailTemplate
+          }
         });
 
         Toast.fire({
@@ -106,12 +109,15 @@ const AddEvent = ({ editMode }) => {
       try {
         const res = await addEvent({
           ...values,
-          eventDate: dayjs(values.eventDate).tz('Europe/Helsinki', true).format(),
+          eventDate: dayjs(values.eventDate),
           ticketInfo,
           socialMedia: {
             fb: values.fbLink,
             x: values.xLink,
           },
+          otherInfo:{
+            emailTemplate:values?.emailTemplate
+          }
         });
 
         Toast.fire({
@@ -151,6 +157,7 @@ const AddEvent = ({ editMode }) => {
       fbLink: "",
       xLink: "",
       igLink: "",
+      emailTemplate:""
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -169,6 +176,7 @@ const AddEvent = ({ editMode }) => {
       igLink: values.socialMedia?.insta || "",
       eventPrice: values.eventPrice || 0, // Fallback in case eventPrice is undefined
       timeZone: tz, // Preserve passed timezone
+      emailTemplate: values?.otherInfo?.emailTemplate
     };
   };
   
@@ -324,7 +332,7 @@ const AddEvent = ({ editMode }) => {
             showSection
             title={`When? ${
               formik.values.eventDate
-                ? dayjs(formik.values.eventDate).tz("Europe/Helsinki").format("ddd, DD MMM YYYY HH:mm")
+                ? dayjs(formik.values.eventDate).format("ddd, DD MMM YYYY HH:mm")
                 : null
             }`}
           >
@@ -343,14 +351,14 @@ const AddEvent = ({ editMode }) => {
                     name="eventDate"
                     value={
                       formik.values.eventDate
-                        ? dayjs(formik.values.eventDate).tz("Europe/Helsinki")
+                        ? dayjs(formik.values.eventDate)
                         : null
                     }      
                     onChange={(value) => {
                       // Convert selected date to local time before saving to Formik
                       formik.setFieldValue(
                         "eventDate",
-                        value ? dayjs(value).tz("Europe/Helsinki").format() : null
+                        value ? dayjs(value): null
                       );
                     }}
                     onBlur={formik.handleBlur}
@@ -649,6 +657,23 @@ const AddEvent = ({ editMode }) => {
                 placeholder="Order of event"
                 fullWidth
                 type="number"
+              />
+            </Grid>
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="EmailTemplate" className="label">
+                Email Template
+              </FormLabel>
+              <TextField
+                id="emailTemplate"
+                name="emailTemplate"
+                label="Email HTML"
+                value={formik.values.emailTemplate}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                multiline
+                rows={30} // Number of visible rows
+                variant="outlined" // Can be "filled" or "standard"
+                fullWidth // Makes it take the full width of its container
               />
             </Grid>
           </FormSection>
