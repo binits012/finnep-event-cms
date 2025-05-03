@@ -14,6 +14,7 @@ import { useDispatch } from "react-redux";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import "./login.css";
+import { useRouter } from "next/navigation";
 
 const MotionWrapper = styled(motion.div)`
   opacity: 0.75;
@@ -29,17 +30,9 @@ export default function Login() {
   const [open, setOpen] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetLinkEmail, setResetLinkEmail] = useState("");
-  //   const handleSendResetLink = async () => {
-  //     try {
-  //       const res = await getResetLink({ username: resetLinkEmail });
-  //       toast.success("Reset link has been sent to the linked email address.");
-  //       setResetLinkEmail("");
-  //       // setForgotPassword(false)
-  //     } catch (err) {
-  //       toast.error("Username not found!");
-  //     }
-  //   };
+ 
   const [keepSignedIn, setKeepmeSignedIn] = useState("");
+  const router = useRouter();
 
   const dispatch = useDispatch();
 
@@ -79,6 +72,7 @@ export default function Login() {
       setLoading(false);
       setOpen(false);
       dispatch(setUser(res.data));
+      router.push('dashboard');
       toast("Logged In Successfully", {
         autoClose: 5000,
       });

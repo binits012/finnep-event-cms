@@ -46,6 +46,7 @@ const Tickets = () => {
   const { id } = useParams();
   const [files, setFiles] = useState([]);
   const [viewEmail, setViewEmail] = useState({});
+  const [viewEmailTimeouts, setViewEmailTimeouts] = useState({});
   const [checkedInTickets, setCheckedInTickets] = useState({});
   const [emailInputHasFocus, setEmailInputHasFocus] = useState(false);
   const [ticketCodeInputHasFocus, setTicketCodeInputHasFocus] = useState(false);
@@ -81,6 +82,15 @@ const Tickets = () => {
       return () => clearTimeout(focusTimer);
     }
   }, [ticketCodeSearch, ticketCodeInputHasFocus]);
+
+  // Initialize viewEmail with default values for all ticket IDs
+  useEffect(() => {
+    const initialViewEmail = tickets.reduce((acc, ticket) => {
+      acc[ticket.id] = false;
+      return acc;
+    }, {});
+    setViewEmail(initialViewEmail);
+  }, [tickets]);
 
   const Toast = Swal.mixin({
     toast: true,
@@ -346,6 +356,20 @@ const Tickets = () => {
     }
   };
 
+  const handleMouseDown = (ticketId) => {
+    setViewEmail((prev) => ({ ...prev, [ticketId]: true }));
+    if (viewEmailTimeouts[ticketId]) {
+      clearTimeout(viewEmailTimeouts[ticketId]);
+    }
+  };
+
+  const handleMouseUpOrLeave = (ticketId) => {
+    const timeout = setTimeout(() => {
+      setViewEmail((prev) => ({ ...prev, [ticketId]: false }));
+    }, 500); // Adjust delay as needed
+    setViewEmailTimeouts((prev) => ({ ...prev, [ticketId]: timeout }));
+  };
+
   const COLUMNS = [
     {
       field: "sn",
@@ -370,9 +394,8 @@ const Tickets = () => {
             <span>{viewEmail[row.id] ? email : maskedEmail}</span>
             <IconButton
               size="small"
-              onMouseDown={() => setViewEmail(prev => ({ ...prev, [row.id]: true }))}
-              onMouseUp={() => setViewEmail(prev => ({ ...prev, [row.id]: false }))}
-              onMouseLeave={() => setViewEmail(prev => ({ ...prev, [row.id]: false }))}
+              onMouseDown={() => handleMouseDown(row.id)} 
+              onMouseLeave={() => handleMouseUpOrLeave(row.id)}
               sx={{ ml: 1 }}
             >
               <IoMdEye size={18} />
