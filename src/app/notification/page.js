@@ -339,6 +339,12 @@ export default function NotificationPage() {
               }}
               pageSizeOptions={[10, 15, 20]}
               autoHeight
+              isRowSelectable={() => false}
+              sx={{
+                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
+                  outline: "none !important"
+                }
+              }}
             />
           </Box>
 
