@@ -42,7 +42,6 @@ const Tickets = () => {
     };
     getEvents();
   }, []);
-  console.log(events)
   const COLUMNS = [
     {
       field: "eventTitle",
@@ -88,7 +87,13 @@ const Tickets = () => {
       renderCell: ({ row }) => {
         return (
           <Link href={`/tickets/${row._id}`}>
-            <Button variant="contained" sx={{background: row.active ? "": "gray" }}>Issue</Button> <span> {row.active?"":"currenlty inactive"}</span>
+            <Button
+              variant="contained"
+              sx={{ background: row.active ? "" : "gray" }}
+            >
+              Issue
+            </Button>{" "}
+            <span> {row.active ? "" : "currenlty inactive"}</span>
           </Link>
         );
       },
@@ -131,6 +136,7 @@ const Tickets = () => {
         }}
         pageSizeOptions={[5, 10, 15, 20]}
         getRowId={(row) => row._id}
+        isRowSelectable={() => false}
         slots={{
           toolbar: () => (
             <Input
@@ -185,6 +191,10 @@ const StyledDataGrid = styled(DataGrid)`
 
   .column-cell {
     font-size: 18px;
+  }
+  .MuiDataGrid-cell:focus,
+  .MuiDataGrid-cell:focus-within{
+    outline: none !important;
   }
 `;
 const FormWrapper = styled.div`

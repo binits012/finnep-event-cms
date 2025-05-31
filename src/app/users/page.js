@@ -220,6 +220,7 @@ const Users = () => {
         pageSizeOptions={[10, 15, 20]}
         getRowId={(row) => row._id}
         disableSelectionOnClick
+        isRowSelectable={() => false}
         loading={loading}
         slots={{
           toolbar: () => (
@@ -295,6 +296,10 @@ const StyledDataGrid = styled(DataGrid)`
 
   .column-cell {
     font-size: 18px;
+  }
+  .MuiDataGrid-cell:focus,
+  .MuiDataGrid-cell:focus-within {
+    outline: none !important;
   }
 `;
 
