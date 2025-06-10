@@ -619,7 +619,7 @@ const Tickets = () => {
             </Grid>
           </FormSection>
         </form>
-        {/*
+        {
         <form>
           <FormSection showSection title={`Create Multiple Tickets`}>
             <Grid container spacing={2} alignItems={"flex-end"}>
@@ -833,7 +833,7 @@ const Tickets = () => {
             </Grid>
           </FormSection>
         </form>
-        */}
+        }
         <DataGrid
           rows={filteredRows}
           columns={COLUMNS}
