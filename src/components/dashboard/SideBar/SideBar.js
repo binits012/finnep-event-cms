@@ -6,7 +6,7 @@ import {
   MdEventNote,
   MdOutlineSettings,
   MdSupervisedUserCircle,
-  MdRateReview,
+  MdRateReview, MdBusinessCenter
 } from "react-icons/md";
 import { FaChevronLeft, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -159,6 +159,11 @@ const SideBar = ({ onToggle }) => {
     },
 
     {
+      title: "Merchants",
+      link: "/merchants",
+      icon: <MdBusinessCenter size={24} />,
+    },
+    {
       title: "Event",
       link: "/events",
       icon: <MdEventNote size={24} />,
@@ -210,7 +215,7 @@ const SideBar = ({ onToggle }) => {
               <>
                 {/* <Avatar src={"/noavatar.png"} alt="no avatar" /> */}
                 <div className="userDetail">
-                  <span className="username">Yellow Bridge</span>
+                  <span className="username">Finnep</span>
                   {/* <span className="userTitle">Administrator</span> */}
                 </div>
               </>

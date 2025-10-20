@@ -5,8 +5,8 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Yellow Bridge",
-  description: "Yellow Bridge CMS",
+  title: "Finnep",
+  description: "Finnep CMS",
 };
 
 export default function RootLayout({ children }) {

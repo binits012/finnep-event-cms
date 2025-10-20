@@ -230,7 +230,7 @@ const Settings = () => {
                     name="aboutSection"
                     id="aboutSection"
                     value={formik.values.aboutSection}
-                    label="About YellowBridge"
+                    label="About Finnep"
                     handleChange={(text) => {
                       formik.setFieldValue("aboutSection", text);
                     }}

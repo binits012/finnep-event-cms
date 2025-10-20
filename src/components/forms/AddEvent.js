@@ -5,7 +5,7 @@ import {
   FormLabel,
   Grid,
   InputAdornment,
-  TextField
+  TextField, Box, Typography, Chip, Select, MenuItem
 } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -16,7 +16,7 @@ import styled from "styled-components";
 import FormSection from "@/components/FormSection";
 import IOSSwitch from "@/components/IOSSwtich";
 import { useEffect, useState } from "react";
-import { addEvent, updateEvent } from "@/RESTAPIs/events";
+import { addEvent, updateEvent, enableDisableEvent } from "@/RESTAPIs/events";
 import { useParams } from "next/navigation";
 import apiHandler from "@/RESTAPIs/helper";
 import moment from "moment";
@@ -72,8 +72,105 @@ const AddEvent = ({ editMode }) => {
     setTicketInfo(newTickets);
   };
 
+  
+
   const handleSubmit = async (values) => {
     setLoading(true);
+    if(id){
+      console.log("Toggling event active status", formik.values.active);
+      console.log("Featured data", formik.values.featured);
+      
+      // Validate featured fields before submission (only when isFeatured is true)
+      if (formik.values.featured?.isFeatured === true) {
+        const featured = formik.values.featured;
+        
+        // Check priority (required for all featured types)
+        if (!featured.priority || featured.priority < 1 || featured.priority > 100) {
+          Toast.fire({
+            icon: "error",
+            title: "Priority must be between 1-100",
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Check dates based on featured type
+        if (featured.featuredType === 'temporary') {
+          // For temporary: both start and end dates are required
+          if (!featured.startDate || featured.startDate === null || featured.startDate === undefined) {
+            Toast.fire({
+              icon: "error",
+              title: "Start date is required for temporary featuring",
+            });
+            setLoading(false);
+            return;
+          }
+          
+          if (!featured.endDate || featured.endDate === null || featured.endDate === undefined) {
+            Toast.fire({
+              icon: "error",
+              title: "End date is required for temporary featuring",
+            });
+            setLoading(false);
+            return;
+          }
+          
+          // Check if end date is after start date
+          if (dayjs(featured.endDate).isBefore(dayjs(featured.startDate))) {
+            Toast.fire({
+              icon: "error",
+              title: "End date must be after start date",
+            });
+            setLoading(false);
+            return;
+          }
+        } else if (featured.featuredType === 'sticky') {
+          // For sticky: only endDate is required (auto-populated with eventDate)
+          if (!featured.endDate || featured.endDate === null || featured.endDate === undefined) {
+            Toast.fire({
+              icon: "error",
+              title: "End date is required for sticky featuring",
+            });
+            setLoading(false);
+            return;
+          }
+          
+          // For sticky, startDate is optional (can be null/undefined)
+          // But if provided, it should be before endDate
+          if (featured.startDate && dayjs(featured.endDate).isBefore(dayjs(featured.startDate))) {
+            Toast.fire({
+              icon: "error",
+              title: "End date must be after start date",
+            });
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
+      const payload = {
+        active: formik.values.active, // Toggle to opposite of current slider
+        featured: formik.values.featured
+      };
+      
+      const res = await enableDisableEvent(id, payload);
+      
+      if(res.status === 200){
+        Toast.fire({
+          icon: "success",
+          title: `Event ${formik.values.active ? "Activated" : "Deactivated"} !!`,
+        });
+        // Update formik to reflect the new status
+        formik.setFieldValue("active", formik.values.active);
+      } else {
+        Toast.fire({
+          icon: "error",
+          title: `Error ${formik.values.active ? "Deactivating" : "Activating"} event !!`,
+        });
+      }
+      setLoading(false);
+    }
+    /*
     if (id) {
       try {
         
@@ -135,6 +232,7 @@ const AddEvent = ({ editMode }) => {
         setLoading(false);
       }
     }
+    */
   };
   const formik = useFormik({
     initialValues: {
@@ -157,7 +255,14 @@ const AddEvent = ({ editMode }) => {
       fbLink: "",
       xLink: "",
       igLink: "",
-      emailTemplate:""
+      emailTemplate: "",
+      featured: {
+        isFeatured: false,
+        featuredType: "temporary",
+        priority: 0,
+        startDate: null,
+        endDate: null
+      }
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -171,12 +276,20 @@ const AddEvent = ({ editMode }) => {
         ? dayjs(values.eventDate).tz(tz).toISOString() // Ensure eventDate is properly handled with timezone
         : null,
       eventTime: null, // Convert or set as required later
-      fbLink: values.socialMedia?.fb || "", // Fallback to empty string if missing
-      xLink: values.socialMedia?.x || "",
-      igLink: values.socialMedia?.insta || "",
+      fbLink: values.socialMedia?.fb || values.socialMedia?.facebook || "", // Fallback to empty string if missing
+      xLink: values.socialMedia?.x || values.socialMedia?.twitter || "",
+      igLink: values.socialMedia?.insta || values.socialMedia?.instagram ||  "",
+      tiktok: values.socialMedia?.tiktok || values.socialMedia?.tiktok ||  "",
       eventPrice: values.eventPrice || 0, // Fallback in case eventPrice is undefined
       timeZone: tz, // Preserve passed timezone
-      emailTemplate: values?.otherInfo?.emailTemplate
+      emailTemplate: values?.otherInfo?.emailTemplate,
+      featured: {
+        isFeatured: values.featured?.isFeatured || false,
+        featuredType: values.featured?.featuredType || "temporary",
+        priority: values.featured?.priority || 0,
+        startDate: values.featured?.startDate ? dayjs(values.featured.startDate) : null,
+        endDate: values.featured?.endDate ? dayjs(values.featured.endDate) : null
+      }
     };
   };
   
@@ -271,14 +384,14 @@ const AddEvent = ({ editMode }) => {
           },
           {
             path: "/events/add",
-            title: editMode ? "Edit Event" : "Add Event",
+            title: editMode ? "View Event" : "Add Event",
             active: true,
           },
         ]}
       />
       <form>
         <Grid container direction="column" spacing={0}>
-          <FormSection showSection title="Introduce">
+          <FormSection title="Introduce">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="eventTitle" className="label">
@@ -292,6 +405,9 @@ const AddEvent = ({ editMode }) => {
                   onBlur={formik.handleBlur}
                   placeholder="Event Title"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>{" "}
               <Grid item container md={10} direction={"column"}>
@@ -306,6 +422,9 @@ const AddEvent = ({ editMode }) => {
                   onBlur={formik.handleBlur}
                   placeholder="Event Name"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
               <Grid item container md={10} direction={"column"}>
@@ -323,13 +442,15 @@ const AddEvent = ({ editMode }) => {
                   // rows={3}
                   minRows={3}
                   maxRows={5}
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
             </Grid>
           </FormSection>
 
           <FormSection
-            showSection
             title={`When? ${
               formik.values.eventDate
                 ? dayjs(formik.values.eventDate).format("ddd, DD MMM YYYY HH:mm")
@@ -368,7 +489,8 @@ const AddEvent = ({ editMode }) => {
             </LocalizationProvider>
           </FormSection>
 
-          <FormSection showSection title="Tickets">
+          <FormSection title="Tickets">
+           {/*
             <Button
               variant="contained"
               color="primary"
@@ -377,56 +499,72 @@ const AddEvent = ({ editMode }) => {
             >
               + Add Ticket
             </Button>
+            */}
             {ticketInfo.map((ticket, index) => (
-              <Grid container spacing={2} key={index}>
-                <Grid item container md={3}>
-                  <TextField
-                    placeholder="Name"
-                    value={ticket.name}
-                    onChange={(e) =>
-                      handleTicketChange(index, "name", e.target.value)
-                    }
-                    fullWidth
-                  />
+              <Box 
+              key={index}
+              sx={{
+                mb: 3,
+                p: 2,
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                backgroundColor: '#f9f9f9'
+              }}
+            >
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                {ticket.name}
+              </Typography>
+              
+              <Grid container spacing={2}>
+                {/* First row */}
+                <Grid item xs={12} sm={4} md={3}>
+                  <Typography variant="caption" color="textSecondary">Price</Typography>
+                  <Typography variant="body1">{ticket.price} €</Typography>
                 </Grid>
-                <Grid item container md={3}>
-                  <TextField
-                    placeholder="Price"
-                    value={ticket.price}
-                    onChange={(e) =>
-                      handleTicketChange(index, "price", e.target.value)
-                    }
-                    fullWidth
-                    type="number"
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment
-                          position="end"
-                          sx={{ marginLeft: "-190px" }}
-                        >
-                          €
-                        </InputAdornment>
-                      ),
+                
+                <Grid item xs={12} sm={4} md={3}>
+                  <Typography variant="caption" color="textSecondary">Quantity</Typography>
+                  <Typography variant="body1">{ticket.quantity}</Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={4} md={3}>
+                  <Typography variant="caption" color="textSecondary">Service Fee</Typography>
+                  <Typography variant="body1">{ticket.serviceFee} €</Typography>
+                </Grid>
+                
+                {/* Second row */}
+                <Grid item xs={12} sm={4} md={3}>
+                  <Typography variant="caption" color="textSecondary">VAT</Typography>
+                  <Typography variant="body1">{ticket.vat}%</Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={4} md={3}>
+                  <Typography variant="caption" color="textSecondary">Available</Typography>
+                  <Typography variant="body1">{ticket.available}</Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={4} md={3}>
+                  <Typography variant="caption" color="textSecondary">Status</Typography>
+                  <Chip 
+                    label={ticket.status || 'N/A'} 
+                    size="small"
+                    sx={{
+                      backgroundColor: ticket.status === 'available' ? '#e3f2fd' : 
+                                      ticket.status === 'sold out' ? '#ffebee' : 
+                                      '#f5f5f5',
+                      color: ticket.status === 'available' ? '#0d47a1' : 
+                            ticket.status === 'sold out' ? '#b71c1c' : 
+                            '#616161',
+                      fontWeight: 'medium'
                     }}
                   />
                 </Grid>
-
-                <Grid item container md={3}>
-                  <TextField
-                    placeholder="Quantity"
-                    value={ticket.quantity}
-                    onChange={(e) =>
-                      handleTicketChange(index, "quantity", e.target.value)
-                    }
-                    fullWidth
-                    type="number"
-                  />
-                </Grid>
               </Grid>
+            </Box>
             ))}
           </FormSection>
 
-          <FormSection showSection title="Business">
+          <FormSection title="Business">
             <Grid container spacing={2}>
               <Grid item container md={5} direction={"column"}>
                 <FormLabel htmlFor="occupancy" className="label">
@@ -441,11 +579,14 @@ const AddEvent = ({ editMode }) => {
                   placeholder="Occupancy"
                   fullWidth
                   type="number"
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection showSection title="Where?">
+          <FormSection title="Where?">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="eventLocationAddress" className="label">
@@ -459,6 +600,9 @@ const AddEvent = ({ editMode }) => {
                   onBlur={formik.handleBlur}
                   placeholder="Address Details"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
               <Grid item container md={10} direction={"column"}>
@@ -474,11 +618,14 @@ const AddEvent = ({ editMode }) => {
                   placeholder="Geo Code"
                   fullWidth
                   // type="number"
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection showSection title="Photos">
+          <FormSection title="Photos">
             <Grid container spacing={2}>
               <Grid item container md={10}>
                 <FormLabel htmlFor="eventPromotionPhoto" className="label">
@@ -492,6 +639,9 @@ const AddEvent = ({ editMode }) => {
                   onBlur={formik.handleBlur}
                   placeholder="Promotion Photo"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
                 {formik.values.eventPromotionPhoto && (
                   <img
@@ -505,7 +655,7 @@ const AddEvent = ({ editMode }) => {
             </Grid>
           </FormSection>
           {editMode && (
-            <FormSection showSection title="Event Photos">
+            <FormSection title="Event Photos">
               <FormLabel htmlFor="eventPhotos" className="label">
                 Event Photos
               </FormLabel>
@@ -519,6 +669,7 @@ const AddEvent = ({ editMode }) => {
                   name="file"
                   labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
                 />
+                {/*
                 <Button
                   variant="contained"
                   color="primary"
@@ -528,6 +679,7 @@ const AddEvent = ({ editMode }) => {
                 >
                   {uploading ? "Uploading..." : "Upload"}
                 </Button>
+                */}
                 {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
 
                 {validPhotoevents.length > 0 && (
@@ -560,7 +712,7 @@ const AddEvent = ({ editMode }) => {
               </Grid>
             </FormSection>
           )}
-          <FormSection showSection title="Social Media">
+          <FormSection title="Social Media">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="fbLink" className="label">
@@ -569,11 +721,14 @@ const AddEvent = ({ editMode }) => {
                 <TextField
                   id="fbLink"
                   name="fbLink"
-                  value={formik.values.fbLink}
+                  value={formik.values.fbLink }
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   placeholder="Facebook Link"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
               <Grid item container md={10} direction={"column"}>
@@ -588,6 +743,9 @@ const AddEvent = ({ editMode }) => {
                   onBlur={formik.handleBlur}
                   placeholder="Instagram Link"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
               <Grid item container md={10} direction={"column"}>
@@ -602,11 +760,180 @@ const AddEvent = ({ editMode }) => {
                   onBlur={formik.handleBlur}
                   placeholder="X (Twitter) Link"
                   fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+              <Grid item container md={10} direction={"column"}>
+                <FormLabel htmlFor="tikTok" className="label">
+                  Tiktok Link
+                </FormLabel>
+                <TextField
+                  id="tikTokLink"
+                  name="tikTokLink"
+                  value={formik.values.tiktok }
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Tiktok Link"
+                  fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
             </Grid>
           </FormSection>
-          <FormSection showSection title="Others">
+          
+          <FormSection title="Featured">
+            <Grid container spacing={2}>
+              <Grid item container md={10} direction={"column"}>
+                <FormLabel htmlFor="isFeatured" className="label">
+                  Featured Event
+                </FormLabel>
+                <FormControlLabel
+                  control={
+                    <IOSSwitch
+                      sx={{ m: 1 }}
+                      checked={formik.values.featured?.isFeatured || false}
+                      id="isFeatured"
+                      name="isFeatured"
+                    />
+                  }
+                  htmlFor="isFeatured"
+                  label="Is this event featured?"
+                  value={formik.values.featured?.isFeatured || false}
+                  onChange={(e) => {
+                    const newFeaturedStatus = !formik.values.featured?.isFeatured;
+                    formik.setFieldValue("featured.isFeatured", newFeaturedStatus);
+                    
+                    // Auto-populate startDate when enabling featured for temporary type
+                    if (newFeaturedStatus && formik.values.featured?.featuredType === 'temporary') {
+                      formik.setFieldValue("featured.startDate", dayjs());
+                    }
+                  }}
+                />
+              </Grid>
+              
+              {formik.values.featured?.isFeatured && (
+                <>
+                  <Grid item container md={10} direction={"column"}>
+                    <FormLabel htmlFor="featuredType" className="label">
+                      Featured Type
+                    </FormLabel>
+                    <Select
+                      id="featuredType"
+                      name="featuredType"
+                      value={formik.values.featured?.featuredType || 'temporary'}
+                      onChange={(e) => {
+                        const newType = e.target.value;
+                        formik.setFieldValue("featured.featuredType", newType);
+                        
+                        // Auto-populate endDate with eventDate for sticky
+                        if (newType === 'sticky' && formik.values.eventDate) {
+                          formik.setFieldValue("featured.endDate", dayjs(formik.values.eventDate));
+                        }
+                        
+                        // Auto-populate startDate with current date/time for temporary
+                        if (newType === 'temporary') {
+                          formik.setFieldValue("featured.startDate", dayjs());
+                        }
+                      }}
+                      fullWidth
+                    >
+                      <MenuItem value="sticky">Sticky (Always at top)</MenuItem>
+                      <MenuItem value="temporary">Temporary (Time-based)</MenuItem>
+                    </Select>
+                  </Grid>
+                  
+                  <Grid item container md={10} direction={"column"}>
+                    <FormLabel htmlFor="priority" className="label">
+                      Priority (0-100)
+                    </FormLabel>
+                    <TextField
+                      id="priority"
+                      name="priority"
+                      value={formik.values.featured?.priority || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          formik.setFieldValue("featured.priority", '');
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue)) {
+                            formik.setFieldValue("featured.priority", numValue);
+                          }
+                        }
+                      }}
+                      onBlur={formik.handleBlur}
+                      placeholder="Priority (1-100)"
+                      fullWidth
+                      type="number"
+                      inputProps={{ min: 0, max: 100 }}
+                      required={formik.values.featured?.isFeatured === true}
+                      error={formik.values.featured?.isFeatured === true && (formik.values.featured?.priority === '' || formik.values.featured?.priority === undefined || formik.values.featured.priority < 1 || formik.values.featured.priority > 100)}
+                      helperText={formik.values.featured?.isFeatured === true && (formik.values.featured?.priority === '' || formik.values.featured?.priority === undefined || formik.values.featured.priority < 1 || formik.values.featured.priority > 100) ? "Priority is required (1-100)" : ""}
+                    />
+                  </Grid>
+                  
+                  {formik.values.featured?.featuredType === 'temporary' && (
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <Grid item container md={5} direction={"column"}>
+                        <FormLabel htmlFor="startDate" className="label">
+                          Start Date
+                        </FormLabel>
+                        <DateTimePicker
+                          disablePast
+                          sx={{ margin: 0 }}
+                          id="startDate"
+                          name="startDate"
+                          value={formik.values.featured?.startDate ? dayjs(formik.values.featured.startDate) : null}
+                          onChange={(value) => {
+                            formik.setFieldValue("featured.startDate", value ? dayjs(value) : null);
+                          }}
+                          onBlur={formik.handleBlur}
+                          slotProps={{
+                            textField: {
+                              required: formik.values.featured?.isFeatured === true && formik.values.featured?.featuredType === 'temporary',
+                              error: formik.values.featured?.isFeatured === true && formik.values.featured?.featuredType === 'temporary' && (formik.values.featured?.startDate === null || formik.values.featured?.startDate === undefined || formik.values.featured?.startDate === ''),
+                              helperText: formik.values.featured?.isFeatured === true && formik.values.featured?.featuredType === 'temporary' && (formik.values.featured?.startDate === null || formik.values.featured?.startDate === undefined || formik.values.featured?.startDate === '') ? "Start date is required" : ""
+                            }
+                          }}
+                        />
+                      </Grid>
+                      
+                      <Grid item container md={5} direction={"column"}>
+                        <FormLabel htmlFor="endDate" className="label">
+                          End Date
+                        </FormLabel>
+                        <DateTimePicker
+                          disablePast
+                          minDateTime={formik.values.featured?.startDate ? dayjs(formik.values.featured.startDate) : dayjs()}
+                          sx={{ margin: 0 }}
+                          id="endDate"
+                          name="endDate"
+                          value={formik.values.featured?.endDate ? dayjs(formik.values.featured.endDate) : null}
+                          onChange={(value) => {
+                            formik.setFieldValue("featured.endDate", value ? dayjs(value) : null);
+                          }}
+                          onBlur={formik.handleBlur}
+                          slotProps={{
+                            textField: {
+                              required: formik.values.featured?.isFeatured === true && formik.values.featured?.featuredType === 'temporary',
+                              error: formik.values.featured?.isFeatured === true && formik.values.featured?.featuredType === 'temporary' && (formik.values.featured?.endDate === null || formik.values.featured?.endDate === undefined || formik.values.featured?.endDate === ''),
+                              helperText: formik.values.featured?.isFeatured === true && formik.values.featured?.featuredType === 'temporary' && (formik.values.featured?.endDate === null || formik.values.featured?.endDate === undefined || formik.values.featured?.endDate === '') ? "End date is required" : ""
+                            }
+                          }}
+                        />
+                      </Grid>
+                    </LocalizationProvider>
+                  )}
+                </>
+              )}
+            </Grid>
+          </FormSection>
+          
+          <FormSection title="Others">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="active" className="label">
@@ -642,6 +969,9 @@ const AddEvent = ({ editMode }) => {
                 onBlur={formik.handleBlur}
                 placeholder="Transport Link"
                 fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
               />
             </Grid>
             <Grid item container md={10} direction={"column"} mt={3}>
@@ -657,6 +987,9 @@ const AddEvent = ({ editMode }) => {
                 placeholder="Order of event"
                 fullWidth
                 type="number"
+                InputProps={{
+                  readOnly: true,
+                }}
               />
             </Grid>
             <Grid item container md={10} direction={"column"} mt={3}>
@@ -674,15 +1007,27 @@ const AddEvent = ({ editMode }) => {
                 rows={30} // Number of visible rows
                 variant="outlined" // Can be "filled" or "standard"
                 fullWidth // Makes it take the full width of its container
+                InputProps={{
+                  readOnly: true,
+                }}
               />
             </Grid>
           </FormSection>
         </Grid>
 
         <Grid container justifyContent="flex-end">
-          <Button id="submit" onClick={formik.handleSubmit} variant="contained">
-            {editMode ? "Update " : " Add"} Event
+          {
+          <Button 
+            id="submit" 
+            onClick={formik.handleSubmit} 
+            variant="contained"
+            color={formik.values.active ? "success" : "error"}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? "Processing..." : (formik.values.active ? "Activate" : "Deactivate")} 
           </Button>
+          }
           <Backdrop
             sx={{
               color: "#fff",

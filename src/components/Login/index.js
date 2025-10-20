@@ -100,7 +100,7 @@ export default function Login() {
   return (
     <div className="page">
       <Head>
-        <title>Yellow Bridge CMS</title>
+        <title>Finnep CMS</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 

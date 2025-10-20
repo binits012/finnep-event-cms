@@ -170,6 +170,39 @@ const Events = () => {
     </Box>
   );
 
+  const handleStatusToggle = async (eventId, currentStatus) => {
+    try { 
+      const response = await apiHandler("PATCH",`event/${eventId}`, true, null, {
+        active: !currentStatus
+      });
+  
+       
+      if (response.status === 200) {
+        // Update local state
+        setEvents(events.map(event => 
+          event._id === eventId 
+            ? { ...event, active: !currentStatus }
+            : event
+        ));
+        // Show success toast 
+        Toast.fire({
+          icon: "success",
+          title: "Event status updated successfully",
+        });
+      } else {
+        // Show error toast
+        Toast.fire({
+          icon: "error",
+          title: "Error making events active/inactive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating event status:', error);
+      // Show error toast
+      Toast.error('An error occurred while updating event status');
+    }
+  };
+
   return (
     <>
       <div style={{ padding: "20px" }}>
@@ -263,9 +296,11 @@ const Events = () => {
                     </MenuItem>
                   </Menu>
                 </Grid>
+                {/*
                 <Link passHref href="/events/add">
                   <Button variant="contained">+ Add</Button>
                 </Link>
+                */}
               </Grid>
             </Grid>
           </>
@@ -293,15 +328,18 @@ const Events = () => {
                     </figure>
                     <div className="article-body">
                       <h2>{event.eventTitle}</h2>
-
+                    {
                       <Button
                         style={{
                           backgroundColor: event.active ? "green" : "yellow",
                           color: event.active ? "white" : "black",
                         }}
+                        //onClick={() => handleStatusToggle(event._id, event.active)}
+                        onClick={() => {}}
                       >
                         {event.active ? "Active" : "Inactive"}
-                      </Button>
+                      </Button> 
+                      }
 
                       <Box mt={1} display="flex" justifyContent="center">
                         <IconButton
@@ -310,9 +348,13 @@ const Events = () => {
                           component={Link}
                           href={`/events/edit/${event._id}`}
                         >
-                          <EditIcon />
+                          <MdOutlineRemoveRedEye
+                            size={24}
+                            color="#4C4C4C"
+                            title="View Details"
+                          />
                         </IconButton>
-
+                        {/*
                         <IconButton
                           aria-label="edit"
                           color="primary"
@@ -327,7 +369,7 @@ const Events = () => {
                             title="View Details"
                           />
                         </IconButton>
-
+                        */}
                         <IconButton
                           aria-label="edit"
                           color="primary"
@@ -339,6 +381,7 @@ const Events = () => {
                             title="Delete Event"
                           />
                         </IconButton>
+                        
                       </Box>
                     </div>
                   </div>
