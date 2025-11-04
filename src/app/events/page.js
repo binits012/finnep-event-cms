@@ -14,6 +14,10 @@ import {
   MenuItem,
   Backdrop,
   CircularProgress,
+  Pagination,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import "@/app/events/card.css";
 import { IoIosSearch } from "react-icons/io";
@@ -41,6 +45,13 @@ const Events = () => {
   const [sortOrder, setSortOrder] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12); // Items per page
+  const [pagination, setPagination] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedMerchant, setSelectedMerchant] = useState("");
+  const [countries, setCountries] = useState([]);
+  const [merchants, setMerchants] = useState([]);
 
   const formatDate = (dateString) => {
     return moment(dateString).format("YYYY-MM-DD");
@@ -59,11 +70,32 @@ const Events = () => {
   });
 
   useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await apiHandler(`GET`, `event/filters/options`, true);
+        setCountries(response.data.data.countries || []);
+        setMerchants(response.data.data.merchants || []);
+      } catch (error) {
+        console.error("Error fetching filter options:", error);
+      }
+    };
+    fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        const response = await apiHandler("GET", "event", true);
+        const params = { page, limit };
+        if (selectedCountry) {
+          params.country = selectedCountry;
+        }
+        if (selectedMerchant) {
+          params.merchantId = selectedMerchant;
+        }
+        const response = await apiHandler(`GET`, `event`, true, null, undefined, params);
         setEvents(response.data.data);
+        setPagination(response.data.pagination);
       } catch (error) {
         Toast.fire({
           icon: "error",
@@ -74,7 +106,7 @@ const Events = () => {
       }
     };
     fetchEvents();
-  }, []);
+  }, [page, limit, selectedCountry, selectedMerchant]);
 
   const handleDelete = async (id) => {
     setLoading(true);
@@ -102,6 +134,16 @@ const Events = () => {
   const handleDeleteClick = (event) => {
     setSelectedEvent(event);
     setShowDeleteModal(true);
+  };
+
+  const handleCountryChange = (event) => {
+    setSelectedCountry(event.target.value);
+    setPage(1); // Reset to first page when filter changes
+  };
+
+  const handleMerchantChange = (event) => {
+    setSelectedMerchant(event.target.value);
+    setPage(1); // Reset to first page when filter changes
   };
 
   const filteredEvents = events.filter((event) =>
@@ -171,20 +213,20 @@ const Events = () => {
   );
 
   const handleStatusToggle = async (eventId, currentStatus) => {
-    try { 
+    try {
       const response = await apiHandler("PATCH",`event/${eventId}`, true, null, {
         active: !currentStatus
       });
-  
-       
+
+
       if (response.status === 200) {
         // Update local state
-        setEvents(events.map(event => 
-          event._id === eventId 
+        setEvents(events.map(event =>
+          event._id === eventId
             ? { ...event, active: !currentStatus }
             : event
         ));
-        // Show success toast 
+        // Show success toast
         Toast.fire({
           icon: "success",
           title: "Event status updated successfully",
@@ -234,7 +276,7 @@ const Events = () => {
               mb={2}
               style={{ justifyContent: "space-between" }}
             >
-              <div>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                 <Input
                   placeholder="Search Event"
                   value={search}
@@ -249,6 +291,44 @@ const Events = () => {
                     ) : null
                   }
                 />
+                <FormControl sx={{ minWidth: 180, marginBottom: "20px" }}>
+                  <InputLabel id="country-filter-label">Country</InputLabel>
+                  <Select
+                    labelId="country-filter-label"
+                    id="country-filter"
+                    value={selectedCountry}
+                    label="Country"
+                    onChange={handleCountryChange}
+                  >
+                    <MenuItem value="">
+                      <em>All Countries</em>
+                    </MenuItem>
+                    {countries.map((country) => (
+                      <MenuItem key={country} value={country}>
+                        {country}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl sx={{ minWidth: 180, marginBottom: "20px" }}>
+                  <InputLabel id="merchant-filter-label">Merchant</InputLabel>
+                  <Select
+                    labelId="merchant-filter-label"
+                    id="merchant-filter"
+                    value={selectedMerchant}
+                    label="Merchant"
+                    onChange={handleMerchantChange}
+                  >
+                    <MenuItem value="">
+                      <em>All Merchants</em>
+                    </MenuItem>
+                    {merchants.map((merchant) => (
+                      <MenuItem key={merchant._id} value={merchant._id}>
+                        {merchant.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </div>
 
               <Grid
@@ -328,18 +408,28 @@ const Events = () => {
                     </figure>
                     <div className="article-body">
                       <h2>{event.eventTitle}</h2>
-                    {
+                      {event.merchant?.name && (
+                        <Typography variant="body2" style={{ color: '#666', marginTop: '4px', marginBottom: '8px', fontSize: '0.875rem' }}>
+                          {event.merchant.name}
+                        </Typography>
+                      )}
+                      {event.eventDate && (
+                        <Typography variant="body2" style={{ color: '#666', marginBottom: '8px', fontSize: '0.875rem' }}>
+                          {formatDate(event.eventDate)}
+                        </Typography>
+                      )}
+                    {event.status !== 'completed' && (
                       <Button
                         style={{
                           backgroundColor: event.active ? "green" : "yellow",
                           color: event.active ? "white" : "black",
+                          marginTop: '8px'
                         }}
-                        //onClick={() => handleStatusToggle(event._id, event.active)}
-                        onClick={() => {}}
+                        onClick={() => handleStatusToggle(event._id, event.active)}
                       >
                         {event.active ? "Active" : "Inactive"}
-                      </Button> 
-                      }
+                      </Button>
+                      )}
 
                       <Box mt={1} display="flex" justifyContent="center">
                         <IconButton
@@ -371,17 +461,18 @@ const Events = () => {
                         </IconButton>
                         */}
                         <IconButton
-                          aria-label="edit"
+                          aria-label="delete"
                           color="primary"
                           onClick={() => handleDeleteClick(event)}
+                          disabled={event.status === 'completed'}
                         >
                           <DeleteIcon
                             size={24}
-                            color="#4C4C4C"
-                            title="Delete Event"
+                            color={event.status === 'completed' ? "#cccccc" : "#4C4C4C"}
+                            title={event.status === 'completed' ? "Cannot delete completed events" : "Delete Event"}
                           />
                         </IconButton>
-                        
+
                       </Box>
                     </div>
                   </div>
@@ -390,6 +481,20 @@ const Events = () => {
             </Grid>
           ))}
         </Grid>
+
+        {pagination && pagination.totalPages > 1 && (
+          <Box display="flex" justifyContent="center" mt={4} mb={4}>
+            <Pagination
+              count={pagination.totalPages}
+              page={pagination.currentPage}
+              onChange={(event, value) => setPage(value)}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
 
         <DeleteModal
           isVisible={showDeleteModal}

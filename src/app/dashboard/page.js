@@ -62,8 +62,9 @@ const Dashboard = () => {
     fetchEvents();
   }, []);
 
-  const events = dashboard?.event || [];
-  const tickets = dashboard?.ticket || [];
+  // Ensure events and tickets are always arrays
+  const events = Array.isArray(dashboard?.event) ? dashboard.event : [];
+  const tickets = Array.isArray(dashboard?.ticket) ? dashboard.ticket : [];
 
   const upcomingEventsCount = events.filter(
     (event) => event.status === "up-coming"
