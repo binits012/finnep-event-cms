@@ -11,7 +11,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import styled from "styled-components";
 import Swal from "sweetalert2";
 import dynamic from "next/dynamic";
-import MonacoEditor from "@monaco-editor/react"; 
+import MonacoEditor from "@monaco-editor/react";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
@@ -71,9 +71,7 @@ const Settings = () => {
       fbLink: "",
       xLink: "",
       instaLink: "",
-      android:"",
-      ios:"",
-      windows:""
+      android:""
     },
     onSubmit: (values) => handleSubmit(values),
   });
@@ -86,9 +84,7 @@ const Settings = () => {
       fbLink: values.socialMedia.fb,
       xLink: values.socialMedia.x,
       instaLink: values.socialMedia.instagram,
-      android: values?.otherInfo?.apps?.android,
-      ios: values?.otherInfo?.apps?.ios,
-      windows: values?.otherInfo?.apps?.windows
+      android: values?.otherInfo?.apps?.android
     };
   };
   useEffect(() => {
@@ -344,7 +340,7 @@ const Settings = () => {
                   <Grid container spacing={3}>
                     <Grid item container md={6} xs={12} direction={"column"} sx={{ marginBottom: 2 }}>
                       <FormLabel htmlFor="android" className="label">
-                        Android 
+                        Android
                       </FormLabel>
                       <Grid container spacing={1} alignItems="center">
                         <Grid item xs={8}>
@@ -359,71 +355,11 @@ const Settings = () => {
                           />
                         </Grid>
                         <Grid item xs={4}>
-                          <Button 
-                            variant="contained" 
+                          <Button
+                            variant="contained"
                             color="primary"
                             disabled={!formik.values.android}
                             onClick={() => handleDownload(formik.values.android)}
-                            fullWidth
-                            size="medium"
-                          >
-                            Download
-                          </Button>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                    <Grid item container md={6} xs={12} direction={"column"} sx={{ marginBottom: 2 }}>
-                      <FormLabel htmlFor="ios" className="label">
-                        iOS
-                      </FormLabel>
-                      <Grid container spacing={1} alignItems="center">
-                        <Grid item xs={8}>
-                          <TextField
-                            id="ios"
-                            name="ios"
-                            value={formik.values.ios}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            placeholder="iOS Link"
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={4}>
-                          <Button 
-                            variant="contained" 
-                            color="primary"
-                            disabled={!formik.values.ios}
-                            onClick={() => handleDownload(formik.values.ios)}
-                            fullWidth
-                            size="medium"
-                          >
-                            Download
-                          </Button>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                    <Grid item container md={6} xs={12} direction={"column"}>
-                      <FormLabel htmlFor="windows" className="label">
-                        Windows
-                      </FormLabel>
-                      <Grid container spacing={1} alignItems="center">
-                        <Grid item xs={8}>
-                          <TextField
-                            id="windows"
-                            name="windows"
-                            value={formik.values.windows}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            placeholder="Windows Link"
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={4}>
-                          <Button 
-                            variant="contained" 
-                            color="primary"
-                            disabled={!formik.values.windows}
-                            onClick={() => handleDownload(formik.values.windows)}
                             fullWidth
                             size="medium"
                           >

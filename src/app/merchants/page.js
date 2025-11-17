@@ -35,10 +35,15 @@ export default function MerchantsPage() {
   const [merchants, setMerchants] = useState([]);
   const [filteredMerchants, setFilteredMerchants] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [selectedMerchant, setSelectedMerchant] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [otherInfo, setOtherInfo] = useState({});
+  const [otherInfoChanged, setOtherInfoChanged] = useState(false);
+  const [savingOtherInfo, setSavingOtherInfo] = useState(false);
 
   // Get available status options based on current status
   const getAvailableStatusOptions = (currentStatus) => {
@@ -79,17 +84,38 @@ export default function MerchantsPage() {
     fetchMerchants();
   }, []);
 
-  // Handle search
+  // Get unique countries from merchants
+  const getUniqueCountries = () => {
+    const countries = merchants
+      .map((merchant) => merchant.country)
+      .filter((country) => country && country.trim() !== "");
+    return [...new Set(countries)].sort();
+  };
+
+  // Handle filtering (search, country, status)
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredMerchants(merchants);
-    } else {
-      const filtered = merchants.filter((merchant) =>
-        merchant.name.toLowerCase().includes(searchQuery.toLowerCase())
+    let filtered = [...merchants];
+
+    // Filter by search query (name)
+    if (searchQuery.trim() !== "") {
+      filtered = filtered.filter((merchant) =>
+        merchant.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        merchant.orgName?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredMerchants(filtered);
     }
-  }, [searchQuery, merchants]);
+
+    // Filter by country
+    if (countryFilter !== "") {
+      filtered = filtered.filter((merchant) => merchant.country === countryFilter);
+    }
+
+    // Filter by status
+    if (statusFilter !== "") {
+      filtered = filtered.filter((merchant) => merchant.status === statusFilter);
+    }
+
+    setFilteredMerchants(filtered);
+  }, [searchQuery, countryFilter, statusFilter, merchants]);
 
   // Handle status change
   const handleStatusChange = async (merchantId, newStatus) => {
@@ -157,6 +183,17 @@ export default function MerchantsPage() {
   // Handle modal open
   const handleViewMerchant = (merchant) => {
     setSelectedMerchant(merchant);
+    // Initialize otherInfo from merchant data
+    // Handle both string and number values from API
+    const initialOtherInfo = merchant.otherInfo || {};
+    const stripeValue = initialOtherInfo.stripe !== undefined && initialOtherInfo.stripe !== null
+      ? (typeof initialOtherInfo.stripe === 'string' ? parseFloat(initialOtherInfo.stripe) : initialOtherInfo.stripe)
+      : '';
+
+    setOtherInfo({
+      stripe: isNaN(stripeValue) ? '' : stripeValue
+    });
+    setOtherInfoChanged(false);
     setModalOpen(true);
   };
 
@@ -164,6 +201,74 @@ export default function MerchantsPage() {
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedMerchant(null);
+    setOtherInfo({});
+    setOtherInfoChanged(false);
+  };
+
+  // Handle otherInfo input change
+  const handleOtherInfoChange = (key, value) => {
+    const numericValue = value === '' ? '' : parseFloat(value);
+    if (value === '' || (!isNaN(numericValue) && numericValue >= 0)) {
+      const updatedOtherInfo = { ...otherInfo, [key]: numericValue };
+      setOtherInfo(updatedOtherInfo);
+
+      // Check if values have changed from original
+      const originalOtherInfo = selectedMerchant?.otherInfo || {};
+      const originalStripe = originalOtherInfo.stripe !== undefined ? Number(originalOtherInfo.stripe) : '';
+      const originalRevolut = originalOtherInfo.revolut !== undefined ? Number(originalOtherInfo.revolut) : '';
+
+      const currentStripe = updatedOtherInfo.stripe === '' ? '' : Number(updatedOtherInfo.stripe || 0);
+      const currentRevolut = updatedOtherInfo.revolut === '' ? '' : Number(updatedOtherInfo.revolut || 0);
+
+      const hasChanged = currentStripe !== originalStripe || currentRevolut !== originalRevolut;
+      setOtherInfoChanged(hasChanged);
+    }
+  };
+
+  // Handle save otherInfo
+  const handleSaveOtherInfo = async () => {
+    if (!selectedMerchant?._id) return;
+
+    setSavingOtherInfo(true);
+    try {
+      // Convert empty strings to 0 and ensure all values are numbers
+      const payload = {
+        otherInfo: {
+          stripe: otherInfo.stripe === '' ? 0 : Number(otherInfo.stripe || 0),
+          revolut: otherInfo.revolut === '' ? 0 : Number(otherInfo.revolut || 0)
+        }
+      };
+
+      const response = await apiHandler(
+        "PATCH",
+        `merchant/${selectedMerchant._id}/otherInfo`,
+        true,
+        null,
+        payload
+      );
+
+      if (response.status === 200) {
+        // Update the merchant in the list
+        const updatedMerchants = merchants.map((merchant) =>
+          merchant._id === selectedMerchant._id
+            ? { ...merchant, otherInfo: payload.otherInfo }
+            : merchant
+        );
+        setMerchants(updatedMerchants);
+
+        // Update selected merchant
+        setSelectedMerchant({ ...selectedMerchant, otherInfo: payload.otherInfo });
+        setOtherInfoChanged(false);
+        Toast.success("Platform commission updated successfully");
+      } else {
+        Toast.error(response.message || "Failed to update platform commission");
+      }
+    } catch (error) {
+      console.error("Error updating platform commission:", error);
+      Toast.error("Error updating platform commission");
+    } finally {
+      setSavingOtherInfo(false);
+    }
   };
 
   return (
@@ -176,7 +281,7 @@ export default function MerchantsPage() {
         </Grid>
 
         <Grid item xs={12}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", alignItems: "center" }}>
             <TextField
               placeholder="Search by name"
               variant="outlined"
@@ -190,15 +295,53 @@ export default function MerchantsPage() {
                 ),
               }}
               size="small"
-              sx={{ width: "300px" }}
+              sx={{ width: "300px", minWidth: "200px" }}
             />
-            
+
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <Select
+                value={countryFilter}
+                onChange={(e) => setCountryFilter(e.target.value)}
+                displayEmpty
+                sx={{ backgroundColor: "background.paper" }}
+              >
+                <MenuItem value="">
+                  <em>All Countries</em>
+                </MenuItem>
+                {getUniqueCountries().map((country) => (
+                  <MenuItem key={country} value={country}>
+                    {country}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                displayEmpty
+                sx={{ backgroundColor: "background.paper" }}
+              >
+                <MenuItem value="">
+                  <em>All Statuses</em>
+                </MenuItem>
+                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="suspended">Suspended</MenuItem>
+              </Select>
+            </FormControl>
+
             <Button
-              variant="contained"
-              onClick={() => setSearchQuery("")}
-              disabled={searchQuery === ""}
+              variant="outlined"
+              onClick={() => {
+                setSearchQuery("");
+                setCountryFilter("");
+                setStatusFilter("");
+              }}
+              disabled={searchQuery === "" && countryFilter === "" && statusFilter === ""}
             >
-              Clear
+              Clear Filters
             </Button>
           </Box>
         </Grid>
@@ -267,7 +410,7 @@ export default function MerchantsPage() {
                                   {merchant.status.charAt(0).toUpperCase() +
                                     merchant.status.slice(1)}
                                 </MenuItem>
-                                
+
                                 {/* Available transition options */}
                                 {getAvailableStatusOptions(merchant.status).map((status) => (
                                   <MenuItem
@@ -288,10 +431,10 @@ export default function MerchantsPage() {
                               <CircularProgress size={20} />
                             )}
                           </Box>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              color: "text.secondary", 
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
                               fontSize: "0.7rem",
                               display: "block",
                               mt: 0.5
@@ -384,7 +527,7 @@ export default function MerchantsPage() {
                     <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
                       Basic Information
                     </Typography>
-                    
+
                     {/* Company Logo */}
                     {selectedMerchant.logo && (
                       <Box sx={{ mb: 3, textAlign: 'center' }}>
@@ -430,7 +573,7 @@ export default function MerchantsPage() {
                         </Box>
                       </Box>
                     )}
-                    
+
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" color="text.secondary">
@@ -510,9 +653,9 @@ export default function MerchantsPage() {
                         </Typography>
                         <Typography variant="body1" sx={{ mb: 1 }}>
                           {selectedMerchant.website ? (
-                            <a 
-                              href={selectedMerchant.website} 
-                              target="_blank" 
+                            <a
+                              href={selectedMerchant.website}
+                              target="_blank"
                               rel="noopener noreferrer"
                               style={{ color: '#1976d2', textDecoration: 'none' }}
                             >
@@ -570,9 +713,9 @@ export default function MerchantsPage() {
                         </Typography>
                         <Typography variant="body1" sx={{ mb: 1, wordBreak: 'break-all' }}>
                           {selectedMerchant.logo ? (
-                            <a 
-                              href={selectedMerchant.logo} 
-                              target="_blank" 
+                            <a
+                              href={selectedMerchant.logo}
+                              target="_blank"
                               rel="noopener noreferrer"
                               style={{ color: '#1976d2', textDecoration: 'none' }}
                             >
@@ -580,6 +723,113 @@ export default function MerchantsPage() {
                             </a>
                           ) : 'N/A'}
                         </Typography>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  {/* Banking Information */}
+                  {selectedMerchant.bankingInfo &&
+                   Object.keys(selectedMerchant.bankingInfo).length > 0 &&
+                   Object.values(selectedMerchant.bankingInfo).some(value => value !== null && value !== undefined && value !== '') && (
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                        Banking Information
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {selectedMerchant.bankingInfo.bank_name && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Bank Name
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>
+                              {selectedMerchant.bankingInfo.bank_name}
+                            </Typography>
+                          </Grid>
+                        )}
+                        {selectedMerchant.bankingInfo.account_holder_name && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Account Holder Name
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>
+                              {selectedMerchant.bankingInfo.account_holder_name}
+                            </Typography>
+                          </Grid>
+                        )}
+                        {selectedMerchant.bankingInfo.bank_account && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Bank Account
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 1, fontFamily: 'monospace' }}>
+                              {selectedMerchant.bankingInfo.bank_account}
+                            </Typography>
+                          </Grid>
+                        )}
+                        {selectedMerchant.bankingInfo.bic_swift && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              BIC/SWIFT
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 1, fontFamily: 'monospace' }}>
+                              {selectedMerchant.bankingInfo.bic_swift}
+                            </Typography>
+                          </Grid>
+                        )}
+                        {selectedMerchant.bankingInfo.bank_address && (
+                          <Grid item xs={12}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Bank Address
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>
+                              {selectedMerchant.bankingInfo.bank_address}
+                            </Typography>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </Grid>
+                  )}
+
+                  <Divider sx={{ my: 2 }} />
+
+                  {/* Platform Commission */}
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ color: 'primary.main' }}>
+                        Platform Commission
+                      </Typography>
+                      {otherInfoChanged && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={handleSaveOtherInfo}
+                          disabled={savingOtherInfo}
+                          size="small"
+                        >
+                          {savingOtherInfo ? <CircularProgress size={20} /> : 'Save'}
+                        </Button>
+                      )}
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Stripe
+                        </Typography>
+                        <TextField
+                          type="number"
+                          value={otherInfo.stripe || ''}
+                          onChange={(e) => handleOtherInfoChange('stripe', e.target.value)}
+                          placeholder="0"
+                          size="small"
+                          fullWidth
+                          inputProps={{ min: 0, step: 0.01 }}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">cents</InputAdornment>
+                          }}
+                        />
                       </Grid>
                     </Grid>
                   </Grid>

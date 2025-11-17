@@ -408,10 +408,24 @@ const Events = () => {
                     </figure>
                     <div className="article-body">
                       <h2>{event.eventTitle}</h2>
-                      {event.merchant?.name && (
-                        <Typography variant="body2" style={{ color: '#666', marginTop: '4px', marginBottom: '8px', fontSize: '0.875rem' }}>
-                          {event.merchant.name}
-                        </Typography>
+                      {event.merchant && (
+                        <Box display="flex" alignItems="center" gap={1} mt={1} mb={1}>
+                          {event.merchant.logo && (
+                            <img
+                              src={event.merchant.logo}
+                              alt={event.merchant.name || 'Merchant logo'}
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '4px',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          )}
+                          <Typography variant="body2" style={{ color: '#666', fontSize: '0.875rem', fontWeight: 500 }}>
+                            {event.merchant.name || 'Unknown Merchant'}
+                          </Typography>
+                        </Box>
                       )}
                       {event.eventDate && (
                         <Typography variant="body2" style={{ color: '#666', marginBottom: '8px', fontSize: '0.875rem' }}>

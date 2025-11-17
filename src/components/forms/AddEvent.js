@@ -42,7 +42,7 @@ import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
 registerPlugin(FilePondPluginImagePreview);
- 
+
 const AddEvent = ({ editMode }) => {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState([]);
@@ -72,18 +72,18 @@ const AddEvent = ({ editMode }) => {
     setTicketInfo(newTickets);
   };
 
-  
+
 
   const handleSubmit = async (values) => {
     setLoading(true);
     if(id){
       console.log("Toggling event active status", formik.values.active);
       console.log("Featured data", formik.values.featured);
-      
+
       // Validate featured fields before submission (only when isFeatured is true)
       if (formik.values.featured?.isFeatured === true) {
         const featured = formik.values.featured;
-        
+
         // Check priority (required for all featured types)
         if (!featured.priority || featured.priority < 1 || featured.priority > 100) {
           Toast.fire({
@@ -93,7 +93,7 @@ const AddEvent = ({ editMode }) => {
           setLoading(false);
           return;
         }
-        
+
         // Check dates based on featured type
         if (featured.featuredType === 'temporary') {
           // For temporary: both start and end dates are required
@@ -105,7 +105,7 @@ const AddEvent = ({ editMode }) => {
             setLoading(false);
             return;
           }
-          
+
           if (!featured.endDate || featured.endDate === null || featured.endDate === undefined) {
             Toast.fire({
               icon: "error",
@@ -114,7 +114,7 @@ const AddEvent = ({ editMode }) => {
             setLoading(false);
             return;
           }
-          
+
           // Check if end date is after start date
           if (dayjs(featured.endDate).isBefore(dayjs(featured.startDate))) {
             Toast.fire({
@@ -134,7 +134,7 @@ const AddEvent = ({ editMode }) => {
             setLoading(false);
             return;
           }
-          
+
           // For sticky, startDate is optional (can be null/undefined)
           // But if provided, it should be before endDate
           if (featured.startDate && dayjs(featured.endDate).isBefore(dayjs(featured.startDate))) {
@@ -147,14 +147,14 @@ const AddEvent = ({ editMode }) => {
           }
         }
       }
-      
+
       const payload = {
         active: formik.values.active, // Toggle to opposite of current slider
         featured: formik.values.featured
       };
-      
+
       const res = await enableDisableEvent(id, payload);
-      
+
       if(res.status === 200){
         Toast.fire({
           icon: "success",
@@ -173,7 +173,7 @@ const AddEvent = ({ editMode }) => {
     /*
     if (id) {
       try {
-        
+
         const res = await updateEvent(id, {
           ...values,
           eventDate: dayjs(values.eventDate),
@@ -184,7 +184,14 @@ const AddEvent = ({ editMode }) => {
             insta: values.igLink,
           },
           otherInfo:{
-            emailTemplate:values?.emailTemplate
+            emailTemplate:values?.emailTemplate,
+            categoryName: values?.categoryName,
+            subCategoryName: values?.subCategoryName,
+            eventExtraInfo: {
+              eventType: values?.eventType,
+              doorSaleAllowed: values?.doorSaleAllowed,
+              doorSaleExtraAmount: values?.doorSaleExtraAmount
+            }
           }
         });
 
@@ -213,7 +220,14 @@ const AddEvent = ({ editMode }) => {
             x: values.xLink,
           },
           otherInfo:{
-            emailTemplate:values?.emailTemplate
+            emailTemplate:values?.emailTemplate,
+            categoryName: values?.categoryName,
+            subCategoryName: values?.subCategoryName,
+            eventExtraInfo: {
+              eventType: values?.eventType,
+              doorSaleAllowed: values?.doorSaleAllowed,
+              doorSaleExtraAmount: values?.doorSaleExtraAmount
+            }
           }
         });
 
@@ -256,6 +270,11 @@ const AddEvent = ({ editMode }) => {
       xLink: "",
       igLink: "",
       emailTemplate: "",
+      categoryName: "",
+      subCategoryName: "",
+      eventType: "",
+      doorSaleAllowed: false,
+      doorSaleExtraAmount: "",
       featured: {
         isFeatured: false,
         featuredType: "temporary",
@@ -283,6 +302,11 @@ const AddEvent = ({ editMode }) => {
       eventPrice: values.eventPrice || 0, // Fallback in case eventPrice is undefined
       timeZone: tz, // Preserve passed timezone
       emailTemplate: values?.otherInfo?.emailTemplate,
+      categoryName: values?.otherInfo?.categoryName || "",
+      subCategoryName: values?.otherInfo?.subCategoryName || "",
+      eventType: values?.otherInfo?.eventExtraInfo?.eventType || "",
+      doorSaleAllowed: values?.otherInfo?.eventExtraInfo?.doorSaleAllowed || false,
+      doorSaleExtraAmount: values?.otherInfo?.eventExtraInfo?.doorSaleExtraAmount || "",
       featured: {
         isFeatured: values.featured?.isFeatured || false,
         featuredType: values.featured?.featuredType || "temporary",
@@ -292,7 +316,7 @@ const AddEvent = ({ editMode }) => {
       }
     };
   };
-  
+
   useEffect(() => {
     if (editMode) {
       const fetchEventById = async () => {
@@ -474,7 +498,7 @@ const AddEvent = ({ editMode }) => {
                       formik.values.eventDate
                         ? dayjs(formik.values.eventDate)
                         : null
-                    }      
+                    }
                     onChange={(value) => {
                       // Convert selected date to local time before saving to Formik
                       formik.setFieldValue(
@@ -501,7 +525,7 @@ const AddEvent = ({ editMode }) => {
             </Button>
             */}
             {ticketInfo.map((ticket, index) => (
-              <Box 
+              <Box
               key={index}
               sx={{
                 mb: 3,
@@ -514,46 +538,46 @@ const AddEvent = ({ editMode }) => {
               <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
                 {ticket.name}
               </Typography>
-              
+
               <Grid container spacing={2}>
                 {/* First row */}
                 <Grid item xs={12} sm={4} md={3}>
                   <Typography variant="caption" color="textSecondary">Price</Typography>
                   <Typography variant="body1">{ticket.price} €</Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={4} md={3}>
                   <Typography variant="caption" color="textSecondary">Quantity</Typography>
                   <Typography variant="body1">{ticket.quantity}</Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={4} md={3}>
                   <Typography variant="caption" color="textSecondary">Service Fee</Typography>
                   <Typography variant="body1">{ticket.serviceFee} €</Typography>
                 </Grid>
-                
+
                 {/* Second row */}
                 <Grid item xs={12} sm={4} md={3}>
                   <Typography variant="caption" color="textSecondary">VAT</Typography>
                   <Typography variant="body1">{ticket.vat}%</Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={4} md={3}>
                   <Typography variant="caption" color="textSecondary">Available</Typography>
                   <Typography variant="body1">{ticket.available}</Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={4} md={3}>
                   <Typography variant="caption" color="textSecondary">Status</Typography>
-                  <Chip 
-                    label={ticket.status || 'N/A'} 
+                  <Chip
+                    label={ticket.status || 'N/A'}
                     size="small"
                     sx={{
-                      backgroundColor: ticket.status === 'available' ? '#e3f2fd' : 
-                                      ticket.status === 'sold out' ? '#ffebee' : 
+                      backgroundColor: ticket.status === 'available' ? '#e3f2fd' :
+                                      ticket.status === 'sold out' ? '#ffebee' :
                                       '#f5f5f5',
-                      color: ticket.status === 'available' ? '#0d47a1' : 
-                            ticket.status === 'sold out' ? '#b71c1c' : 
+                      color: ticket.status === 'available' ? '#0d47a1' :
+                            ticket.status === 'sold out' ? '#b71c1c' :
                             '#616161',
                       fontWeight: 'medium'
                     }}
@@ -784,7 +808,7 @@ const AddEvent = ({ editMode }) => {
               </Grid>
             </Grid>
           </FormSection>
-          
+
           <FormSection title="Featured">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
@@ -806,7 +830,7 @@ const AddEvent = ({ editMode }) => {
                   onChange={(e) => {
                     const newFeaturedStatus = !formik.values.featured?.isFeatured;
                     formik.setFieldValue("featured.isFeatured", newFeaturedStatus);
-                    
+
                     // Auto-populate startDate when enabling featured for temporary type
                     if (newFeaturedStatus && formik.values.featured?.featuredType === 'temporary') {
                       formik.setFieldValue("featured.startDate", dayjs());
@@ -814,7 +838,7 @@ const AddEvent = ({ editMode }) => {
                   }}
                 />
               </Grid>
-              
+
               {formik.values.featured?.isFeatured && (
                 <>
                   <Grid item container md={10} direction={"column"}>
@@ -828,12 +852,12 @@ const AddEvent = ({ editMode }) => {
                       onChange={(e) => {
                         const newType = e.target.value;
                         formik.setFieldValue("featured.featuredType", newType);
-                        
+
                         // Auto-populate endDate with eventDate for sticky
                         if (newType === 'sticky' && formik.values.eventDate) {
                           formik.setFieldValue("featured.endDate", dayjs(formik.values.eventDate));
                         }
-                        
+
                         // Auto-populate startDate with current date/time for temporary
                         if (newType === 'temporary') {
                           formik.setFieldValue("featured.startDate", dayjs());
@@ -845,7 +869,7 @@ const AddEvent = ({ editMode }) => {
                       <MenuItem value="temporary">Temporary (Time-based)</MenuItem>
                     </Select>
                   </Grid>
-                  
+
                   <Grid item container md={10} direction={"column"}>
                     <FormLabel htmlFor="priority" className="label">
                       Priority (0-100)
@@ -875,7 +899,7 @@ const AddEvent = ({ editMode }) => {
                       helperText={formik.values.featured?.isFeatured === true && (formik.values.featured?.priority === '' || formik.values.featured?.priority === undefined || formik.values.featured.priority < 1 || formik.values.featured.priority > 100) ? "Priority is required (1-100)" : ""}
                     />
                   </Grid>
-                  
+
                   {formik.values.featured?.featuredType === 'temporary' && (
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <Grid item container md={5} direction={"column"}>
@@ -901,7 +925,7 @@ const AddEvent = ({ editMode }) => {
                           }}
                         />
                       </Grid>
-                      
+
                       <Grid item container md={5} direction={"column"}>
                         <FormLabel htmlFor="endDate" className="label">
                           End Date
@@ -932,7 +956,7 @@ const AddEvent = ({ editMode }) => {
               )}
             </Grid>
           </FormSection>
-          
+
           <FormSection title="Others">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
@@ -992,6 +1016,7 @@ const AddEvent = ({ editMode }) => {
                 }}
               />
             </Grid>
+            {/*
             <Grid item container md={10} direction={"column"} mt={3}>
               <FormLabel htmlFor="EmailTemplate" className="label">
                 Email Template
@@ -1012,20 +1037,120 @@ const AddEvent = ({ editMode }) => {
                 }}
               />
             </Grid>
+            */}
+
+            {/* Category Information */}
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="categoryName" className="label">
+                Category Name
+              </FormLabel>
+              <TextField
+                id="categoryName"
+                name="categoryName"
+                value={formik.values.categoryName}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Category Name"
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+            </Grid>
+
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="subCategoryName" className="label">
+                Sub Category Name
+              </FormLabel>
+              <TextField
+                id="subCategoryName"
+                name="subCategoryName"
+                value={formik.values.subCategoryName}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Sub Category Name"
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+            </Grid>
+
+            {/* Event Extra Information */}
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Event Extra Information
+              </Typography>
+            </Grid>
+
+            <Grid item container md={10} direction={"column"} mt={2}>
+              <FormLabel htmlFor="eventType" className="label">
+                Event Type
+              </FormLabel>
+              <TextField
+                id="eventType"
+                name="eventType"
+                value={formik.values.eventType}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Event Type (e.g., paid, free)"
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+            </Grid>
+
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="doorSaleAllowed" className="label">
+                Door Sale Allowed?
+              </FormLabel>
+              <TextField
+                id="doorSaleAllowed"
+                name="doorSaleAllowed"
+                value={formik.values.doorSaleAllowed ? "Yes" : "No"}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Door Sale Allowed"
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+            </Grid>
+
+            <Grid item container md={10} direction={"column"} mt={3}>
+              <FormLabel htmlFor="doorSaleExtraAmount" className="label">
+                Door Sale Extra Amount
+              </FormLabel>
+              <TextField
+                id="doorSaleExtraAmount"
+                name="doorSaleExtraAmount"
+                value={formik.values.doorSaleExtraAmount}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="Extra amount for door sales"
+                fullWidth
+                type="number"
+                InputProps={{
+                  readOnly: true,
+                }}
+              />
+            </Grid>
           </FormSection>
         </Grid>
 
         <Grid container justifyContent="flex-end">
           {
-          <Button 
-            id="submit" 
-            onClick={formik.handleSubmit} 
+          <Button
+            id="submit"
+            onClick={formik.handleSubmit}
             variant="contained"
             color={formik.values.active ? "success" : "error"}
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : null}
           >
-            {loading ? "Processing..." : (formik.values.active ? "Activate" : "Deactivate")} 
+            {loading ? "Processing..." : (formik.values.active ? "Activate" : "Deactivate")}
           </Button>
           }
           <Backdrop
