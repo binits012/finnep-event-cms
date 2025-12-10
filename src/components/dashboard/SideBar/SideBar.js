@@ -6,7 +6,8 @@ import {
   MdEventNote,
   MdOutlineSettings,
   MdSupervisedUserCircle,
-  MdRateReview, MdBusinessCenter
+  MdRateReview, MdBusinessCenter,
+  MdEventSeat
 } from "react-icons/md";
 import { FaChevronLeft, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -69,8 +70,8 @@ const Wrapper = styled.div`
     /* padding: 5px; */
     background-color: #222;
     border-bottom: 1px solid #333;
-    justify-content: ${({ isCollapsed }) =>
-      isCollapsed ? "center" : "space-between"};
+    justify-content: ${({ $isCollapsed }) =>
+      $isCollapsed ? "center" : "space-between"};
   }
 
   .userDetail {
@@ -129,7 +130,7 @@ const Wrapper = styled.div`
     justify-content: center;
     width: 40px;
     height: 40px;
-    margin-left: ${({ isCollapsed }) => (isCollapsed ? "0" : "auto")};
+    margin-left: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "auto")};
   }
 
   .menuIcon {
@@ -174,6 +175,11 @@ const SideBar = ({ onToggle }) => {
       icon: <BsTicketPerforated size={24} />,
     },
     {
+      title: "Seatmap",
+      link: "/seatmap",
+      icon: <MdEventSeat size={24} />,
+    },
+    {
       title: "Notifications",
       link: "/notification",
       icon: <IoMdNotificationsOutline size={24} />,
@@ -196,7 +202,7 @@ const SideBar = ({ onToggle }) => {
   ];
 
   return (
-    <Wrapper isCollapsed={isCollapsed}>
+    <Wrapper $isCollapsed={isCollapsed}>
       <Drawer
         variant="permanent"
         open={!isCollapsed}
@@ -210,7 +216,7 @@ const SideBar = ({ onToggle }) => {
         }}
       >
         <div className="sideBar">
-          <div className="user" isCollapsed={isCollapsed}>
+          <div className="user">
             {!isCollapsed && (
               <>
                 {/* <Avatar src={"/noavatar.png"} alt="no avatar" /> */}
@@ -236,7 +242,7 @@ const SideBar = ({ onToggle }) => {
                 component={Link}
                 href={item.link}
                 className={
-                  pathname === item.link
+                  pathname === item.link || (item.link === "/seatmap" && pathname?.startsWith("/seatmap"))
                     ? "item-container active"
                     : "item-container"
                 }

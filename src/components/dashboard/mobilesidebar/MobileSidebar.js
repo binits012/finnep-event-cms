@@ -4,7 +4,9 @@ import React, { useState } from "react";
 import {
   MdDashboard,
   MdEventNote,
-  MdSupervisedUserCircle,MdBusinessCenter
+  MdSupervisedUserCircle,
+  MdBusinessCenter,
+  MdEventSeat
 } from "react-icons/md";
 import { FaBell, FaEuroSign, FaHouseUser, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -167,6 +169,11 @@ const MobileSideBar = ({ onToggle }) => {
       icon: <BsTicketPerforated size={24} />,
     },
     {
+      title: "Seatmap",
+      link: "/seatmap",
+      icon: <MdEventSeat size={24} />,
+    },
+    {
       title: "Notifications",
       link: "/notification",
       icon: <IoMdNotificationsOutline size={24} />,
@@ -223,7 +230,7 @@ const MobileSideBar = ({ onToggle }) => {
                 component={Link}
                 href={item.link}
                 className={
-                  pathname === item.link
+                  pathname === item.link || (item.link === "/seatmap" && pathname?.startsWith("/seatmap"))
                     ? "item-container active"
                     : "item-container"
                 }

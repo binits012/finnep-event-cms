@@ -1,79 +1,424 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .page {
   width: 100%;
-}
-
-.login-form-wrap {
-  width: 410px;
-}
-
-.login-container {
-  width: 50%;
-  height: 100vh;
-  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .main-container {
-  background: url("/login_background.jpg") no-repeat;
-  background-size: cover;
   width: 100%;
+  min-height: 100vh;
   display: flex;
-  margin: 0 auto;
-  height: auto;
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
 }
 
-.logo {
-  margin-left: 50px;
-  margin-top: 32px;
+/* Animated background */
+.main-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: backgroundMove 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes backgroundMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+/* Floating orbs */
+.main-container::after {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+  border-radius: 50%;
+  top: -250px;
+  right: -250px;
+  animation: float 15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-100px, 100px) scale(1.1);
+  }
 }
 
 .aircraft-img-container {
-  width: 50%;
+  width: 55%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px;
+  position: relative;
+  z-index: 1;
 }
 
-.aircraft {
-  object-fit: cover;
+.logo {
+  margin: 0;
+  animation: fadeInDown 0.8s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logo img {
+  max-width: 180px;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.logo img:hover {
+  transform: scale(1.05);
+}
+
+/* Hero text on left side */
+.aircraft-img-container::before {
+  content: 'Welcome Back';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(48px, 6vw, 72px);
+  font-weight: 700;
+  color: rgba(255,255,255,0.95);
+  text-align: center;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  animation: fadeInUp 1s ease-out 0.3s backwards;
   width: 100%;
-  height: calc(100vh);
+  line-height: 1.2;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 30px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .login-container {
+  width: 45%;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  height: 100vh;
+  align-items: center;
+  padding: 40px;
   position: relative;
+  z-index: 1;
+}
+
+.field-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
   align-items: center;
 }
 
 .login-form-wrap {
-  width: 432px;
-  background-color: #ffffff;
-  padding: 24px;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 48px 40px;
+  border-radius: 24px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.keepLogin span {
-  padding: 0;
-  margin-right: 8px;
+/* Glassmorphism effect */
+.login-form-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .styled-header {
-  font-family: "Roboto" !important;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-style: normal;
   font-weight: 700;
-  font-size: 40px;
-  line-height: 52px;
+  font-size: clamp(32px, 5vw, 42px);
+  line-height: 1.2;
   text-align: center;
-  color: #000000;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  animation: fadeIn 1s ease-out 0.5s backwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .styled-sub-header {
   font-style: normal;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 24px;
   text-align: center;
-  color: #4c4c4c;
+  color: #666;
+  margin-bottom: 36px;
+  animation: fadeIn 1s ease-out 0.6s backwards;
 }
 
-/* Add additional styles as needed for buttons, text fields, etc. */
+/* Enhanced input styling */
+.login-form-wrap .MuiTextField-root {
+  margin-bottom: 24px !important;
+}
+
+.login-form-wrap .MuiOutlinedInput-root {
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+  background: white;
+}
+
+.login-form-wrap .MuiOutlinedInput-root:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.login-form-wrap .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
+}
+
+/* Enhanced button styling */
+.login-form-wrap .btn.primary {
+  height: 52px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  text-transform: none !important;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4) !important;
+  transition: all 0.3s ease !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-form-wrap .btn.primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-form-wrap .btn.primary:hover::before {
+  left: 100%;
+}
+
+.login-form-wrap .btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5) !important;
+}
+
+.login-form-wrap .btn.primary:active {
+  transform: translateY(0);
+}
+
+.login-form-wrap .btn.primary:disabled {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  opacity: 0.7;
+}
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+  .aircraft-img-container {
+    width: 50%;
+    padding: 30px;
+  }
+
+  .login-container {
+    width: 50%;
+    padding: 30px 20px;
+  }
+
+  .field-container {
+    width: 100%;
+  }
+
+  .login-form-wrap {
+    max-width: 420px;
+    padding: 40px 32px;
+  }
+}
+
+/* Tablet to mobile transition */
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+  }
+
+  .aircraft-img-container {
+    width: 100%;
+    min-height: 40vh;
+    padding: 24px;
+  }
+
+  .aircraft-img-container::before {
+    font-size: clamp(36px, 8vw, 48px);
+  }
+
+  .login-container {
+    width: 100%;
+    min-height: 60vh;
+    padding: 40px 24px;
+    background: white;
+  }
+
+  .field-container {
+    width: 100%;
+  }
+
+  .login-form-wrap {
+    max-width: 100%;
+    padding: 36px 28px;
+    box-shadow:
+      0 10px 40px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  }
+
+  .logo img {
+    max-width: 140px;
+  }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 480px) {
+  .main-container::before {
+    background-size: 30px 30px;
+  }
+
+  .aircraft-img-container {
+    min-height: 35vh;
+    padding: 20px;
+  }
+
+  .aircraft-img-container::before {
+    font-size: 32px;
+  }
+
+  .logo img {
+    max-width: 120px;
+  }
+
+  .login-container {
+    padding: 32px 20px;
+  }
+
+  .login-form-wrap {
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .styled-header {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .styled-sub-header {
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+
+  .login-form-wrap .MuiTextField-root {
+    margin-bottom: 20px !important;
+  }
+
+  .login-form-wrap .btn.primary {
+    height: 48px !important;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 360px) {
+  .aircraft-img-container {
+    min-height: 30vh;
+    padding: 16px;
+  }
+
+  .login-form-wrap {
+    padding: 28px 20px;
+  }
+
+  .styled-header {
+    font-size: 24px;
+  }
+
+  .styled-sub-header {
+    font-size: 13px;
+  }
+}
+
+/* Loading backdrop enhancement */
+.MuiBackdrop-root {
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+.login-form-wrap *:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}

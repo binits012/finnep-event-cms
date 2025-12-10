@@ -1,0 +1,653 @@
+'use client'
+
+import React, { useRef, useEffect, useState, useCallback } from 'react'
+import { Box, Paper, Typography, IconButton, Tooltip, Button, ButtonGroup } from '@mui/material'
+import { ZoomIn, ZoomOut, Fullscreen, FullscreenExit, FitScreen } from '@mui/icons-material'
+
+/**
+ * SeatMapViewer Component
+ * Interactive viewer/editor for displaying and adjusting venue seats and sections
+ */
+const SeatMapViewer = ({
+	manifest,
+	width = 800,
+	height = 600,
+	onSave,
+	saving = false
+}) => {
+	const canvasRef = useRef(null)
+	const containerRef = useRef(null)
+	const [scale, setScale] = useState(1)
+	const [pan, setPan] = useState({ x: 0, y: 0 })
+	const [isFullscreen, setIsFullscreen] = useState(false)
+	const [isPanning, setIsPanning] = useState(false)
+	const [lastPanPoint, setLastPanPoint] = useState(null)
+	const [loadedSvgs, setLoadedSvgs] = useState(new Map())
+
+	// Editing state
+	const [isEditMode, setIsEditMode] = useState(false)
+	const [selectedSection, setSelectedSection] = useState(null)
+	const [selectedSeat, setSelectedSeat] = useState(null)
+	const [draggedItem, setDraggedItem] = useState(null) // 'section', 'seat', or polygon point index
+	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+	const [hoveredItem, setHoveredItem] = useState(null) // For hover effects
+	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+	// Local copies for editing
+	const [localSections, setLocalSections] = useState([])
+	const [localPlaces, setLocalPlaces] = useState([])
+
+	// Initialize canvas size - responsive to container
+	useEffect(() => {
+		const canvas = canvasRef.current
+		if (!canvas) return
+
+		const updateCanvasSize = () => {
+			const container = containerRef.current
+			if (container) {
+				const rect = container.getBoundingClientRect()
+				// Account for padding
+				canvas.width = rect.width - 32 // 16px padding on each side
+				canvas.height = rect.height - 32
+			} else {
+				// Default size
+				canvas.width = width
+				canvas.height = height
+			}
+		}
+
+		updateCanvasSize()
+		window.addEventListener('resize', updateCanvasSize)
+		return () => window.removeEventListener('resize', updateCanvasSize)
+	}, [width, height, isFullscreen])
+
+	// Handle fullscreen changes
+	useEffect(() => {
+		const handleFullscreenChange = () => {
+			setIsFullscreen(!!document.fullscreenElement)
+		}
+
+		document.addEventListener('fullscreenchange', handleFullscreenChange)
+		return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+	}, [])
+
+	// Load SVG background if available (from venue data)
+	useEffect(() => {
+		const backgroundSvg = manifest?.venue?.backgroundSvg || manifest?.backgroundSvg
+		if (backgroundSvg?.svgContent && !loadedSvgs.has(backgroundSvg.svgContent)) {
+			const img = new Image()
+			img.crossOrigin = 'anonymous'
+
+			let svgDataUrl = backgroundSvg.svgContent
+			if (!svgDataUrl.startsWith('data:image/svg+xml')) {
+				svgDataUrl = `data:image/svg+xml;base64,${btoa(svgDataUrl)}`
+			}
+
+			img.onload = () => {
+				setLoadedSvgs(prev => new Map(prev).set(backgroundSvg.svgContent, img))
+				redrawCanvas()
+			}
+
+			img.onerror = () => {
+				console.warn('Failed to load SVG background')
+			}
+
+			img.src = svgDataUrl
+		}
+	}, [manifest?.venue?.backgroundSvg?.svgContent, manifest?.backgroundSvg?.svgContent])
+
+	// Redraw canvas when data changes
+	const redrawCanvas = useCallback(() => {
+		const canvas = canvasRef.current
+		if (!canvas) return
+
+		const ctx = canvas.getContext('2d')
+		if (!ctx) return
+
+		// Clear canvas
+		ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+		// Save context for transformations
+		ctx.save()
+
+		// Apply transformations
+		ctx.translate(canvas.width / 2 + pan.x, canvas.height / 2 + pan.y)
+		ctx.scale(scale, scale)
+		ctx.translate(-canvas.width / 2, -canvas.height / 2)
+
+		// Draw background SVG if available (from venue)
+		const backgroundSvg = manifest?.venue?.backgroundSvg || manifest?.backgroundSvg
+		if (backgroundSvg?.svgContent) {
+			const bgImg = loadedSvgs.get(backgroundSvg.svgContent)
+			if (bgImg) {
+				const bgScale = backgroundSvg.scale || 1
+				const bgTranslateX = backgroundSvg.translateX || 0
+				const bgTranslateY = backgroundSvg.translateY || 0
+				const bgOpacity = backgroundSvg.opacity || 0.3
+
+				ctx.save()
+				ctx.globalAlpha = bgOpacity
+				ctx.drawImage(
+					bgImg,
+					(canvas.width - bgImg.width * bgScale) / 2 + bgTranslateX,
+					(canvas.height - bgImg.height * bgScale) / 2 + bgTranslateY,
+					bgImg.width * bgScale,
+					bgImg.height * bgScale
+				)
+				ctx.restore()
+			}
+		}
+
+		// Draw sections (use local copies for editing)
+		if (localSections) {
+			localSections.forEach((section, index) => {
+				ctx.save()
+
+				// Highlight selected/hovered section
+				const isSelected = selectedSection === index
+				const isHovered = hoveredItem === `section-${index}`
+				const shouldHighlight = isSelected || isHovered
+				ctx.strokeStyle = shouldHighlight ? '#FF6B35' : (section.strokeColor || section.color || '#000')
+				ctx.lineWidth = shouldHighlight ? 3 : 2
+				ctx.setLineDash(shouldHighlight ? [] : [5, 5])
+
+				if (section.polygon && section.polygon.length > 0) {
+					// Draw polygon
+					ctx.beginPath()
+					ctx.moveTo(section.polygon[0].x, section.polygon[0].y)
+					for (let i = 1; i < section.polygon.length; i++) {
+						ctx.lineTo(section.polygon[i].x, section.polygon[i].y)
+					}
+					ctx.closePath()
+					ctx.stroke()
+
+					// Draw polygon points if selected and in edit mode
+					if (isSelected && isEditMode) {
+						section.polygon.forEach((point, pointIndex) => {
+							const isPointHovered = hoveredItem === `polygon-point-${pointIndex}`
+							ctx.fillStyle = isPointHovered ? '#FF4444' : '#FF6B35'
+							ctx.beginPath()
+							ctx.arc(point.x, point.y, isPointHovered ? 5 : 4, 0, 2 * Math.PI)
+							ctx.fill()
+							ctx.strokeStyle = '#fff'
+							ctx.lineWidth = 1
+							ctx.stroke()
+						})
+					}
+				} else if (section.bounds) {
+					// Draw rectangle
+					const { x, y, width, height } = section.bounds
+					ctx.strokeRect(x, y, width, height)
+
+					// Draw resize handles if selected and in edit mode
+					if (isSelected && isEditMode) {
+						ctx.fillStyle = '#FF6B35'
+						const handles = [
+							{ x, y }, // nw
+							{ x: x + width, y }, // ne
+							{ x, y: y + height }, // sw
+							{ x: x + width, y: y + height } // se
+						]
+						handles.forEach(handle => {
+							ctx.beginPath()
+							ctx.arc(handle.x, handle.y, 6, 0, 2 * Math.PI)
+							ctx.fill()
+							ctx.strokeStyle = '#fff'
+							ctx.lineWidth = 1
+							ctx.stroke()
+						})
+					}
+				}
+
+				// Draw section label
+				ctx.fillStyle = shouldHighlight ? '#FF6B35' : (section.color || '#000')
+				ctx.font = '12px Arial'
+				ctx.textAlign = 'center'
+
+				let labelX, labelY
+				if (section.polygon && section.polygon.length > 0) {
+					// Use centroid of polygon
+					const centroid = section.polygon.reduce((acc, point) => ({
+						x: acc.x + point.x,
+						y: acc.y + point.y
+					}), { x: 0, y: 0 })
+					labelX = centroid.x / section.polygon.length
+					labelY = centroid.y / section.polygon.length
+				} else if (section.bounds) {
+					labelX = section.bounds.x + section.bounds.width / 2
+					labelY = section.bounds.y + section.bounds.height / 2
+				}
+
+				if (labelX !== undefined && labelY !== undefined) {
+					ctx.fillText(section.name, labelX, labelY)
+				}
+
+				ctx.restore()
+			})
+		}
+
+		// Draw seats (use local copies for editing)
+		if (localPlaces) {
+			localPlaces.forEach((place, index) => {
+				if (place.x !== null && place.y !== null) {
+					ctx.save()
+
+					// Seat color based on selection/hover status
+					const isSelected = selectedSeat === index
+					const isHovered = hoveredItem === `seat-${index}`
+					const shouldHighlight = isSelected || isHovered
+					ctx.fillStyle = shouldHighlight ? '#FF6B35' : '#4CAF50' // Orange for selected/hovered, green for available
+					ctx.strokeStyle = shouldHighlight ? '#E53935' : '#2E7D32'
+					ctx.lineWidth = shouldHighlight ? 2 : 1
+
+					// Draw seat as circle
+					ctx.beginPath()
+					ctx.arc(place.x, place.y, shouldHighlight ? 4 : 3, 0, 2 * Math.PI)
+					ctx.fill()
+					ctx.stroke()
+
+					ctx.restore()
+				}
+			})
+		}
+
+		ctx.restore()
+	}, [manifest, scale, pan, loadedSvgs])
+
+	// Initialize local copies when manifest changes
+	useEffect(() => {
+		if (manifest) {
+			const sections = manifest?.venue?.sections || manifest?.sections || []
+			const places = manifest?.places || []
+			setLocalSections(JSON.parse(JSON.stringify(sections))) // Deep copy
+			setLocalPlaces(JSON.parse(JSON.stringify(places))) // Deep copy
+			setHasUnsavedChanges(false)
+		}
+	}, [manifest])
+
+	// Redraw when dependencies change
+	useEffect(() => {
+		redrawCanvas()
+	}, [redrawCanvas, localSections, localPlaces, selectedSection, selectedSeat, hoveredItem, isEditMode])
+
+	const handleZoomIn = () => {
+		setScale(prev => Math.min(prev * 1.2, 5))
+	}
+
+	const handleZoomOut = () => {
+		setScale(prev => Math.max(prev / 1.2, 0.1))
+	}
+
+	const handleFitToScreen = () => {
+		setScale(1)
+		setPan({ x: 0, y: 0 })
+	}
+
+	const handleFullscreen = () => {
+		const container = containerRef.current
+		if (!container) return
+
+		if (!isFullscreen) {
+			container.requestFullscreen?.()
+		} else {
+			document.exitFullscreen?.()
+		}
+	}
+
+	const handleMouseDown = (e) => {
+		if (!isEditMode) {
+			if (e.button === 1 || (e.button === 0 && e.altKey)) { // Middle mouse or Alt+left click
+				setIsPanning(true)
+				setLastPanPoint({ x: e.clientX, y: e.clientY })
+			}
+			return
+		}
+
+		const canvas = canvasRef.current
+		if (!canvas) return
+
+		const rect = canvas.getBoundingClientRect()
+		const x = (e.clientX - rect.left - canvas.width / 2) / scale + canvas.width / 2 - pan.x
+		const y = (e.clientY - rect.top - canvas.height / 2) / scale + canvas.height / 2 - pan.y
+
+		// Check for polygon point selection first
+		if (selectedSection !== null && localSections[selectedSection]?.polygon) {
+			const polygon = localSections[selectedSection].polygon
+			for (let i = 0; i < polygon.length; i++) {
+				const point = polygon[i]
+				const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2)
+				if (distance < 8) { // 8 pixel tolerance
+					setDraggedItem(`polygon-${i}`)
+					setDragOffset({ x: x - point.x, y: y - point.y })
+					return
+				}
+			}
+		}
+
+		// Check for section selection
+		for (let i = 0; i < localSections.length; i++) {
+			const section = localSections[i]
+			if (section.polygon && section.polygon.length > 0) {
+				// Check if point is inside polygon
+				if (isPointInPolygon(x, y, section.polygon)) {
+					setSelectedSection(i)
+					setSelectedSeat(null)
+					setDraggedItem('section')
+					setDragOffset({ x: 0, y: 0 })
+					return
+				}
+			} else if (section.bounds) {
+				// Check if point is inside rectangle
+				const { x: bx, y: by, width, height } = section.bounds
+				if (x >= bx && x <= bx + width && y >= by && y <= by + height) {
+					setSelectedSection(i)
+					setSelectedSeat(null)
+					setDraggedItem('section')
+					setDragOffset({ x: 0, y: 0 })
+					return
+				}
+			}
+		}
+
+		// Check for seat selection
+		for (let i = 0; i < localPlaces.length; i++) {
+			const place = localPlaces[i]
+			if (place.x !== null && place.y !== null) {
+				const distance = Math.sqrt((x - place.x) ** 2 + (y - place.y) ** 2)
+				if (distance < 6) { // 6 pixel tolerance for seats
+					setSelectedSeat(i)
+					setSelectedSection(null)
+					setDraggedItem('seat')
+					setDragOffset({ x: x - place.x, y: y - place.y })
+					return
+				}
+			}
+		}
+
+		// Clear selection if clicked on empty space
+		setSelectedSection(null)
+		setSelectedSeat(null)
+		setDraggedItem(null)
+	}
+
+	const handleMouseMove = (e) => {
+		if (isPanning && lastPanPoint) {
+			const deltaX = e.clientX - lastPanPoint.x
+			const deltaY = e.clientY - lastPanPoint.y
+			setPan(prev => ({
+				x: prev.x + deltaX,
+				y: prev.y + deltaY
+			}))
+			setLastPanPoint({ x: e.clientX, y: e.clientY })
+			return
+		}
+
+		if (!isEditMode) return
+
+		const canvas = canvasRef.current
+		if (!canvas) return
+
+		const rect = canvas.getBoundingClientRect()
+		const x = (e.clientX - rect.left - canvas.width / 2) / scale + canvas.width / 2 - pan.x
+		const y = (e.clientY - rect.top - canvas.height / 2) / scale + canvas.height / 2 - pan.y
+
+		// Handle hover detection
+		let newHoveredItem = null
+
+		if (!draggedItem) {
+			// Check for polygon point hover
+			if (selectedSection !== null && localSections[selectedSection]?.polygon) {
+				const polygon = localSections[selectedSection].polygon
+				for (let i = 0; i < polygon.length; i++) {
+					const point = polygon[i]
+					const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2)
+					if (distance < 6) {
+						newHoveredItem = `polygon-point-${i}`
+						break
+					}
+				}
+			}
+
+			// Check for section hover (only if not already hovering over a point)
+			if (!newHoveredItem) {
+				for (let i = 0; i < localSections.length; i++) {
+					const section = localSections[i]
+					if (section.polygon && section.polygon.length > 0) {
+						if (isPointInPolygon(x, y, section.polygon)) {
+							newHoveredItem = `section-${i}`
+							break
+						}
+					} else if (section.bounds) {
+						const { x: bx, y: by, width, height } = section.bounds
+						if (x >= bx && x <= bx + width && y >= by && y <= by + height) {
+							newHoveredItem = `section-${i}`
+							break
+						}
+					}
+				}
+			}
+
+			// Check for seat hover (only if not already hovering over section)
+			if (!newHoveredItem) {
+				for (let i = 0; i < localPlaces.length; i++) {
+					const place = localPlaces[i]
+					if (place.x !== null && place.y !== null) {
+						const distance = Math.sqrt((x - place.x) ** 2 + (y - place.y) ** 2)
+						if (distance < 5) {
+							newHoveredItem = `seat-${i}`
+							break
+						}
+					}
+				}
+			}
+		}
+
+		setHoveredItem(newHoveredItem)
+
+		// Handle dragging
+		if (draggedItem) {
+			setHasUnsavedChanges(true)
+
+			if (draggedItem === 'section' && selectedSection !== null) {
+				const section = localSections[selectedSection]
+				const deltaX = x - dragOffset.x
+				const deltaY = y - dragOffset.y
+
+				if (section.polygon && section.polygon.length > 0) {
+					// Move entire polygon
+					const movedPolygon = section.polygon.map(point => ({
+						x: point.x + deltaX,
+						y: point.y + deltaY
+					}))
+					setLocalSections(prev => {
+						const newSections = [...prev]
+						newSections[selectedSection] = { ...section, polygon: movedPolygon }
+						return newSections
+					})
+					setDragOffset({ x, y })
+				} else if (section.bounds) {
+					// Move rectangle
+					const movedBounds = {
+						...section.bounds,
+						x: section.bounds.x + deltaX,
+						y: section.bounds.y + deltaY
+					}
+					setLocalSections(prev => {
+						const newSections = [...prev]
+						newSections[selectedSection] = { ...section, bounds: movedBounds }
+						return newSections
+					})
+					setDragOffset({ x, y })
+				}
+			} else if (draggedItem.startsWith('polygon-') && selectedSection !== null) {
+			const pointIndex = parseInt(draggedItem.split('-')[1])
+			const section = localSections[selectedSection]
+
+			if (section.polygon && section.polygon.length > pointIndex) {
+				setLocalSections(prev => {
+					const newSections = [...prev]
+					const newPolygon = [...section.polygon]
+					newPolygon[pointIndex] = { x, y }
+					newSections[selectedSection] = { ...section, polygon: newPolygon }
+					return newSections
+				})
+			}
+		} else if (draggedItem === 'seat' && selectedSeat !== null) {
+			setLocalPlaces(prev => {
+				const newPlaces = [...prev]
+				newPlaces[selectedSeat] = { ...newPlaces[selectedSeat], x, y }
+				return newPlaces
+			})
+		}
+	}
+
+	const handleMouseUp = () => {
+		setIsPanning(false)
+		setLastPanPoint(null)
+		setDraggedItem(null)
+		setDragOffset({ x: 0, y: 0 })
+	}
+
+	// Helper function to check if point is inside polygon
+	const isPointInPolygon = (x, y, polygon) => {
+		let inside = false
+		for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+			const xi = polygon[i].x, yi = polygon[i].y
+			const xj = polygon[j].x, yj = polygon[j].y
+
+			if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+				inside = !inside
+			}
+		}
+		return inside
+	}
+
+	const handleSaveChanges = async () => {
+		if (!onSave) return
+
+		try {
+			await onSave({
+				sections: localSections,
+				places: localPlaces
+			})
+			setHasUnsavedChanges(false)
+		} catch (error) {
+			console.error('Failed to save changes:', error)
+		}
+	}
+
+	if (!manifest) {
+		return (
+			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+				<Typography variant="body1" color="textSecondary">
+					No manifest data available
+				</Typography>
+			</Box>
+		)
+	}
+
+	return (
+		<Box>
+			{/* Controls */}
+			<Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<ButtonGroup variant="outlined" size="small">
+					<Button onClick={handleZoomOut} disabled={scale <= 0.1}>
+						<ZoomOut />
+					</Button>
+					<Button onClick={handleFitToScreen}>
+						<FitScreen />
+					</Button>
+					<Button onClick={handleZoomIn} disabled={scale >= 5}>
+						<ZoomIn />
+					</Button>
+					<Button onClick={handleFullscreen}>
+						{isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+					</Button>
+				</ButtonGroup>
+
+				<Box sx={{ display: 'flex', gap: 1 }}>
+					<Button
+						variant={isEditMode ? "contained" : "outlined"}
+						size="small"
+						onClick={() => setIsEditMode(!isEditMode)}
+						color="secondary"
+					>
+						{isEditMode ? 'Exit Edit Mode' : 'Edit Mode'}
+					</Button>
+					{isEditMode && onSave && (
+						<Button
+							variant="contained"
+							size="small"
+							onClick={handleSaveChanges}
+							disabled={saving || !hasUnsavedChanges}
+							color="primary"
+						>
+							{saving ? 'Saving...' : 'Save Changes'}
+						</Button>
+					)}
+				</Box>
+			</Box>
+
+			{/* Canvas Container */}
+			<Paper
+				ref={containerRef}
+				elevation={2}
+				sx={{
+					width: '100%',
+					height: height,
+					position: 'relative',
+					overflow: 'hidden',
+					cursor: isPanning ? 'grabbing' : 'grab'
+				}}
+				onMouseDown={handleMouseDown}
+				onMouseMove={handleMouseMove}
+				onMouseUp={handleMouseUp}
+				onMouseLeave={handleMouseUp}
+			>
+				<canvas
+					ref={canvasRef}
+					style={{
+						display: 'block',
+						width: '100%',
+						height: '100%'
+					}}
+				/>
+
+				{/* Instructions overlay */}
+				<Box
+					sx={{
+						position: 'absolute',
+						top: 10,
+						left: 10,
+						backgroundColor: 'rgba(255, 255, 255, 0.9)',
+						padding: 1,
+						borderRadius: 1,
+						fontSize: '0.75rem',
+						maxWidth: '250px'
+					}}
+				>
+					<Typography variant="caption">
+						<strong>Controls:</strong><br />
+						• Zoom: Buttons or mouse wheel<br />
+						• Pan: Alt+drag or middle mouse<br />
+						{isEditMode ? (
+							<>
+								<br />• Click sections to select<br />
+								• Drag sections to move<br />
+								• Drag orange dots to reshape<br />
+								• Click seats to select/move<br />
+								• Orange = selected items
+							</>
+						) : (
+							<>
+								<br />• Green dots = Available seats
+							</>
+						)}
+					</Typography>
+				</Box>
+			</Paper>
+		</Box>
+	)
+}
+
+export default SeatMapViewer
