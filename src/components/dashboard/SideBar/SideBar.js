@@ -199,6 +199,11 @@ const SideBar = ({ onToggle }) => {
       link: "/profile",
       icon: <MdSupervisedUserCircle size={24} />,
     },
+    {
+      title: "Queue Admin",
+      link: "/admin/queue",
+      icon: <MdOutlineSettings size={24} />,
+    },
   ];
 
   return (
