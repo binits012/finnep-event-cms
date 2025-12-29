@@ -47,6 +47,22 @@ const VenueConfiguration = ({ venue, onSubmit, onCancel, loading = false }) => {
 			name: venue?.name || '',
 			venueType: venue?.venueType || 'stadium',
 			externalVenueId: venue?.externalVenueId || '',
+			// Location fields
+			address: venue?.address || '',
+			city: venue?.city || '',
+			state: venue?.state || '',
+			country: venue?.country || '',
+			postalCode: venue?.postalCode || '',
+			coordinates: {
+				latitude: venue?.coordinates?.latitude || '',
+				longitude: venue?.coordinates?.longitude || '',
+				geocode: venue?.coordinates?.geocode || ''
+			},
+			timezone: venue?.timezone || '',
+			phone: venue?.phone || '',
+			email: venue?.email || '',
+			website: venue?.website || '',
+			description: venue?.description || '',
 			dimensions: {
 				width: venue?.dimensions?.width || 0,
 				height: venue?.dimensions?.height || 0,
@@ -249,6 +265,185 @@ const VenueConfiguration = ({ venue, onSubmit, onCancel, loading = false }) => {
 							value={formik.values.externalVenueId}
 							onChange={formik.handleChange}
 							helperText="Optional: Use if integrating with external systems"
+						/>
+					</Grid>
+
+					{/* Location Information Section */}
+					<Grid item xs={12}>
+						<Divider sx={{ my: 2 }} />
+						<Box sx={{ mb: 2 }}>
+							<Typography variant="subtitle1" gutterBottom>
+								Location Information (Optional)
+							</Typography>
+							<Typography variant="body2" color="textSecondary">
+								Provide location details for the venue. This helps with event organization and filtering.
+							</Typography>
+						</Box>
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							fullWidth
+							label="Address"
+							name="address"
+							value={formik.values.address}
+							onChange={formik.handleChange}
+							placeholder="Street address"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="City"
+							name="city"
+							value={formik.values.city}
+							onChange={formik.handleChange}
+							placeholder="City name"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="State/Province"
+							name="state"
+							value={formik.values.state}
+							onChange={formik.handleChange}
+							placeholder="State or province"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Country"
+							name="country"
+							value={formik.values.country}
+							onChange={formik.handleChange}
+							placeholder="Country name"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={6}>
+						<TextField
+							fullWidth
+							label="Postal Code"
+							name="postalCode"
+							value={formik.values.postalCode}
+							onChange={formik.handleChange}
+							placeholder="ZIP/Postal code"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={6}>
+						<TextField
+							fullWidth
+							label="Timezone"
+							name="timezone"
+							value={formik.values.timezone}
+							onChange={formik.handleChange}
+							placeholder="e.g., Europe/Helsinki, America/New_York"
+							helperText="IANA timezone identifier"
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<Divider sx={{ my: 1 }} />
+						<Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+							Coordinates (Optional)
+						</Typography>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Latitude"
+							type="number"
+							name="coordinates.latitude"
+							value={formik.values.coordinates.latitude}
+							onChange={(e) => formik.setFieldValue('coordinates.latitude', e.target.value)}
+							placeholder="e.g., 60.1699"
+							inputProps={{ step: 'any' }}
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Longitude"
+							type="number"
+							name="coordinates.longitude"
+							value={formik.values.coordinates.longitude}
+							onChange={(e) => formik.setFieldValue('coordinates.longitude', e.target.value)}
+							placeholder="e.g., 24.9384"
+							inputProps={{ step: 'any' }}
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Geocode"
+							name="coordinates.geocode"
+							value={formik.values.coordinates.geocode}
+							onChange={(e) => formik.setFieldValue('coordinates.geocode', e.target.value)}
+							placeholder="Geocoded address string"
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<Divider sx={{ my: 1 }} />
+						<Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+							Contact Information (Optional)
+						</Typography>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Phone"
+							name="phone"
+							value={formik.values.phone}
+							onChange={formik.handleChange}
+							placeholder="+358 9 1234567"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Email"
+							type="email"
+							name="email"
+							value={formik.values.email}
+							onChange={formik.handleChange}
+							placeholder="info@venue.com"
+						/>
+					</Grid>
+
+					<Grid item xs={12} md={4}>
+						<TextField
+							fullWidth
+							label="Website"
+							type="url"
+							name="website"
+							value={formik.values.website}
+							onChange={formik.handleChange}
+							placeholder="https://venue.com"
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							fullWidth
+							label="Description"
+							name="description"
+							value={formik.values.description}
+							onChange={formik.handleChange}
+							multiline
+							rows={3}
+							placeholder="Venue description..."
 						/>
 					</Grid>
 

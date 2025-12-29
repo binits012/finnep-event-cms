@@ -14,7 +14,9 @@ import {
 	MenuItem,
 	Grid,
 	Box,
-	Typography
+	Typography,
+	Checkbox,
+	FormControlLabel
 } from '@mui/material'
 import { useFormik } from 'formik'
 
@@ -35,14 +37,11 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 			basePrice: place?.pricing?.basePrice || 0,
 			currency: place?.pricing?.currency || 'EUR',
 			available: place?.available !== false,
-			status: place?.status || 'available',
-			categories: place?.categories || [],
 			tags: place?.tags || []
 		},
 		enableReinitialize: true,
 		onSubmit: (values) => {
 			if (onSave) {
-				// Format data to match schema
 				const placeData = {
 					placeId: values.placeId,
 					x: parseFloat(values.x) || 0,
@@ -52,19 +51,25 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 					section: values.section,
 					zone: values.zone,
 					pricing: {
-						basePrice: Math.round(parseFloat(values.basePrice) * 100) || 0, // Convert to cents
+						basePrice: Math.round(parseFloat(values.basePrice) * 100) || 0,
 						currency: values.currency,
 						currentPrice: Math.round(parseFloat(values.basePrice) * 100) || 0
 					},
 					available: values.available,
-					status: values.status,
-					categories: values.categories,
 					tags: values.tags
 				}
 				onSave(placeData)
 			}
 		}
 	})
+
+	const handleTagToggle = (tag) => {
+		const currentTags = formik.values.tags || []
+		const newTags = currentTags.includes(tag)
+			? currentTags.filter(t => t !== tag)
+			: [...currentTags, tag]
+		formik.setFieldValue('tags', newTags)
+	}
 
 	if (!place) return null
 
@@ -80,32 +85,13 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								label="Place ID"
 								name="placeId"
 								value={formik.values.placeId}
-								onChange={formik.handleChange}
 								disabled
 							/>
 						</Grid>
 
-						<Grid item xs={12} md={6}>
-							<FormControl fullWidth>
-								<InputLabel>Status</InputLabel>
-								<Select
-									name="status"
-									value={formik.values.status}
-									label="Status"
-									onChange={formik.handleChange}
-								>
-									<MenuItem value="available">Available</MenuItem>
-									<MenuItem value="reserved">Reserved</MenuItem>
-									<MenuItem value="sold">Sold</MenuItem>
-									<MenuItem value="blocked">Blocked</MenuItem>
-									<MenuItem value="unavailable">Unavailable</MenuItem>
-								</Select>
-							</FormControl>
-						</Grid>
-
 						<Grid item xs={12}>
 							<Typography variant="subtitle2" gutterBottom>
-								Coordinates
+								Coordinates (Read-only)
 							</Typography>
 						</Grid>
 
@@ -116,7 +102,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								type="number"
 								name="x"
 								value={formik.values.x}
-								onChange={formik.handleChange}
+								disabled
 							/>
 						</Grid>
 
@@ -127,13 +113,13 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								type="number"
 								name="y"
 								value={formik.values.y}
-								onChange={formik.handleChange}
+								disabled
 							/>
 						</Grid>
 
 						<Grid item xs={12}>
 							<Typography variant="subtitle2" gutterBottom>
-								Location
+								Location (Read-only)
 							</Typography>
 						</Grid>
 
@@ -143,7 +129,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								label="Section"
 								name="section"
 								value={formik.values.section}
-								onChange={formik.handleChange}
+								disabled
 							/>
 						</Grid>
 
@@ -153,7 +139,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								label="Row"
 								name="row"
 								value={formik.values.row}
-								onChange={formik.handleChange}
+								disabled
 							/>
 						</Grid>
 
@@ -163,13 +149,13 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								label="Seat"
 								name="seat"
 								value={formik.values.seat}
-								onChange={formik.handleChange}
+								disabled
 							/>
 						</Grid>
 
 						<Grid item xs={12}>
 							<Typography variant="subtitle2" gutterBottom>
-								Pricing
+								Pricing (Read-only)
 							</Typography>
 						</Grid>
 
@@ -180,8 +166,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								type="number"
 								name="basePrice"
 								value={formik.values.basePrice / 100}
-								onChange={(e) => formik.setFieldValue('basePrice', parseFloat(e.target.value) * 100 || 0)}
-								inputProps={{ step: 0.01, min: 0 }}
+								disabled
 							/>
 						</Grid>
 
@@ -192,7 +177,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 									name="currency"
 									value={formik.values.currency}
 									label="Currency"
-									onChange={formik.handleChange}
+									disabled
 								>
 									<MenuItem value="EUR">EUR</MenuItem>
 									<MenuItem value="USD">USD</MenuItem>
@@ -202,15 +187,36 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 						</Grid>
 
 						<Grid item xs={12}>
-							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-								<input
-									type="checkbox"
-									name="available"
-									checked={formik.values.available}
-									onChange={formik.handleChange}
-								/>
-								<Typography>Available</Typography>
-							</Box>
+							<Typography variant="subtitle2" gutterBottom>
+								Availability & Tags
+							</Typography>
+						</Grid>
+
+						<Grid item xs={12}>
+							<FormControlLabel
+								control={
+									<Checkbox
+										checked={formik.values.available}
+										onChange={(e) => formik.setFieldValue('available', e.target.checked)}
+									/>
+								}
+								label="Available"
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<Typography variant="body2" color="textSecondary" gutterBottom>
+								Tags
+							</Typography>
+							<FormControlLabel
+								control={
+									<Checkbox
+										checked={formik.values.tags?.includes('wheelchair') || false}
+										onChange={() => handleTagToggle('wheelchair')}
+									/>
+								}
+								label="Wheelchair Accessible"
+							/>
 						</Grid>
 					</Grid>
 				</DialogContent>

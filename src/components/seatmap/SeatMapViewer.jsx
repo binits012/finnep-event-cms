@@ -152,6 +152,20 @@ const SeatMapViewer = (props) => {
 		}
 	}, [manifest?.venue?.backgroundSvg?.svgContent, manifest?.backgroundSvg?.svgContent, props.venue?.backgroundSvg?.svgContent])
 
+	// Helper function to check if point is inside polygon (defined before redrawCanvas)
+	const isPointInPolygonHelper = (x, y, polygon) => {
+		let inside = false
+		for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+			const xi = polygon[i].x, yi = polygon[i].y
+			const xj = polygon[j].x, yj = polygon[j].y
+
+			if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+				inside = !inside
+			}
+		}
+		return inside
+	}
+
 	// Redraw canvas when data changes
 	const redrawCanvas = useCallback(() => {
 		const canvas = canvasRef.current
@@ -343,13 +357,16 @@ const SeatMapViewer = (props) => {
 		if (localPlaces) {
 			// In simpleMode (Seat Map Overview), apply per-section spacing adjustments.
 			// rowGap and seatGap scale seats from their section's center.
-			// Baseline is 10, values < 10 shrink, values > 10 expand (clamped to max 3.0 for higher spacing)
-			const baselineSpacing = 15
-			const rawSeatScale = (effectiveDisplayConfig.seatGap || baselineSpacing) / baselineSpacing
-			const rawRowScale = (effectiveDisplayConfig.rowGap || baselineSpacing) / baselineSpacing
-			// CLAMP to max 3.0 to allow higher spacing values (seats may overflow polygons)
-			const seatSpacingScale = simpleMode ? Math.min(3.0, rawSeatScale) : 1
-			const rowSpacingScale = simpleMode ? Math.min(3.0, rawRowScale) : 1
+			// Baseline is 10, values < 10 shrink, values > 10 expand
+			const baselineSpacing = 10
+			const seatGapValue = effectiveDisplayConfig.seatGap || baselineSpacing
+			const rowGapValue = effectiveDisplayConfig.rowGap || baselineSpacing
+			const rawSeatScale = seatGapValue / baselineSpacing
+			const rawRowScale = rowGapValue / baselineSpacing
+			// Calculate scaling factors - allow values from 0.1 to 3.0
+			// Only apply scaling if values differ from baseline (to avoid unnecessary transformations)
+			const seatSpacingScale = simpleMode ? Math.max(0.1, Math.min(3.0, rawSeatScale)) : 1
+			const rowSpacingScale = simpleMode ? Math.max(0.1, Math.min(3.0, rawRowScale)) : 1
 
 			// Group places by section for per-section scaling
 			const placesBySection = {}
@@ -361,19 +378,105 @@ const SeatMapViewer = (props) => {
 				placesBySection[sectionName].push(place)
 			})
 
-			// Calculate section centers for scaling
+			// Calculate section centers for scaling (use section polygon centroid if available, otherwise seat centroid)
 			const sectionCenters = {}
-			Object.keys(placesBySection).forEach(sectionName => {
-				const sectionPlaces = placesBySection[sectionName].filter(p => p.x !== null && p.y !== null)
-				if (sectionPlaces.length > 0) {
-					const sumX = sectionPlaces.reduce((sum, p) => sum + p.x, 0)
-					const sumY = sectionPlaces.reduce((sum, p) => sum + p.y, 0)
+			const sectionPolygons = {}
+			const sectionRotations = {} // Store rotation angles for each section
+
+			// First, try to get section polygon centroids (more accurate for tilted sections)
+			// Also get rotation angle from venue sections
+			localSections.forEach(section => {
+				const sectionName = section.name || section.sectionName || 'default'
+				if (section.polygon && section.polygon.length > 0) {
+					const centroid = section.polygon.reduce((acc, point) => ({
+						x: acc.x + point.x,
+						y: acc.y + point.y
+					}), { x: 0, y: 0 })
 					sectionCenters[sectionName] = {
-						x: sumX / sectionPlaces.length,
-						y: sumY / sectionPlaces.length
+						x: centroid.x / section.polygon.length,
+						y: centroid.y / section.polygon.length
+					}
+					sectionPolygons[sectionName] = section.polygon
+				} else if (section.bounds) {
+					sectionCenters[sectionName] = {
+						x: section.bounds.x + section.bounds.width / 2,
+						y: section.bounds.y + section.bounds.height / 2
+					}
+				}
+
+				// Get rotation angle from section spacingConfig (if available)
+				// Also check venue.sections for spacingConfig
+				const venueSection = venue?.sections?.find(s => (s.name || s.sectionName) === sectionName)
+				const rotationAngle = venueSection?.spacingConfig?.rotationAngle || section?.spacingConfig?.rotationAngle || 0
+				if (rotationAngle !== 0) {
+					sectionRotations[sectionName] = rotationAngle
+				}
+			})
+
+			// Fallback to seat centroid for sections without polygon/bounds
+			Object.keys(placesBySection).forEach(sectionName => {
+				if (!sectionCenters[sectionName]) {
+					const sectionPlaces = placesBySection[sectionName].filter(p => p.x !== null && p.y !== null)
+					if (sectionPlaces.length > 0) {
+						const sumX = sectionPlaces.reduce((sum, p) => sum + p.x, 0)
+						const sumY = sectionPlaces.reduce((sum, p) => sum + p.y, 0)
+						sectionCenters[sectionName] = {
+							x: sumX / sectionPlaces.length,
+							y: sumY / sectionPlaces.length
+						}
 					}
 				}
 			})
+
+			// Helper function to check if point is within polygon bounds
+			// Always constrains to polygon - no tolerance for overflow
+			const constrainToPolygon = (x, y, originalX, originalY, sectionName, scaleX, scaleY) => {
+				const polygon = sectionPolygons[sectionName]
+				if (!polygon || polygon.length < 3) {
+					// No polygon constraint, allow the scaled position
+					return { x, y }
+				}
+
+				// Check if scaled position is inside polygon
+				if (isPointInPolygonHelper(x, y, polygon)) {
+					return { x, y }
+				}
+
+				// If outside polygon, find the closest point on polygon boundary
+				// For rotated/tilted sections, we need strict constraint to prevent overflow
+				let closestPoint = { x: originalX, y: originalY } // Default to original position
+				let minDist = Infinity
+
+				for (let i = 0; i < polygon.length; i++) {
+					const p1 = polygon[i]
+					const p2 = polygon[(i + 1) % polygon.length]
+
+					// Project point onto line segment
+					const dx = p2.x - p1.x
+					const dy = p2.y - p1.y
+					const length2 = dx * dx + dy * dy
+
+					if (length2 === 0) continue
+
+					const t = Math.max(0, Math.min(1, ((x - p1.x) * dx + (y - p1.y) * dy) / length2))
+					const projX = p1.x + t * dx
+					const projY = p1.y + t * dy
+
+					const dist = Math.sqrt((x - projX) ** 2 + (y - projY) ** 2)
+					if (dist < minDist) {
+						minDist = dist
+						closestPoint = { x: projX, y: projY }
+					}
+				}
+
+				// If the scaled point is far outside, use original position instead
+				// This prevents seats from jumping to polygon edges when scaling causes overflow
+				if (minDist > 20) {
+					return { x: originalX, y: originalY }
+				}
+
+				return closestPoint
+			}
 
 			localPlaces.forEach((place, index) => {
 				if (place.x !== null && place.y !== null) {
@@ -391,24 +494,83 @@ const SeatMapViewer = (props) => {
 					const dragOffset = (isSelected && draggedItem === 'seats') ? seatsDragOffset : { x: 0, y: 0 }
 					const seatmapDragOffset = (draggedItem === 'seatmap') ? sectionDragOffset : { x: 0, y: 0 }
 
-					// SeatMapViewer shows raw coordinates with only uniform visual controls
-					// This ensures consistency across all presentation styles
+					// Start with original seat position
 					let seatX = place.x
 					let seatY = place.y
 
-					// Only apply uniform displayConfig scaling for row gap/seat gap controls
-					// No section-specific transformations to avoid presentation style differences
+					// Apply per-section scaling from section center (fixes tilted seat overflow)
+					// Only apply scaling if values are different from baseline (10)
 					if (simpleMode && (seatSpacingScale !== 1 || rowSpacingScale !== 1)) {
-						// Use overall map center for uniform scaling across all seats
-						const mapCenterX = (Math.min(...localPlaces.map(p => p.x)) + Math.max(...localPlaces.map(p => p.x))) / 2
-						const mapCenterY = (Math.min(...localPlaces.map(p => p.y)) + Math.max(...localPlaces.map(p => p.y))) / 2
+						const sectionName = place.section || place.sectionName || 'default'
+						const sectionCenter = sectionCenters[sectionName]
+						const rotationAngle = sectionRotations[sectionName] || 0
 
-						seatX = mapCenterX + (place.x - mapCenterX) * seatSpacingScale
-						seatY = mapCenterY + (place.y - mapCenterY) * rowSpacingScale
+						if (sectionCenter) {
+							// Calculate offset from center
+							const offsetX = place.x - sectionCenter.x
+							const offsetY = place.y - sectionCenter.y
+
+							let scaledX, scaledY
+
+							if (rotationAngle !== 0) {
+								// For tilted/rotated sections, automatically reduce gaps to prevent overflow
+								// Apply 50% reduction: if user sets gap to 20 (2x), tilted section gets 1.5x instead
+								const reducedSeatScale = 0.6+ (seatSpacingScale - 1)
+								const reducedRowScale = 0.8 + (rowSpacingScale - 1)
+
+								// Scale in local coordinate system
+								const radians = (rotationAngle * Math.PI) / 180
+								const cos = Math.cos(radians)
+								const sin = Math.sin(radians)
+
+								// Step 1: Rotate offset by -angle to get local coordinates
+								const localX = offsetX * cos + offsetY * sin
+								const localY = -offsetX * sin + offsetY * cos
+
+								// Step 2: Scale in local coordinate system (with reduced scaling for tilted sections)
+								const scaledLocalX = localX * reducedSeatScale
+								const scaledLocalY = localY * reducedRowScale
+
+								// Step 3: Rotate back by +angle to get global coordinates
+								const rotatedBackX = scaledLocalX * cos - scaledLocalY * sin
+								const rotatedBackY = scaledLocalX * sin + scaledLocalY * cos
+
+								// Step 4: Translate back to global position
+								scaledX = sectionCenter.x + rotatedBackX
+								scaledY = sectionCenter.y + rotatedBackY
+							} else {
+								// No rotation - simple scaling from center
+								scaledX = sectionCenter.x + offsetX * seatSpacingScale
+								scaledY = sectionCenter.y + offsetY * rowSpacingScale
+							}
+
+							// Always constrain to polygon boundary to prevent overflow
+							const constrained = constrainToPolygon(scaledX, scaledY, place.x, place.y, sectionName, seatSpacingScale, rowSpacingScale)
+
+							// Use constrained position
+							seatX = constrained.x
+							seatY = constrained.y
+						} else {
+							// No section center found - try to use seat centroid as fallback
+							// This ensures seats still display even if section lookup fails
+							const fallbackCenter = placesBySection[sectionName]?.length > 0
+								? {
+									x: placesBySection[sectionName].reduce((sum, p) => sum + (p.x || 0), 0) / placesBySection[sectionName].length,
+									y: placesBySection[sectionName].reduce((sum, p) => sum + (p.y || 0), 0) / placesBySection[sectionName].length
+								}
+								: null
+
+							if (fallbackCenter) {
+								// Use fallback center for scaling (no rotation handling for fallback)
+								seatX = fallbackCenter.x + (place.x - fallbackCenter.x) * seatSpacingScale
+								seatY = fallbackCenter.y + (place.y - fallbackCenter.y) * rowSpacingScale
+							}
+							// If no fallback available, use original position (seatX, seatY already set to place.x, place.y)
+						}
 					}
 
 					// Draw seat as circle with drag offset - use displayConfig for SeatMapViewer
-					const dotRadius = simpleMode ? effectiveDisplayConfig.dotSize : (shouldHighlight ? 4 : 3)
+					const dotRadius = simpleMode ? (effectiveDisplayConfig.dotSize || 8) : (shouldHighlight ? 4 : 3)
 					ctx.beginPath()
 					ctx.arc(
 						seatX + dragOffset.x + seatmapDragOffset.x,

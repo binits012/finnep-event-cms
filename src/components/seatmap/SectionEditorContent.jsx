@@ -314,10 +314,57 @@ const SectionEditorContent = ({
 		})
 	}
 
-	const handleDeleteSection = (sectionId) => {
+	const handleDeleteSection = async (sectionId) => {
+		const sectionToDelete = sections.find(s => s.id === sectionId)
+		const sectionName = sectionToDelete?.name || 'Section'
+
+		// Confirm deletion
+		const result = await SwalConfig.fire({
+			icon: 'warning',
+			title: 'Delete Section?',
+			html: `Are you sure you want to delete <strong>${sectionName}</strong>?<br/><br/>This action cannot be undone.`,
+			showCancelButton: true,
+			confirmButtonColor: '#d33',
+			cancelButtonColor: '#3085d6',
+			confirmButtonText: 'Yes, delete it!',
+			cancelButtonText: 'Cancel'
+		})
+
+		if (!result.isConfirmed) {
+			return
+		}
+
 		const newSections = sections.filter(s => s.id !== sectionId)
 		setSections(newSections)
 		saveToHistory(newSections, centralFeature)
+
+		// Save to backend immediately after updating local state
+		if (onSaveRef.current) {
+			try {
+				await onSaveRef.current({
+					sections: newSections,
+					centralFeature
+				})
+				SwalConfig.fire({
+					icon: 'success',
+					title: 'Section Deleted',
+					text: `${sectionName} has been deleted successfully`,
+					timer: 2000,
+					showConfirmButton: false
+				})
+			} catch (error) {
+				console.error('Failed to delete section:', error)
+				// Revert local state on error
+				setSections(sections)
+				saveToHistory(sections, centralFeature)
+				SwalConfig.fire({
+					icon: 'error',
+					title: 'Delete Failed',
+					text: error.response?.data?.message || 'Failed to delete section. Please try again.',
+					timer: 3000
+				})
+			}
+		}
 	}
 
 	/**
@@ -705,7 +752,7 @@ const SectionEditorContent = ({
 		proceedWithSave(bounds, polygon, isEditing, existingSection)
 	}
 
-	const proceedWithSave = (bounds, polygon, isEditing, existingSection, adjustedSpacingConfig = null) => {
+	const proceedWithSave = async (bounds, polygon, isEditing, existingSection, adjustedSpacingConfig = null) => {
 		if (!isEditing && sectionForm.shape !== 'polygon' && (!bounds || (bounds.x1 === undefined && bounds.x2 === undefined && bounds.y1 === undefined && bounds.y2 === undefined))) {
 			const sectionIndex = sections.length
 			const cols = Math.ceil(Math.sqrt(Math.max(sections.length + 1, 1)))
@@ -802,6 +849,31 @@ const SectionEditorContent = ({
 			polygon: undefined,
 			rowConfig: []
 		})
+
+		// Save to backend immediately after updating local state
+		if (onSaveRef.current) {
+			try {
+				await onSaveRef.current({
+					sections: newSections,
+					centralFeature
+				})
+				SwalConfig.fire({
+					icon: 'success',
+					title: 'Section Saved',
+					text: isEditing ? 'Section updated successfully' : 'Section added successfully',
+					timer: 2000,
+					showConfirmButton: false
+				})
+			} catch (error) {
+				console.error('Failed to save section:', error)
+				SwalConfig.fire({
+					icon: 'error',
+					title: 'Save Failed',
+					text: error.response?.data?.message || 'Failed to save section. Please try again.',
+					timer: 3000
+				})
+			}
+		}
 	}
 
 	const handleAddObstruction = () => {
@@ -906,23 +978,14 @@ const SectionEditorContent = ({
 		saveToHistory(sections, centralFeature)
 	}
 
-	const handleSave = () => {
-		if (onSave) {
-			onSave({
-				sections,
-				centralFeature
-			})
-		}
-	}
-
 	// Import the rest of the component content from SectionEditor
 	// For brevity, I'll include the key parts - the full form content would be copied from SectionEditor.jsx
 	// This is a simplified version - you may want to copy the full form content
 
 	return (
 		<Box>
-			{/* Toolbar with Undo/Redo and Save */}
-			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+			{/* Toolbar with Undo/Redo */}
+			<Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mb: 3 }}>
 				<Box sx={{ display: 'flex', gap: 1 }}>
 					<Tooltip title="Undo (Ctrl+Z)">
 						<span>
@@ -947,15 +1010,6 @@ const SectionEditorContent = ({
 						</span>
 					</Tooltip>
 				</Box>
-				<Button
-					variant="contained"
-					startIcon={<Save />}
-					onClick={handleSave}
-					disabled={saving}
-					size="large"
-				>
-					{saving ? 'Saving...' : 'Save Configuration'}
-				</Button>
 			</Box>
 
 			<Alert severity="info" sx={{ mb: 3 }}>

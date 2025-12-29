@@ -119,6 +119,9 @@ const VenueCanvasEditor = ({
 		}
 	}, [centralFeature?.imageUrl, loadedImages])
 
+	// Track Blob URLs for cleanup
+	const blobUrlsRef = useRef(new Map())
+
 	// Load SVG as Image when venue.backgroundSvg changes
 	useEffect(() => {
 		if (venue?.backgroundSvg?.svgContent && venue.backgroundSvg.isVisible) {
@@ -130,21 +133,217 @@ const VenueCanvasEditor = ({
 			// Convert SVG string to data URL and create Image
 			try {
 				const img = new Image()
-				const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' })
-				const url = URL.createObjectURL(svgBlob)
+				// Only set crossOrigin for external URLs, not for data URLs or Blob URLs
+				// crossOrigin can cause issues with data URLs in some browsers
 
+				let svgDataUrl = svgContent
+				let useBlobUrl = false
+				let blobUrl = null
+
+				// Handle different SVG content formats (matching SeatMapViewer approach)
+				if (svgDataUrl.startsWith('data:image/svg+xml')) {
+					// Already a proper data URL, use as-is
+				} else if (svgDataUrl.startsWith('<svg') || svgDataUrl.startsWith('<?xml')) {
+					// Raw SVG content - SVG may contain embedded PNG images (xlink:href="data:image/png;base64,...")
+					// These embedded images must be preserved when encoding the SVG
+					let svgString = typeof svgContent === 'string' ? svgContent : String(svgContent)
+
+					// Sanitize SVG: Fix common issues like invalid attributes (e.g., "c" without value)
+					// Remove invalid single-letter attributes without values
+					// Pattern: space(s) + single letter + space(s) + > or />
+					svgString = svgString.replace(/\s+([a-z])\s*>/gi, '>') // Remove ' c>' -> '>'
+					svgString = svgString.replace(/\s+([a-z])\s*\/>/gi, '/>') // Remove ' c />' -> '/>'
+					// Handle cases where invalid attribute appears after valid attributes: 'viewBox="..." c>'
+					svgString = svgString.replace(/(="[^"]*")\s+([a-z])\s*>/gi, '$1>') // Remove ' c>' after quoted attributes
+					svgString = svgString.replace(/(=\S+)\s+([a-z])\s*>/gi, '$1>') // Remove ' c>' after unquoted attributes
+
+					// Check if SVG contains embedded images (xlink:href with data:image)
+					const hasEmbeddedImages = svgString.includes('xlink:href="data:image') || svgString.includes('href="data:image')
+
+					if (hasEmbeddedImages) {
+						// For SVGs with embedded images, Blob URL is the most reliable method
+						// It preserves the embedded base64 PNG data URLs without encoding issues
+						try {
+							const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+							blobUrl = URL.createObjectURL(svgBlob)
+							blobUrlsRef.current.set(svgContent, blobUrl) // Track for cleanup
+							useBlobUrl = true
+							svgDataUrl = blobUrl
+							console.log('Using Blob URL for SVG with embedded images')
+						} catch (blobError) {
+							// If Blob fails, try base64 encoding (preserves embedded images better than URI)
+							console.warn('Blob URL creation failed, trying base64:', blobError)
+							try {
+								// Base64 encoding preserves embedded base64 PNG images in the SVG
+								// The embedded data:image/png;base64,... strings remain intact
+								svgDataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`
+								console.log('Using base64 encoding for SVG with embedded images')
+							} catch (base64Error) {
+								// URI encoding can break embedded images, but it's the last resort
+								console.warn('Base64 encoding failed, using URI encoding (may break embedded images):', base64Error)
+								svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+							}
+						}
+					} else {
+						// No embedded images - can use any encoding method
+						// Try Blob URL first for consistency
+						try {
+							const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+							blobUrl = URL.createObjectURL(svgBlob)
+							blobUrlsRef.current.set(svgContent, blobUrl)
+							useBlobUrl = true
+							svgDataUrl = blobUrl
+						} catch (blobError) {
+							// Fall back to URI encoding (works in SeatMapViewer)
+							svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+						}
+					}
+				} else if (svgDataUrl.startsWith('data:')) {
+					// Some other data URL format, use as-is
+				} else {
+					// Try Blob URL approach for other formats
+					try {
+						const svgString = typeof svgContent === 'string' ? svgContent : String(svgContent)
+						const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+						blobUrl = URL.createObjectURL(svgBlob)
+						blobUrlsRef.current.set(svgContent, blobUrl) // Track for cleanup
+						useBlobUrl = true
+						svgDataUrl = blobUrl
+					} catch (blobError) {
+						// If Blob fails, try base64 encoding
+						console.warn('Blob URL failed, trying base64:', blobError)
+						const svgString = typeof svgContent === 'string' ? svgContent : String(svgContent)
+						svgDataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`
+					}
+				}
+
+				// Set up handlers
 				img.onload = () => {
 					setLoadedSvgs(prev => new Map(prev).set(svgContent, img))
-					URL.revokeObjectURL(url) // Clean up
+					// Don't revoke Blob URL immediately - keep it until component unmounts
+					// The Blob URL is needed for the image to remain loaded
 				}
 				img.onerror = (error) => {
 					console.error('Failed to load SVG as image:', error)
-					URL.revokeObjectURL(url)
+					console.error('SVG content length:', svgContent.length)
+					console.error('SVG data URL starts with:', svgDataUrl.substring(0, 100))
+					console.error('Original SVG content starts with:', svgContent.substring(0, 100))
+					console.error('Image error details:', {
+						naturalWidth: img.naturalWidth,
+						naturalHeight: img.naturalHeight,
+						complete: img.complete,
+						width: img.width,
+						height: img.height
+					})
+
+					// If Blob URL failed, try URI encoding (which works in SeatMapViewer)
+					if (useBlobUrl && blobUrl) {
+						URL.revokeObjectURL(blobUrl)
+						blobUrlsRef.current.delete(svgContent)
+						console.log('Blob URL failed, retrying with URI encoding (matching SeatMapViewer approach)...')
+
+						// Retry with URI encoding (same as SeatMapViewer uses)
+						const retryImg = new Image()
+						const svgString = typeof svgContent === 'string' ? svgContent : String(svgContent)
+						const uriEncodedUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+
+						retryImg.onload = () => {
+							console.log('URI encoding succeeded!')
+							setLoadedSvgs(prev => new Map(prev).set(svgContent, retryImg))
+						}
+						retryImg.onerror = (retryError) => {
+							console.error('URI encoding also failed:', retryError)
+							console.error('URI URL length:', uriEncodedUrl.length)
+							console.error('URI URL starts with:', uriEncodedUrl.substring(0, 150))
+							console.error('SVG content sample (first 500 chars):', svgString.substring(0, 500))
+
+							// Check if SVG is valid XML and try to fix it
+							try {
+								const parser = new DOMParser()
+								let svgDoc = parser.parseFromString(svgString, 'image/svg+xml')
+								let parseError = svgDoc.querySelector('parsererror')
+
+								if (parseError) {
+									console.error('SVG parsing error:', parseError.textContent)
+
+									// Try to fix common issues and reparse
+									let fixedSvg = svgString
+									// Remove invalid single-letter attributes without values
+									fixedSvg = fixedSvg.replace(/\s+([a-z])\s*>/gi, '>')
+									fixedSvg = fixedSvg.replace(/\s+([a-z])\s*\/>/gi, '/>')
+									// Remove attributes with no value (e.g., ' c' before > or />)
+									fixedSvg = fixedSvg.replace(/\s+([a-z])\s*([=>])/gi, '$2')
+
+									// Try parsing again
+									svgDoc = parser.parseFromString(fixedSvg, 'image/svg+xml')
+									parseError = svgDoc.querySelector('parsererror')
+
+									if (!parseError) {
+										console.log('SVG fixed! Retrying with sanitized SVG...')
+										// Retry loading with fixed SVG
+										const fixedImg = new Image()
+										const fixedBlob = new Blob([fixedSvg], { type: 'image/svg+xml;charset=utf-8' })
+										const fixedBlobUrl = URL.createObjectURL(fixedBlob)
+										blobUrlsRef.current.set(svgContent, fixedBlobUrl)
+
+										fixedImg.onload = () => {
+											setLoadedSvgs(prev => new Map(prev).set(svgContent, fixedImg))
+										}
+										fixedImg.onerror = () => {
+											console.error('Fixed SVG still failed to load')
+											URL.revokeObjectURL(fixedBlobUrl)
+										}
+										fixedImg.src = fixedBlobUrl
+										return // Exit early, fixed version is loading
+									} else {
+										console.error('SVG could not be fixed:', parseError.textContent)
+									}
+								} else {
+									console.log('SVG is valid XML, but Image element cannot load it')
+									console.log('SVG root element:', svgDoc.documentElement.tagName)
+									console.log('SVG namespace:', svgDoc.documentElement.namespaceURI)
+								}
+							} catch (parseErr) {
+								console.error('Failed to parse SVG as XML:', parseErr)
+							}
+
+							// Last resort: try base64
+							console.log('Trying base64 encoding as last resort...')
+							const base64Img = new Image()
+							try {
+								const base64Url = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`
+								base64Img.onload = () => {
+									console.log('Base64 encoding succeeded!')
+									setLoadedSvgs(prev => new Map(prev).set(svgContent, base64Img))
+								}
+								base64Img.onerror = () => {
+									console.error('All encoding methods failed. SVG may be invalid or too large.')
+								}
+								base64Img.src = base64Url
+							} catch (base64Err) {
+								console.error('Failed to create base64 URL:', base64Err)
+							}
+						}
+						retryImg.src = uriEncodedUrl
+					}
 				}
-				img.src = url
+
+				// Set src after handlers are attached
+				img.src = svgDataUrl
 			} catch (error) {
 				console.error('Error creating SVG image:', error)
 			}
+		}
+
+		// Cleanup function: revoke Blob URLs when SVG content changes or component unmounts
+		return () => {
+			blobUrlsRef.current.forEach((url, content) => {
+				// Only revoke if this SVG is no longer in use
+				if (!loadedSvgs.has(content)) {
+					URL.revokeObjectURL(url)
+					blobUrlsRef.current.delete(content)
+				}
+			})
 		}
 	}, [venue?.backgroundSvg?.svgContent, venue?.backgroundSvg?.isVisible, loadedSvgs])
 

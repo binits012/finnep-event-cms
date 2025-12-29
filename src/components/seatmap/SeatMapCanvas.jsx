@@ -99,11 +99,38 @@ const SeatMapCanvas = ({
 			// Get section-specific spacing configuration from venue
 			const venueSection = venue?.sections?.find(s => s.name === sectionName)
 			const spacingConfig = venueSection?.spacingConfig || {}
-			const sectionSeatRadius = spacingConfig.seatRadius !== undefined ? spacingConfig.seatRadius : SEAT_RADIUS
+
+			// Priority: displayConfig (from venue.backgroundSvg.displayConfig) > spacingConfig > defaults
+			// This ensures customer view matches configure view
+			const displayConfig = venue?.backgroundSvg?.displayConfig || {}
+			const baselineSpacing = 10
+
+			// Seat radius: displayConfig.dotSize > spacingConfig.seatRadius > default
+			const sectionSeatRadius = displayConfig.dotSize !== undefined
+				? displayConfig.dotSize
+				: (spacingConfig.seatRadius !== undefined ? spacingConfig.seatRadius : SEAT_RADIUS)
+
+			let rawSeatSpacingMultiplier, rawRowSpacingMultiplier
+
+			// Check displayConfig first (matches configure view)
+			if (displayConfig.seatGap !== undefined) {
+				rawSeatSpacingMultiplier = displayConfig.seatGap / baselineSpacing
+			} else if (spacingConfig.seatSpacingVisual !== undefined) {
+				rawSeatSpacingMultiplier = spacingConfig.seatSpacingVisual
+			} else {
+				rawSeatSpacingMultiplier = SEAT_SPACING_MULTIPLIER
+			}
+
+			if (displayConfig.rowGap !== undefined) {
+				rawRowSpacingMultiplier = displayConfig.rowGap / baselineSpacing
+			} else if (spacingConfig.rowSpacingVisual !== undefined) {
+				rawRowSpacingMultiplier = spacingConfig.rowSpacingVisual
+			} else {
+				rawRowSpacingMultiplier = ROW_SPACING_MULTIPLIER
+			}
+
 			// IMPORTANT: Clamp multipliers to max 1.0 to prevent seats from expanding beyond polygon bounds
 			// Values > 1.0 would cause overflow - old schema had defaults of 1.3 and 1.2 which caused issues
-			const rawSeatSpacingMultiplier = spacingConfig.seatSpacingVisual !== undefined ? spacingConfig.seatSpacingVisual : SEAT_SPACING_MULTIPLIER
-			const rawRowSpacingMultiplier = spacingConfig.rowSpacingVisual !== undefined ? spacingConfig.rowSpacingVisual : ROW_SPACING_MULTIPLIER
 			const sectionSeatSpacingMultiplier = Math.min(1.0, rawSeatSpacingMultiplier)
 			const sectionRowSpacingMultiplier = Math.min(1.0, rawRowSpacingMultiplier)
 			const sectionTopMargin = spacingConfig.topMargin !== undefined ? spacingConfig.topMargin : TOP_MARGIN
@@ -120,14 +147,52 @@ const SeatMapCanvas = ({
 				if (rowSeats.length > 0) {
 					const avgY = rowSeats.reduce((sum, seat) => sum + (seat.y || 0), 0) / rowSeats.length
 
+					// Get rotation angle for tilted sections
+					const rotationAngle = spacingConfig.rotationAngle || 0
+
 					rowSeats.forEach(seat => {
 						// For manual sections, apply spacing multipliers to create visual gaps while preserving curves
 						// For auto-generated sections, apply scaling for spacing
 						if (hasManualSections) {
 							// Apply spacing from section center to create gaps between seats and rows
 							// This preserves the curve pattern while adding visual spacing
-							const scaledX = centerX + (seat.x - centerX) * sectionSeatSpacingMultiplier
-							const scaledY = sectionTopMargin + centerY + ((seat.y || avgY) - centerY) * sectionRowSpacingMultiplier
+							let scaledX, scaledY
+
+							if (rotationAngle !== 0) {
+								// For tilted/rotated sections, reduce gaps to prevent overflow
+								const reducedSeatScale = 0.6 + (sectionSeatSpacingMultiplier - 1)
+								const reducedRowScale = 0.9 + (sectionRowSpacingMultiplier - 1)
+
+								// Scale in local coordinate system
+								const radians = (rotationAngle * Math.PI) / 180
+								const cos = Math.cos(radians)
+								const sin = Math.sin(radians)
+
+								// Calculate offset from center
+								const offsetX = seat.x - centerX
+								const offsetY = (seat.y || avgY) - centerY
+
+								// Step 1: Rotate offset by -angle to get local coordinates
+								const localX = offsetX * cos + offsetY * sin
+								const localY = -offsetX * sin + offsetY * cos
+
+								// Step 2: Scale in local coordinate system
+								const scaledLocalX = localX * reducedSeatScale
+								const scaledLocalY = localY * reducedRowScale
+
+								// Step 3: Rotate back by +angle to get global coordinates
+								const rotatedBackX = scaledLocalX * cos - scaledLocalY * sin
+								const rotatedBackY = scaledLocalX * sin + scaledLocalY * cos
+
+								// Step 4: Apply same formula as non-rotated
+								scaledX = centerX + rotatedBackX
+								scaledY = sectionTopMargin + centerY + rotatedBackY
+							} else {
+								// No rotation - standard scaling
+								scaledX = centerX + (seat.x - centerX) * sectionSeatSpacingMultiplier
+								scaledY = sectionTopMargin + centerY + ((seat.y || avgY) - centerY) * sectionRowSpacingMultiplier
+							}
+
 							seat.scaledX = scaledX
 							seat.scaledY = scaledY // Preserves curve while adding row spacing and top margin
 							seat.seatRadius = sectionSeatRadius // Store section-specific seat radius
