@@ -196,9 +196,9 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 							<FormControlLabel
 								control={
 									<Checkbox
-										checked={formik.values.available}
+									checked={formik.values.available}
 										onChange={(e) => formik.setFieldValue('available', e.target.checked)}
-									/>
+								/>
 								}
 								label="Available"
 							/>

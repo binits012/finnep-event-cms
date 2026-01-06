@@ -70,6 +70,7 @@ const SwalConfig = Swal.mixin({
  */
 const SectionEditorContent = ({
 	venue,
+	manifest = null, // Manifest with places for showing actual seats
 	onSave,
 	saving = false
 }) => {
@@ -1096,6 +1097,7 @@ const SectionEditorContent = ({
 							sections={sections}
 							centralFeature={centralFeature}
 							venue={localVenue}
+							manifest={manifest}
 							directionLabel={centralFeature?.directionLabel || centralFeature?.name || localVenue?.centralFeature?.directionLabel || 'Kenttä'}
 								onSectionAdd={(sectionData) => {
 									// If a section form is open (adding or editing), update the form instead of creating a new section
@@ -2642,71 +2644,7 @@ const SectionEditorContent = ({
 							</Grid>
 						</Grid>
 
-						<FormControlLabel
-							control={
-								<Checkbox
-									checked={sectionForm.accessible}
-									onChange={(e) => setSectionForm({ ...sectionForm, accessible: e.target.checked })}
-								/>
-							}
-							label="Wheelchair Accessible"
-						/>
 
-						<TextField
-							label="Price Tier"
-							value={sectionForm.priceTier}
-							onChange={(e) => setSectionForm({ ...sectionForm, priceTier: e.target.value })}
-							fullWidth
-						/>
-
-						{/* Obstructions Section */}
-						<Grid item xs={12}>
-							<Divider sx={{ my: 2 }} />
-							<Typography variant="subtitle2" gutterBottom>
-								Obstructions / Blocked Areas
-							</Typography>
-							<Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-								Define areas within this section where seats cannot be placed (e.g., entrances, pillars, aisles). Seats will be automatically skipped in these areas.
-							</Typography>
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-								<Button
-									variant="outlined"
-									size="small"
-									startIcon={<Add />}
-									onClick={handleAddObstruction}
-									sx={{ alignSelf: 'flex-start' }}
-								>
-									Add Obstruction
-								</Button>
-								{(sectionForm.obstructions || []).map((obstruction) => (
-									<Paper key={obstruction.id} elevation={1} sx={{ p: 1.5 }}>
-										<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-											<Box>
-												<Typography variant="body2" fontWeight="medium">
-													{obstruction.name || 'Unnamed Obstruction'}
-												</Typography>
-												<Typography variant="caption" color="textSecondary">
-													{obstruction.type} • {obstruction.shape}
-												</Typography>
-											</Box>
-											<Box>
-												<IconButton size="small" onClick={() => handleEditObstruction(obstruction)}>
-													<Edit fontSize="small" />
-												</IconButton>
-												<IconButton size="small" onClick={() => handleDeleteObstruction(obstruction.id)} color="error">
-													<Delete fontSize="small" />
-												</IconButton>
-											</Box>
-										</Box>
-									</Paper>
-								))}
-								{(!sectionForm.obstructions || sectionForm.obstructions.length === 0) && (
-									<Typography variant="caption" color="textSecondary" sx={{ fontStyle: 'italic' }}>
-										No obstructions defined. Click "Add Obstruction" to mark areas where seats cannot be placed.
-									</Typography>
-								)}
-							</Box>
-						</Grid>
 						</Box>
 					</Box>
 

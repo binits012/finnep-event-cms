@@ -79,13 +79,13 @@ const VenueConfigurePage = () => {
 		}
 	}, [venueId])
 
-	// Load manifest when seats tab is selected and manifest not loaded yet
+	// Load manifest when venue is loaded (so seats show up in Sections & Layout tab)
 	// Use manifestFetched flag to prevent infinite loop when no manifest exists
 	useEffect(() => {
-		if (activeTab === 1 && venueId && !manifest && !loadingManifest && !manifestFetched) {
+		if (venueId && venue && !manifest && !loadingManifest && !manifestFetched) {
 			fetchManifest()
 		}
-	}, [activeTab, venueId, manifest, loadingManifest, manifestFetched])
+	}, [venueId, venue, manifest, loadingManifest, manifestFetched])
 
 	const fetchVenue = async () => {
 		setLoading(true)
@@ -448,6 +448,7 @@ const VenueConfigurePage = () => {
 				<>
 					<SectionEditorContent
 						venue={venue}
+						manifest={manifest}
 						onSave={handleSave}
 						saving={saving}
 					/>

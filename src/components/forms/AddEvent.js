@@ -49,6 +49,8 @@ const AddEvent = ({ editMode }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [ticketInfo, setTicketInfo] = useState([]);
+  const [pricingConfig, setPricingConfig] = useState(null);
+  const [venueInfo, setVenueInfo] = useState(null);
 
   const Toast = Swal.mixin({
     toast: true,
@@ -327,6 +329,10 @@ const AddEvent = ({ editMode }) => {
             transformObtainedValuesToForm(res.data.data, res.data.timeZone)
           );
           setTicketInfo(res.data.data.ticketInfo || []);
+          // Store pricingConfig from response if available
+          setPricingConfig(res.data.pricingConfig || null);
+          // Store venue info to check if we should hide ticket info
+          setVenueInfo(res.data.data.venue || null);
         } catch (err) {
           Toast.fire({
             icon: "error",
@@ -524,7 +530,89 @@ const AddEvent = ({ editMode }) => {
               + Add Ticket
             </Button>
             */}
-            {ticketInfo.map((ticket, index) => (
+            {/* Display Pricing Configuration if available */}
+            {pricingConfig && (
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  border: '2px solid #2196F3',
+                  borderRadius: '8px',
+                  backgroundColor: '#e3f2fd'
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#0d47a1' }}>
+                  Pricing Configuration
+                </Typography>
+
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={12} sm={4} md={3}>
+                    <Typography variant="caption" color="textSecondary">Currency</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                      {pricingConfig.currency || 'EUR'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={3}>
+                    <Typography variant="caption" color="textSecondary">Order Fee</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                      {pricingConfig.orderFee || 0} {pricingConfig.currency || 'EUR'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={3}>
+                    <Typography variant="caption" color="textSecondary">Order Tax</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                      {pricingConfig.orderTax || 0}%
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                {pricingConfig.tiers && pricingConfig.tiers.length > 0 && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#1976d2' }}>
+                      Pricing Tiers
+                    </Typography>
+                    {pricingConfig.tiers.map((tier, index) => (
+                      <Box
+                        key={tier._id || index}
+                        sx={{
+                          mb: 2,
+                          p: 2,
+                          border: '1px solid #90caf9',
+                          borderRadius: '6px',
+                          backgroundColor: '#ffffff'
+                        }}
+                      >
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                          Tier {tier.id || index}
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="caption" color="textSecondary">Base Price</Typography>
+                            <Typography variant="body2">{tier.basePrice} {pricingConfig.currency || 'EUR'}</Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="caption" color="textSecondary">Tax (VAT)</Typography>
+                            <Typography variant="body2">{tier.tax || 0}%</Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="caption" color="textSecondary">Service Fee</Typography>
+                            <Typography variant="body2">{tier.serviceFee || 0} {pricingConfig.currency || 'EUR'}</Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="caption" color="textSecondary">Service Tax</Typography>
+                            <Typography variant="body2">{tier.serviceTax || 0}%</Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Only show regular ticket info if NOT using pricing_configuration model */}
+            {!(venueInfo?.venueId && venueInfo?.pricingModel === 'pricing_configuration') &&
+              ticketInfo.map((ticket, index) => (
               <Box
               key={index}
               sx={{

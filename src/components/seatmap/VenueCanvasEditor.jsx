@@ -15,6 +15,8 @@ const VenueCanvasEditor = ({
 	sections = [],
 	centralFeature = null,
 	venue = null, // Full venue object (for backgroundSvg)
+	manifest = null, // Manifest object with places array (for showing actual seats)
+	places = null, // Alternative: direct places array
 	onSectionAdd,
 	onSectionUpdate,
 	onSectionDelete,
@@ -659,6 +661,157 @@ const VenueCanvasEditor = ({
 		}
 	}
 
+	// Get places from manifest or direct prop
+	const allPlaces = places || manifest?.places || []
+
+	// Get seat positions for a section from actual manifest places
+	// This uses the real seat positions from the API, matching SeatMapCanvas approach
+	const getSeatsForSection = (section) => {
+		if (!section || allPlaces.length === 0) return []
+
+		const sectionName = section.name
+		if (!sectionName) return []
+
+		// Filter places by section name
+		const sectionPlaces = allPlaces.filter(place => place.section === sectionName)
+		if (sectionPlaces.length === 0) return []
+
+		// Get section-specific spacing configuration (matching SeatMapCanvas)
+		const spacingConfig = section.spacingConfig || {}
+		const displayConfig = venue?.backgroundSvg?.displayConfig || {}
+		const baselineSpacing = 10
+
+		// Get spacing multipliers (same logic as SeatMapCanvas)
+		let rawSeatSpacingMultiplier
+		if (displayConfig.seatGap !== undefined) {
+			rawSeatSpacingMultiplier = displayConfig.seatGap / baselineSpacing
+		} else if (spacingConfig.seatSpacingVisual !== undefined) {
+			rawSeatSpacingMultiplier = spacingConfig.seatSpacingVisual
+		} else {
+			rawSeatSpacingMultiplier = spacingConfig.seatSpacingMultiplier || 0.65
+		}
+
+		let rawRowSpacingMultiplier
+		if (displayConfig.rowGap !== undefined) {
+			rawRowSpacingMultiplier = displayConfig.rowGap / baselineSpacing
+		} else if (spacingConfig.rowSpacingVisual !== undefined) {
+			rawRowSpacingMultiplier = spacingConfig.rowSpacingVisual
+		} else {
+			rawRowSpacingMultiplier = spacingConfig.rowSpacingMultiplier || 0.75
+		}
+
+		// Clamp multipliers to max 1.0 (matching SeatMapCanvas)
+		const sectionSeatSpacingMultiplier = Math.min(1.0, rawSeatSpacingMultiplier)
+		const sectionRowSpacingMultiplier = Math.min(1.0, rawRowSpacingMultiplier)
+		const sectionTopMargin = spacingConfig.topMargin !== undefined ? spacingConfig.topMargin : 30
+		const seatRadius = displayConfig.dotSize !== undefined
+			? displayConfig.dotSize
+			: (spacingConfig.seatRadius !== undefined ? spacingConfig.seatRadius : 7)
+
+		// Get section center for scaling (matching SeatMapCanvas)
+		let centerX, centerY
+		if (section.shape === 'polygon' && section.polygon && section.polygon.length >= 3) {
+			const xs = section.polygon.map(p => p.x)
+			const ys = section.polygon.map(p => p.y)
+			centerX = (Math.min(...xs) + Math.max(...xs)) / 2
+			centerY = (Math.min(...ys) + Math.max(...ys)) / 2
+		} else if (section.bounds) {
+			centerX = (section.bounds.x1 + section.bounds.x2) / 2
+			centerY = (section.bounds.y1 + section.bounds.y2) / 2
+		} else {
+			return [] // No bounds defined
+		}
+
+		// Group places by row and apply scaling (matching SeatMapCanvas logic)
+		const groupedByRow = {}
+		sectionPlaces.forEach(place => {
+			const rowKey = place.row || 'unknown'
+			if (!groupedByRow[rowKey]) {
+				groupedByRow[rowKey] = []
+			}
+			groupedByRow[rowKey].push(place)
+		})
+
+		const seats = []
+		Object.keys(groupedByRow).forEach(rowKey => {
+			const rowSeats = groupedByRow[rowKey]
+			if (rowSeats.length === 0) return
+
+			// Calculate average Y for the row
+			const avgY = rowSeats.reduce((sum, seat) => sum + (seat.y || 0), 0) / rowSeats.length
+
+			// Get rotation angle for tilted sections
+			const rotationAngle = spacingConfig.rotationAngle || 0
+
+			rowSeats.forEach(place => {
+				// Apply spacing multipliers from center (matching SeatMapCanvas formula)
+				let scaledX, scaledY
+
+				if (rotationAngle !== 0) {
+					// For tilted/rotated sections
+					const reducedSeatScale = 0.6 + (sectionSeatSpacingMultiplier - 1)
+					const reducedRowScale = 0.9 + (sectionRowSpacingMultiplier - 1)
+					const radians = (rotationAngle * Math.PI) / 180
+					const cos = Math.cos(radians)
+					const sin = Math.sin(radians)
+
+					const offsetX = place.x - centerX
+					const offsetY = (place.y || avgY) - centerY
+
+					const localX = offsetX * cos + offsetY * sin
+					const localY = -offsetX * sin + offsetY * cos
+
+					const scaledLocalX = localX * reducedSeatScale
+					const scaledLocalY = localY * reducedRowScale
+
+					const rotatedBackX = scaledLocalX * cos - scaledLocalY * sin
+					const rotatedBackY = scaledLocalX * sin + scaledLocalY * cos
+
+					scaledX = centerX + rotatedBackX
+					scaledY = sectionTopMargin + centerY + rotatedBackY
+				} else {
+					// No rotation - standard scaling (matching SeatMapCanvas)
+					scaledX = centerX + (place.x - centerX) * sectionSeatSpacingMultiplier
+					scaledY = sectionTopMargin + centerY + ((place.y || avgY) - centerY) * sectionRowSpacingMultiplier
+				}
+
+				seats.push({
+					x: scaledX,
+					y: scaledY,
+					place: place,
+					radius: seatRadius
+				})
+			})
+		})
+
+		return seats
+	}
+
+	// Draw seats within a section using actual places from manifest
+	const drawSeats = (ctx, section) => {
+		if (!section) return
+
+		const seats = getSeatsForSection(section)
+		if (seats.length === 0) return
+
+		ctx.save()
+		ctx.globalAlpha = 0.8
+
+		seats.forEach(seat => {
+			// Draw seat as a circle using the scaled position from API
+			// Seats from API are already positioned correctly within sections
+			ctx.fillStyle = '#4CAF50' // Green for available seats
+			ctx.strokeStyle = '#2E7D32'
+			ctx.lineWidth = 1
+			ctx.beginPath()
+			ctx.arc(seat.x, seat.y, seat.radius, 0, 2 * Math.PI)
+			ctx.fill()
+			ctx.stroke()
+		})
+
+		ctx.restore()
+	}
+
 	const drawSection = (ctx, section, isSelected = false) => {
 		if (!section) return
 
@@ -687,6 +840,9 @@ const VenueCanvasEditor = ({
 		}
 
 		ctx.globalAlpha = 1.0
+
+		// Draw seats if section has seat configuration
+		drawSeats(ctx, section)
 
 		// Draw section label
 		if (section.name) {
