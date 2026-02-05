@@ -23,6 +23,8 @@ import {
   IconButton,
   Divider,
   Chip,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -44,6 +46,9 @@ export default function MerchantsPage() {
   const [otherInfo, setOtherInfo] = useState({});
   const [otherInfoChanged, setOtherInfoChanged] = useState(false);
   const [savingOtherInfo, setSavingOtherInfo] = useState(false);
+  const [paytrailEnabled, setPaytrailEnabled] = useState(false);
+  const [paytrailCommissionRate, setPaytrailCommissionRate] = useState(3);
+  const [updatingPaytrail, setUpdatingPaytrail] = useState(false);
 
   // Get available status options based on current status
   const getAvailableStatusOptions = (currentStatus) => {
@@ -194,6 +199,14 @@ export default function MerchantsPage() {
       stripe: isNaN(stripeValue) ? '' : stripeValue
     });
     setOtherInfoChanged(false);
+
+    // Initialize Paytrail state
+    setPaytrailEnabled(merchant.paytrailEnabled || false);
+    setPaytrailCommissionRate(
+      merchant.paytrailShopInShopData?.commissionRate ||
+      parseFloat(process.env.NEXT_PUBLIC_PAYTRAIL_PLATFORM_COMMISSION || '3')
+    );
+
     setModalOpen(true);
   };
 
@@ -203,6 +216,8 @@ export default function MerchantsPage() {
     setSelectedMerchant(null);
     setOtherInfo({});
     setOtherInfoChanged(false);
+    setPaytrailEnabled(false);
+    setPaytrailCommissionRate(3);
   };
 
   // Handle otherInfo input change
@@ -268,6 +283,63 @@ export default function MerchantsPage() {
       Toast.error("Error updating platform commission");
     } finally {
       setSavingOtherInfo(false);
+    }
+  };
+
+  // Handle Paytrail toggle
+  const handleTogglePaytrail = async (merchantId, enabled) => {
+    setUpdatingPaytrail(true);
+    try {
+      const response = await apiHandler(
+        "POST",
+        `admin/paytrail/toggle`,
+        true,
+        null,
+        {
+          merchantId: merchantId,
+          enabled: enabled,
+          commissionRate: paytrailCommissionRate
+        }
+      );
+
+      if (response.status === 200 || response.success) {
+        // Update local state
+        const updatedMerchants = merchants.map((merchant) =>
+          merchant._id === merchantId
+            ? {
+                ...merchant,
+                paytrailEnabled: enabled,
+                paytrailShopInShopData: {
+                  ...merchant.paytrailShopInShopData,
+                  commissionRate: paytrailCommissionRate
+                }
+              }
+            : merchant
+        );
+        setMerchants(updatedMerchants);
+
+        // Update selected merchant
+        if (selectedMerchant && selectedMerchant._id === merchantId) {
+          setSelectedMerchant({
+            ...selectedMerchant,
+            paytrailEnabled: enabled,
+            paytrailShopInShopData: {
+              ...selectedMerchant.paytrailShopInShopData,
+              commissionRate: paytrailCommissionRate
+            }
+          });
+        }
+
+        setPaytrailEnabled(enabled);
+        Toast.success(`Paytrail ${enabled ? 'enabled' : 'disabled'} successfully`);
+      } else {
+        Toast.error(response.message || `Failed to ${enabled ? 'enable' : 'disable'} Paytrail`);
+      }
+    } catch (error) {
+      console.error("Error toggling Paytrail:", error);
+      Toast.error(`Error ${enabled ? 'enabling' : 'disabling'} Paytrail`);
+    } finally {
+      setUpdatingPaytrail(false);
     }
   };
 
@@ -792,6 +864,99 @@ export default function MerchantsPage() {
                       </Grid>
                     </Grid>
                   )}
+
+                  <Divider sx={{ my: 2 }} />
+
+                  {/* Paytrail Configuration */}
+                  <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                      Paytrail Payment Gateway
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={paytrailEnabled}
+                              onChange={(e) => {
+                                const enabled = e.target.checked;
+                                setPaytrailEnabled(enabled);
+                                if (selectedMerchant?._id) {
+                                  handleTogglePaytrail(selectedMerchant._id, enabled);
+                                }
+                              }}
+                              disabled={updatingPaytrail}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body1">
+                                Enable Paytrail for this merchant
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {paytrailEnabled
+                                  ? 'Customers can pay via Paytrail (Finnish banks & mobile payments)'
+                                  : 'Paytrail payment option will not be available for this merchant'}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </Grid>
+                      {paytrailEnabled && (
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                            Platform Commission Rate (%)
+                          </Typography>
+                          <TextField
+                            type="number"
+                            value={paytrailCommissionRate}
+                            onChange={(e) => {
+                              const rate = parseFloat(e.target.value) || 0;
+                              if (rate >= 0 && rate <= 100) {
+                                setPaytrailCommissionRate(rate);
+                              }
+                            }}
+                            placeholder="3"
+                            size="small"
+                            fullWidth
+                            inputProps={{ min: 0, max: 100, step: 0.1 }}
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">%</InputAdornment>
+                            }}
+                            helperText="Platform commission percentage for Paytrail payments"
+                            disabled={updatingPaytrail}
+                          />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              if (selectedMerchant?._id) {
+                                handleTogglePaytrail(selectedMerchant._id, paytrailEnabled);
+                              }
+                            }}
+                            disabled={updatingPaytrail}
+                            sx={{ mt: 1 }}
+                          >
+                            {updatingPaytrail ? <CircularProgress size={20} /> : 'Update Commission Rate'}
+                          </Button>
+                        </Grid>
+                      )}
+                      {selectedMerchant?.paytrailSubMerchantId && (
+                        <Grid item xs={12}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Sub-Merchant ID
+                          </Typography>
+                          <Typography variant="body1" sx={{ mb: 1, fontFamily: 'monospace' }}>
+                            {selectedMerchant.paytrailSubMerchantId}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Shop-in-shop sub-merchant account (automatic settlement enabled)
+                          </Typography>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </Grid>
 
                   <Divider sx={{ my: 2 }} />
 
