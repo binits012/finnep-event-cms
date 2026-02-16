@@ -16,8 +16,8 @@ import {
 	CircularProgress,
 	Alert
 } from '@mui/material'
-import { Edit, Delete, Visibility } from '@mui/icons-material'
-import { getManifests, deleteManifest } from '@/RESTAPIs/seatmap'
+import { Edit, Delete, Visibility, CloudDownload, CloudUpload } from '@mui/icons-material'
+import { getManifests, deleteManifest, exportManifest, importManifest } from '@/RESTAPIs/seatmap'
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 
@@ -38,6 +38,9 @@ const SeatmapPage = () => {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState(null)
 	const router = useRouter()
+	const fileInputRef = React.useRef(null)
+	const [importMode, setImportMode] = useState('create')
+	const [importTargetManifestId, setImportTargetManifestId] = useState(null)
 
 	useEffect(() => {
 		fetchManifests()
@@ -80,6 +83,87 @@ const SeatmapPage = () => {
 		}
 	}
 
+	const handleExportManifest = async (manifest) => {
+		try {
+			const response = await exportManifest(manifest._id)
+			const payload = response.data?.data || response.data
+			if (!payload) {
+				throw new Error('Empty export payload')
+			}
+
+			const blob = new Blob([JSON.stringify(payload, null, 2)], {
+				type: 'application/json'
+			})
+			const url = URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			const safeName = (manifest.name || 'manifest').replace(/[^a-z0-9-_]+/gi, '_')
+			a.href = url
+			a.download = `${safeName}-${manifest._id}.json`
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
+		} catch (err) {
+			SwalConfig.fire(
+				'Error!',
+				err.response?.data?.message || err.message || 'Failed to export manifest',
+				'error'
+			)
+		}
+	}
+
+	const triggerImport = (mode, manifestId = null) => {
+		setImportMode(mode)
+		setImportTargetManifestId(manifestId)
+		if (fileInputRef.current) {
+			fileInputRef.current.value = ''
+			fileInputRef.current.click()
+		}
+	}
+
+	const handleImportFileChange = async (event) => {
+		const file = event.target.files && event.target.files[0]
+		if (!file) return
+
+		try {
+			const text = await file.text()
+			const json = JSON.parse(text)
+
+			if (json.type && json.type !== 'manifest') {
+				throw new Error('Selected file is not a manifest export (invalid type).')
+			}
+
+			const payload = {
+				version: json.version || 1,
+				type: json.type || 'manifest',
+				data: json.data || json,
+				mode: importMode,
+				targetId: importMode === 'update' ? importTargetManifestId : undefined
+			}
+
+			await importManifest(payload)
+
+			SwalConfig.fire(
+				'Success!',
+				`Manifest ${importMode === 'update' ? 'updated' : 'created'} successfully`,
+				'success'
+			)
+
+			await fetchManifests()
+		} catch (err) {
+			console.error('Manifest import error:', err)
+			SwalConfig.fire(
+				'Error!',
+				err.response?.data?.message || err.message || 'Failed to import manifest',
+				'error'
+			)
+		} finally {
+			if (fileInputRef.current) {
+				fileInputRef.current.value = ''
+			}
+		}
+	}
+
 	const handleView = (id) => {
 		router.push(`/seatmap/${id}`)
 	}
@@ -101,6 +185,13 @@ const SeatmapPage = () => {
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
 				<Typography variant="h4">Manifests</Typography>
 				<Box sx={{ display: 'flex', gap: 2 }}>
+					<Button
+						variant="outlined"
+						startIcon={<CloudUpload />}
+						onClick={() => triggerImport('create', null)}
+					>
+						Import Manifest
+					</Button>
 					<Button
 						variant="outlined"
 						onClick={() => router.push('/seatmap/venues')}
@@ -156,6 +247,22 @@ const SeatmapPage = () => {
 									<TableCell align="right">
 										<IconButton
 											size="small"
+											onClick={() => handleExportManifest(manifest)}
+											color="primary"
+											title="Export Manifest"
+										>
+											<CloudDownload />
+										</IconButton>
+										<IconButton
+											size="small"
+											onClick={() => triggerImport('update', manifest._id)}
+											color="primary"
+											title="Import into Manifest"
+										>
+											<CloudUpload />
+										</IconButton>
+										<IconButton
+											size="small"
 											onClick={() => handleView(manifest._id)}
 											color="primary"
 										>
@@ -182,6 +289,15 @@ const SeatmapPage = () => {
 					</TableBody>
 				</Table>
 			</TableContainer>
+
+			{/* Hidden file input for manifest import */}
+			<input
+				type="file"
+				accept="application/json"
+				style={{ display: 'none' }}
+				ref={fileInputRef}
+				onChange={handleImportFileChange}
+			/>
 		</Box>
 	)
 }

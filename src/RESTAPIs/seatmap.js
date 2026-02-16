@@ -134,3 +134,22 @@ export const syncManifestToEventMerchant = async (manifestId) => {
 	return await apiHandler('POST', `manifest/${manifestId}/sync`, true, false, null)
 }
 
+/**
+ * Export/Import helpers for venues and manifests
+ */
+export const exportVenue = async (id) => {
+	return await apiHandler('GET', `venue/${id}/export`, true, false, null)
+}
+
+export const importVenue = async (payload) => {
+	return await apiHandler('POST', 'venue/import', true, false, payload)
+}
+
+export const exportManifest = async (id) => {
+	return await apiHandler('GET', `manifest/${id}/export`, true, false, null)
+}
+
+export const importManifest = async (payload) => {
+	return await apiHandler('POST', 'manifest/import', true, false, payload)
+}
+

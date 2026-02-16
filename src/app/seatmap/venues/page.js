@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
 	Box,
@@ -21,8 +21,8 @@ import {
 	DialogContent,
 	Chip
 } from '@mui/material'
-import { Edit, Delete, Add, ArrowBack } from '@mui/icons-material'
-import { getVenues, updateVenue, deleteVenue } from '@/RESTAPIs/seatmap'
+import { Edit, Delete, Add, ArrowBack, CloudDownload, CloudUpload,ViewModule } from '@mui/icons-material'
+import { getVenues, updateVenue, deleteVenue, exportVenue, importVenue } from '@/RESTAPIs/seatmap'
 import VenueConfiguration from '@/components/seatmap/VenueConfiguration'
 import Swal from 'sweetalert2'
 
@@ -46,6 +46,9 @@ const VenuesPage = () => {
 	const [editingVenue, setEditingVenue] = useState(null)
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 	const [saving, setSaving] = useState(false)
+	const fileInputRef = useRef(null)
+	const [importMode, setImportMode] = useState('create')
+	const [importTargetVenueId, setImportTargetVenueId] = useState(null)
 
 	useEffect(() => {
 		fetchVenues()
@@ -117,6 +120,93 @@ const VenuesPage = () => {
 		router.push(`/seatmap/venue/${venueId}/configure`)
 	}
 
+	const handleExportVenue = async (venue) => {
+		try {
+			const response = await exportVenue(venue._id)
+			const payload = response.data?.data || response.data
+			if (!payload) {
+				throw new Error('Empty export payload')
+			}
+
+			const blob = new Blob([JSON.stringify(payload, null, 2)], {
+				type: 'application/json'
+			})
+			const url = URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			const safeName = (venue.name || 'venue').replace(/[^a-z0-9-_]+/gi, '_')
+			a.href = url
+			a.download = `${safeName}-${venue._id}.json`
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
+		} catch (err) {
+			SwalConfig.fire(
+				'Error!',
+				err.response?.data?.message || err.message || 'Failed to export venue',
+				'error'
+			)
+		}
+	}
+
+	const triggerImport = (mode, venueId = null) => {
+		setImportMode(mode)
+		setImportTargetVenueId(venueId)
+		if (fileInputRef.current) {
+			fileInputRef.current.value = ''
+			fileInputRef.current.click()
+		}
+	}
+
+	const handleImportFileChange = async (event) => {
+		const file = event.target.files && event.target.files[0]
+		if (!file) return
+
+		try {
+			const text = await file.text()
+			const json = JSON.parse(text)
+
+			if (json.type && json.type !== 'venue') {
+				throw new Error('Selected file is not a venue export (invalid type).')
+			}
+
+			const payload = {
+				version: json.version || 1,
+				type: json.type || 'venue',
+				data: json.data || json,
+				mode: importMode,
+				targetId: importMode === 'update' ? importTargetVenueId : undefined
+			}
+
+			const result = await importVenue(payload)
+			const importedVenue = result.data?.data
+
+			SwalConfig.fire(
+				'Success!',
+				`Venue ${importMode === 'update' ? 'updated' : 'created'} successfully`,
+				'success'
+			)
+
+			await fetchVenues()
+
+			// If we created a new venue, optionally navigate to configure
+			if (importMode === 'create' && importedVenue?._id) {
+				// Keep user on list for now; they can click configure manually if needed
+			}
+		} catch (err) {
+			console.error('Venue import error:', err)
+			SwalConfig.fire(
+				'Error!',
+				err.response?.data?.message || err.message || 'Failed to import venue',
+				'error'
+			)
+		} finally {
+			if (fileInputRef.current) {
+				fileInputRef.current.value = ''
+			}
+		}
+	}
+
 	if (loading) {
 		return (
 			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -137,13 +227,22 @@ const VenuesPage = () => {
 					</Button>
 					<Typography variant="h4">Venues Management</Typography>
 				</Box>
-				<Button
-					variant="contained"
-					startIcon={<Add />}
-					onClick={() => router.push('/seatmap/new')}
-				>
-					Create New Venue
-				</Button>
+				<Box sx={{ display: 'flex', gap: 2 }}>
+					<Button
+						variant="outlined"
+						startIcon={<CloudUpload />}
+						onClick={() => triggerImport('create', null)}
+					>
+						Import Venue
+					</Button>
+					<Button
+						variant="contained"
+						startIcon={<Add />}
+						onClick={() => router.push('/seatmap/new')}
+					>
+						Create New Venue
+					</Button>
+				</Box>
 			</Box>
 
 			{error && (
@@ -202,11 +301,27 @@ const VenuesPage = () => {
 									<TableCell align="right">
 										<IconButton
 											size="small"
+											onClick={() => handleExportVenue(venue)}
+											color="primary"
+											title="Export Venue"
+										>
+											<CloudDownload />
+										</IconButton>
+										<IconButton
+											size="small"
+											onClick={() => triggerImport('update', venue._id)}
+											color="primary"
+											title="Import into Venue"
+										>
+											<CloudUpload />
+										</IconButton>
+										<IconButton
+											size="small"
 											onClick={() => handleConfigureSections(venue._id)}
 											color="primary"
 											title="Configure Sections"
 										>
-											<Edit />
+											<ViewModule />
 										</IconButton>
 										<IconButton
 											size="small"
@@ -231,6 +346,15 @@ const VenuesPage = () => {
 					</TableBody>
 				</Table>
 			</TableContainer>
+
+			{/* Hidden file input for import */}
+			<input
+				type="file"
+				accept="application/json"
+				style={{ display: 'none' }}
+				ref={fileInputRef}
+				onChange={handleImportFileChange}
+			/>
 
 			{/* Edit Venue Dialog */}
 			<Dialog
