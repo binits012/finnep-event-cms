@@ -220,7 +220,7 @@ const MobileSideBar = ({ onToggle }) => {
             {!isCollapsed && (
               <>
                 <div className="userDetail">
-                  <span className="username">Finnep</span>
+                  <span className="username">Okazzo</span>
                 </div>
               </>
             )}

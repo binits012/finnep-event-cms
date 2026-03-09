@@ -100,14 +100,14 @@ export default function Login() {
   return (
     <div className="page">
       <Head>
-        <title>Finnep CMS</title>
+        <title>Okazzo Events CMS</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <div className="main-container">
         <div className="aircraft-img-container">
           <div className="logo">
-            <img src="logo.png" alt="logo" />
+            <img src="logo22100.png" alt="logo" />
           </div>
         </div>
         <Grid

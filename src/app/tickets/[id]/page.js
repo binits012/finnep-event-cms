@@ -28,6 +28,9 @@ const Tickets = () => {
   const [tickets, setTickets] = useState([]);
   const [ticketInfo, setTicketInfo] = useState([]);
   const [fetching, setFetching] = useState(false);
+  const [serverPage, setServerPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTickets, setTotalTickets] = useState(0);
   const [search, setSearch] = useState("");
   const [ticketCodeSearch, setTicketCodeSearch] = useState("");
   const { id } = useParams();
@@ -35,6 +38,7 @@ const Tickets = () => {
   const [viewEmailTimeouts, setViewEmailTimeouts] = useState({});
   const [emailInputHasFocus, setEmailInputHasFocus] = useState(false);
   const [ticketCodeInputHasFocus, setTicketCodeInputHasFocus] = useState(false);
+  const SERVER_PAGE_SIZE = 1000;
 
   // Add refs for search inputs
   const emailSearchRef = useRef(null);
@@ -232,12 +236,31 @@ const Tickets = () => {
     }
   };
 
-  const getEventTickets = async () => {
+  const getEventTickets = async (page = 1) => {
     setFetching(true);
     try {
-      const response = await apiHandler("GET", `event/${id}/ticket`, true);
-      // console.log(response, "check res");
-      setTickets(response.data?.data);
+      const response = await apiHandler(
+        "GET",
+        `event/${id}/ticket`,
+        true,
+        false,
+        undefined,
+        { page }
+      );
+
+      const responseData = response.data?.data || [];
+      setTickets(responseData);
+
+      const pagination = response.data?.pagination;
+      if (pagination) {
+        setServerPage(pagination.page || 1);
+        setTotalPages(pagination.totalPages || 1);
+        setTotalTickets(pagination.total || 0);
+      } else {
+        setServerPage(page);
+        setTotalPages(1);
+        setTotalTickets(responseData.length || 0);
+      }
     } catch (err) {
 
       Toast.fire({
@@ -265,8 +288,13 @@ const Tickets = () => {
       }
     };
     getEventDetails();
-    getEventTickets();
+    getEventTickets(1);
   }, [id]);
+
+  const handleChangeServerPage = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || fetching) return;
+    getEventTickets(newPage);
+  };
 
   // Add this function at the beginning of your component to dynamically assign colors
   const getTicketTypeColor = (typeName) => {
@@ -452,7 +480,7 @@ const Tickets = () => {
     <FormWrapper>
       {" "}
       <CustomBreadcrumbs
-        title={`Tickets for ${eventDetails?.eventTitle || ""} (${totalTicketsSold} sold of ${eventDetails?.occupancy || 0})`}
+        title={`Tickets for ${eventDetails?.eventTitle || ""} (${totalTickets} sold of ${eventDetails?.occupancy || 0})`}
         links={[
           {
             path: "/tickets",
@@ -491,7 +519,7 @@ const Tickets = () => {
               },
             },
           }}
-          pageSizeOptions={[100, 500, 1000]}
+          pageSizeOptions={[25, 50, 100]}
           loading={fetching}
           slots={{
             toolbar: () => (
@@ -586,7 +614,7 @@ const Tickets = () => {
 />
                 <IconButton
                   title="Refresh"
-                  onClick={getEventTickets}
+                  onClick={() => getEventTickets(serverPage)}
                   disabled={fetching}
                   sx={{
                     margin: 2,
@@ -595,6 +623,27 @@ const Tickets = () => {
                 >
                   <IoReload size={28} style={{ margin: 5 }} />
                 </IconButton>
+                <Typography variant="body2" sx={{ mx: 1 }}>
+                  Page {serverPage} of {totalPages} ({SERVER_PAGE_SIZE} per load)
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleChangeServerPage(serverPage - 1)}
+                  disabled={fetching || serverPage <= 1}
+                  sx={{ mx: 1 }}
+                >
+                  Previous {SERVER_PAGE_SIZE}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleChangeServerPage(serverPage + 1)}
+                  disabled={fetching || serverPage >= totalPages}
+                  sx={{ mx: 1 }}
+                >
+                  Next {SERVER_PAGE_SIZE}
+                </Button>
                 <IconButton
                   title="Download Tickets PDF"
                   onClick={downloadTicketsPDF}

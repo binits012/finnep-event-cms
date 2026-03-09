@@ -226,7 +226,7 @@ const SideBar = ({ onToggle }) => {
               <>
                 {/* <Avatar src={"/noavatar.png"} alt="no avatar" /> */}
                 <div className="userDetail">
-                  <span className="username">Finnep</span>
+                  <span className="username">Okazzo</span>
                   {/* <span className="userTitle">Administrator</span> */}
                 </div>
               </>
