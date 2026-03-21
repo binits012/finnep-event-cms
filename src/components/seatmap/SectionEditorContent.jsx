@@ -63,6 +63,26 @@ const SwalConfig = Swal.mixin({
 	}
 })
 
+const SECTION_TYPE_TO_LEGACY = {
+	Seating: 'seating',
+	Standing: 'standing',
+	'Private Box': 'box',
+	Lounge: 'lounge',
+	Bar: 'bar',
+	Accessible: 'accessible',
+	VIP: 'vip',
+	Premium: 'premium',
+	'General Admission': 'general',
+	Custom: 'custom'
+}
+
+const LEGACY_TO_SECTION_TYPE = Object.entries(SECTION_TYPE_TO_LEGACY).reduce((acc, [sectionType, legacy]) => {
+	acc[legacy] = sectionType
+	return acc
+}, {})
+
+const deriveSelectionMode = (sectionType) => (sectionType === 'Seating' ? 'seat' : 'area')
+
 /**
  * Section Editor Content Component
  * Main content for section configuration (without Dialog wrapper)
@@ -91,6 +111,8 @@ const SectionEditorContent = ({
 	const [sectionForm, setSectionForm] = useState({
 		name: '',
 		type: 'seating',
+		sectionType: 'Seating',
+		selectionMode: 'seat',
 		shape: 'rectangle',
 		capacity: 0,
 		rows: 0,
@@ -247,6 +269,8 @@ const SectionEditorContent = ({
 		setSectionForm({
 			name: '',
 			type: 'seating',
+			sectionType: 'Seating',
+			selectionMode: 'seat',
 			shape: 'rectangle',
 			capacity: 0,
 			rows: 0,
@@ -284,6 +308,8 @@ const SectionEditorContent = ({
 		setSectionForm({
 			name: section.name || '',
 			type: section.type || 'seating',
+			sectionType: section.sectionType || LEGACY_TO_SECTION_TYPE[section.type] || 'Seating',
+			selectionMode: section.selectionMode || deriveSelectionMode(section.sectionType || LEGACY_TO_SECTION_TYPE[section.type] || 'Seating'),
 			shape: section.shape || (section.polygon ? 'polygon' : 'rectangle'),
 			capacity: section.capacity || 0,
 			rows: section.rows || 0,
@@ -771,14 +797,16 @@ const SectionEditorContent = ({
 			}
 		}
 
-		// Calculate capacity: if using variable rows, calculate from rowConfig; otherwise use explicit capacity or rows*seatsPerRow
+		const isSeatMode = sectionForm.selectionMode === 'seat'
+
+		// Calculate capacity: for seat mode derive from rows/rowConfig, for area mode use direct capacity.
 		let calculatedCapacity = sectionForm.capacity
-		if (rowConfigMode === 'variable' && sectionForm.rowConfig && sectionForm.rowConfig.length > 0) {
+		if (isSeatMode && rowConfigMode === 'variable' && sectionForm.rowConfig && sectionForm.rowConfig.length > 0) {
 			// Auto-calculate capacity from rowConfig
 			calculatedCapacity = sectionForm.rowConfig.reduce((sum, row) => {
 				return sum + (row.seatCount || 0)
 			}, 0)
-		} else if (!calculatedCapacity && sectionForm.rows && sectionForm.seatsPerRow) {
+		} else if (isSeatMode && !calculatedCapacity && sectionForm.rows && sectionForm.seatsPerRow) {
 			// Calculate from rows * seatsPerRow if capacity not set
 			calculatedCapacity = sectionForm.rows * sectionForm.seatsPerRow
 		}
@@ -798,11 +826,13 @@ const SectionEditorContent = ({
 		const sectionData = {
 			id: editingSection?.id || `section-${Date.now()}`,
 			name: sectionForm.name,
-			type: sectionForm.type,
+			type: SECTION_TYPE_TO_LEGACY[sectionForm.sectionType] || 'seating',
+			sectionType: sectionForm.sectionType,
+			selectionMode: sectionForm.selectionMode,
 			shape: sectionForm.shape,
 			capacity: calculatedCapacity || 0,
-			rows: sectionForm.rows,
-			seatsPerRow: sectionForm.seatsPerRow,
+			rows: isSeatMode ? sectionForm.rows : undefined,
+			seatsPerRow: isSeatMode ? sectionForm.seatsPerRow : undefined,
 			color: sectionForm.color,
 			strokeColor: sectionForm.strokeColor,
 			accessible: sectionForm.accessible,
@@ -811,7 +841,7 @@ const SectionEditorContent = ({
 			basePrice: sectionForm.basePrice,
 			bounds: sectionForm.shape === 'polygon' ? undefined : bounds,
 			polygon: sectionForm.shape === 'polygon' ? polygon : undefined,
-			rowConfig: rowConfigMode === 'variable' ? (sectionForm.rowConfig || []) : undefined,
+			rowConfig: isSeatMode && rowConfigMode === 'variable' ? (sectionForm.rowConfig || []) : undefined,
 			obstructions: sectionForm.obstructions || [],
 			presentationStyle: sectionForm.presentationStyle || 'flat',
 			groundDirection: sectionForm.groundDirection || null,
@@ -836,6 +866,8 @@ const SectionEditorContent = ({
 		setSectionForm({
 			name: '',
 			type: 'seating',
+			sectionType: 'Seating',
+			selectionMode: 'seat',
 			shape: 'rectangle',
 			capacity: 0,
 			rows: 0,
@@ -1827,21 +1859,49 @@ const SectionEditorContent = ({
 						<FormControl fullWidth>
 							<InputLabel>Section Type</InputLabel>
 							<Select
-								value={sectionForm.type}
+								value={sectionForm.sectionType}
 								label="Section Type"
-								onChange={(e) => setSectionForm({ ...sectionForm, type: e.target.value })}
+								onChange={(e) => {
+									const nextSectionType = e.target.value
+									const nextSelectionMode = deriveSelectionMode(nextSectionType)
+									setSectionForm({
+										...sectionForm,
+										sectionType: nextSectionType,
+										type: SECTION_TYPE_TO_LEGACY[nextSectionType] || 'seating',
+										selectionMode: nextSelectionMode,
+										rows: nextSelectionMode === 'area' ? 0 : sectionForm.rows,
+										seatsPerRow: nextSelectionMode === 'area' ? 0 : sectionForm.seatsPerRow,
+										rowConfig: nextSelectionMode === 'area' ? [] : sectionForm.rowConfig
+									})
+									if (nextSelectionMode === 'area') {
+										setRowConfigMode('uniform')
+									}
+								}}
 							>
-								<MenuItem value="seating">Seating</MenuItem>
-								<MenuItem value="standing">Standing</MenuItem>
-								<MenuItem value="box">Private Box</MenuItem>
-								<MenuItem value="lounge">Lounge</MenuItem>
-								<MenuItem value="bar">Bar</MenuItem>
-								<MenuItem value="accessible">Accessible</MenuItem>
-								<MenuItem value="vip">VIP</MenuItem>
-								<MenuItem value="premium">Premium</MenuItem>
-								<MenuItem value="general">General Admission</MenuItem>
-								<MenuItem value="custom">Custom</MenuItem>
+								<MenuItem value="Seating">Seating</MenuItem>
+								<MenuItem value="Standing">Standing</MenuItem>
+								<MenuItem value="Private Box">Private Box</MenuItem>
+								<MenuItem value="Lounge">Lounge</MenuItem>
+								<MenuItem value="Bar">Bar</MenuItem>
+								<MenuItem value="Accessible">Accessible</MenuItem>
+								<MenuItem value="VIP">VIP</MenuItem>
+								<MenuItem value="Premium">Premium</MenuItem>
+								<MenuItem value="General Admission">General Admission</MenuItem>
+								<MenuItem value="Custom">Custom</MenuItem>
 							</Select>
+						</FormControl>
+
+						<FormControl fullWidth>
+							<InputLabel>Selection Mode</InputLabel>
+							<Select value={sectionForm.selectionMode} label="Selection Mode" disabled>
+								<MenuItem value="seat">Seat-level (row/seat)</MenuItem>
+								<MenuItem value="area">Area-level (capacity)</MenuItem>
+							</Select>
+							<FormHelperText>
+								{sectionForm.selectionMode === 'seat'
+									? 'Seating sections use row + seat level selection.'
+									: 'Non-seating sections are sold by section quantity only.'}
+							</FormHelperText>
 						</FormControl>
 
 						<Box sx={{ mt: 2, mb: 2 }}>
@@ -1944,6 +2004,7 @@ const SectionEditorContent = ({
 									}
 								/>
 							</Grid>
+							{sectionForm.selectionMode === 'seat' && (
 							<Grid item xs={6}>
 								<TextField
 									label="Number of Rows"
@@ -1955,6 +2016,8 @@ const SectionEditorContent = ({
 									helperText="Optional: Number of rows"
 								/>
 							</Grid>
+							)}
+							{sectionForm.selectionMode === 'seat' && (
 							<Grid item xs={6}>
 								<TextField
 									label="Seats per Row"
@@ -1967,7 +2030,9 @@ const SectionEditorContent = ({
 									disabled={rowConfigMode === 'variable'}
 								/>
 							</Grid>
+							)}
 
+							{sectionForm.selectionMode === 'seat' && (
 							<Grid item xs={12}>
 								<Divider sx={{ my: 2 }} />
 								<FormControl fullWidth>
@@ -2004,6 +2069,7 @@ const SectionEditorContent = ({
 									</FormHelperText>
 								</FormControl>
 							</Grid>
+							)}
 
 							<Grid item xs={12}>
 								<FormControl fullWidth>
