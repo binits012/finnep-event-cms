@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { Box, Paper, Typography, IconButton, Tooltip, Button, ButtonGroup } from '@mui/material'
+import { Box, Paper, Typography, IconButton, Tooltip, Button, ButtonGroup, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Divider } from '@mui/material'
 import { ZoomIn, ZoomOut, Fullscreen, FullscreenExit, FitScreen } from '@mui/icons-material'
 
 /**
@@ -24,7 +24,9 @@ const SeatMapViewer = (props) => {
 		seatMapConfig,
 		onConfigChange,
 		simpleMode = false,
-		showSections = true // Toggle for showing section boundaries (default: visible)
+		showSections = true, // Toggle for showing section boundaries (default: visible)
+		sectionDisplayOverrides = {}, // Optional per-section display settings from parent
+		onSelectedSectionChange // Optional callback(section|null)
 	} = props
 
 	// Use new props if available, otherwise fall back to legacy seatMapConfig
@@ -66,6 +68,28 @@ const SeatMapViewer = (props) => {
 	// Local copies for editing
 	const [localSections, setLocalSections] = useState([])
 	const [localPlaces, setLocalPlaces] = useState([])
+
+	// Seat label editor state (row/seat/subSectionName)
+	const [seatEditOpen, setSeatEditOpen] = useState(false)
+	const [seatEditPlaceIndex, setSeatEditPlaceIndex] = useState(null)
+	const [seatEditLocation, setSeatEditLocation] = useState('')
+	const [seatEditSection, setSeatEditSection] = useState('')
+	const [seatEditRow, setSeatEditRow] = useState('')
+	const [seatEditSeat, setSeatEditSeat] = useState('')
+	const [seatEditSubSectionName, setSeatEditSubSectionName] = useState('')
+	const [seatEditX, setSeatEditX] = useState(null)
+	const [seatEditY, setSeatEditY] = useState(null)
+	const [seatEditSaving, setSeatEditSaving] = useState(false)
+
+	// Notify parent when selected section changes (used by configure page controls).
+	useEffect(() => {
+		if (!onSelectedSectionChange) return
+		if (selectedSection === null || selectedSection === undefined) {
+			onSelectedSectionChange(null)
+			return
+		}
+		onSelectedSectionChange(localSections[selectedSection] || null)
+	}, [selectedSection, localSections, onSelectedSectionChange])
 
 	// Initialize canvas size - responsive to container
 	useEffect(() => {
@@ -222,9 +246,10 @@ const SeatMapViewer = (props) => {
 				ctx.save()
 				ctx.globalAlpha = bgOpacity
 
-				// Apply translation - in simpleMode, include drag offset for interactive adjustment
-				const totalTranslateX = bgTranslateX + (simpleMode ? backgroundDragOffset.x : 0)
-				const totalTranslateY = bgTranslateY + (simpleMode ? backgroundDragOffset.y : 0)
+				// Apply translation from persisted controls.
+				// In simpleMode we keep drag for panning, not background shifting.
+				const totalTranslateX = bgTranslateX
+				const totalTranslateY = bgTranslateY
 				ctx.translate(totalTranslateX, totalTranslateY)
 
 				// Apply rotation around the center of the image (same as VenueCanvasEditor)
@@ -357,16 +382,8 @@ const SeatMapViewer = (props) => {
 		if (localPlaces) {
 			// In simpleMode (Seat Map Overview), apply per-section spacing adjustments.
 			// rowGap and seatGap scale seats from their section's center.
-			// Baseline is 10, values < 10 shrink, values > 10 expand
+			// Baseline is 10, values < 10 shrink, values > 10 expand.
 			const baselineSpacing = 10
-			const seatGapValue = effectiveDisplayConfig.seatGap || baselineSpacing
-			const rowGapValue = effectiveDisplayConfig.rowGap || baselineSpacing
-			const rawSeatScale = seatGapValue / baselineSpacing
-			const rawRowScale = rowGapValue / baselineSpacing
-			// Calculate scaling factors - allow values from 0.1 to 3.0
-			// Only apply scaling if values differ from baseline (to avoid unnecessary transformations)
-			const seatSpacingScale = simpleMode ? Math.max(0.1, Math.min(3.0, rawSeatScale)) : 1
-			const rowSpacingScale = simpleMode ? Math.max(0.1, Math.min(3.0, rawRowScale)) : 1
 
 			// Group places by section for per-section scaling
 			const placesBySection = {}
@@ -382,6 +399,12 @@ const SeatMapViewer = (props) => {
 			const sectionCenters = {}
 			const sectionPolygons = {}
 			const sectionRotations = {} // Store rotation angles for each section
+			const sectionDisplayByName = {} // Per-section display settings
+
+			const toNumber = (v) => {
+				const n = Number(v)
+				return Number.isFinite(n) ? n : null
+			}
 
 			// First, try to get section polygon centroids (more accurate for tilted sections)
 			// Also get rotation angle from venue sections
@@ -410,6 +433,41 @@ const SeatMapViewer = (props) => {
 				const rotationAngle = venueSection?.spacingConfig?.rotationAngle || section?.spacingConfig?.rotationAngle || 0
 				if (rotationAngle !== 0) {
 					sectionRotations[sectionName] = rotationAngle
+				}
+
+				const spacingConfig = section?.spacingConfig || venueSection?.spacingConfig || {}
+				const override = sectionDisplayOverrides?.[sectionName] || {}
+
+				const globalDot = toNumber(effectiveDisplayConfig.dotSize) ?? 8
+				const globalSeatGap = toNumber(effectiveDisplayConfig.seatGap) ?? baselineSpacing
+				const globalRowGap = toNumber(effectiveDisplayConfig.rowGap) ?? baselineSpacing
+
+				const visualSeatMultiplier = toNumber(spacingConfig.seatSpacingVisual)
+				const visualRowMultiplier = toNumber(spacingConfig.rowSpacingVisual)
+				const backendSeatMultiplier = toNumber(spacingConfig.seatSpacingMultiplier)
+				const backendRowMultiplier = toNumber(spacingConfig.rowSpacingMultiplier)
+				const sectionSeatRadius = toNumber(spacingConfig.seatRadius)
+
+				const seatGapValue = toNumber(override.seatGap)
+					?? (visualSeatMultiplier !== null ? visualSeatMultiplier * baselineSpacing : null)
+					?? (backendSeatMultiplier !== null ? backendSeatMultiplier * baselineSpacing : null)
+					?? globalSeatGap
+
+				const rowGapValue = toNumber(override.rowGap)
+					?? (visualRowMultiplier !== null ? visualRowMultiplier * baselineSpacing : null)
+					?? (backendRowMultiplier !== null ? backendRowMultiplier * baselineSpacing : null)
+					?? globalRowGap
+
+				const dotSizeValue = toNumber(override.dotSize)
+					?? sectionSeatRadius
+					?? globalDot
+
+				sectionDisplayByName[sectionName] = {
+					seatSpacingScale: Math.max(0.1, Math.min(3.0, seatGapValue / baselineSpacing)),
+					rowSpacingScale: Math.max(0.1, Math.min(3.0, rowGapValue / baselineSpacing)),
+					dotRadius: Math.max(2, Math.min(20, dotSizeValue)),
+					topPad: Math.max(0, toNumber(override.topPad) ?? toNumber(spacingConfig.topPadding) ?? toNumber(spacingConfig.topPaddingVisual) ?? 0),
+					bottomPad: Math.max(0, toNumber(override.bottomPad) ?? toNumber(spacingConfig.bottomMarginY) ?? toNumber(spacingConfig.bottomPaddingVisual) ?? 0)
 				}
 			})
 
@@ -499,9 +557,20 @@ const SeatMapViewer = (props) => {
 					let seatY = place.y
 
 					// Apply per-section scaling from section center (fixes tilted seat overflow)
-					// Only apply scaling if values are different from baseline (10)
+					// Only apply scaling if this section values differ from baseline.
+					const sectionName = place.section || place.sectionName || 'default'
+					const sectionDisplay = sectionDisplayByName[sectionName] || {
+						seatSpacingScale: 1,
+						rowSpacingScale: 1,
+						dotRadius: Math.max(2, Math.min(20, toNumber(effectiveDisplayConfig.dotSize) ?? 8)),
+						topPad: 0,
+						bottomPad: 0
+					}
+
+					const seatSpacingScale = sectionDisplay.seatSpacingScale
+					const rowSpacingScale = sectionDisplay.rowSpacingScale
+
 					if (simpleMode && (seatSpacingScale !== 1 || rowSpacingScale !== 1)) {
-						const sectionName = place.section || place.sectionName || 'default'
 						const sectionCenter = sectionCenters[sectionName]
 						const rotationAngle = sectionRotations[sectionName] || 0
 
@@ -544,6 +613,14 @@ const SeatMapViewer = (props) => {
 								scaledY = sectionCenter.y + offsetY * rowSpacingScale
 							}
 
+							// Per-section vertical pad in preview: top shifts upper seats down,
+							// bottom shifts lower seats up.
+							if (offsetY < 0 && sectionDisplay.topPad > 0) {
+								scaledY += sectionDisplay.topPad
+							} else if (offsetY > 0 && sectionDisplay.bottomPad > 0) {
+								scaledY -= sectionDisplay.bottomPad
+							}
+
 							// Always constrain to polygon boundary to prevent overflow
 							const constrained = constrainToPolygon(scaledX, scaledY, place.x, place.y, sectionName, seatSpacingScale, rowSpacingScale)
 
@@ -569,8 +646,8 @@ const SeatMapViewer = (props) => {
 						}
 					}
 
-					// Draw seat as circle with drag offset - use displayConfig for SeatMapViewer
-					const dotRadius = simpleMode ? (effectiveDisplayConfig.dotSize || 8) : (shouldHighlight ? 4 : 3)
+					// Draw seat as circle with drag offset
+					const dotRadius = simpleMode ? sectionDisplay.dotRadius : (shouldHighlight ? 4 : 3)
 					ctx.beginPath()
 					ctx.arc(
 						seatX + dragOffset.x + seatmapDragOffset.x,
@@ -673,6 +750,35 @@ const SeatMapViewer = (props) => {
 		}
 	}
 
+	// Convert mouse screen coordinates to canvas world coordinates.
+	// Must mirror redrawCanvas transform exactly:
+	// translate(canvas/2 + pan) -> scale(scale) -> translate(-canvas/2).
+	const getWorldCoords = (clientX, clientY) => {
+		const canvas = canvasRef.current
+		if (!canvas) return null
+		const rect = canvas.getBoundingClientRect()
+		const screenX = clientX - rect.left
+		const screenY = clientY - rect.top
+
+		return {
+			x: ((screenX - (canvas.width / 2 + pan.x)) / scale) + canvas.width / 2,
+			y: ((screenY - (canvas.height / 2 + pan.y)) / scale) + canvas.height / 2
+		}
+	}
+
+	const isPointInBounds = (x, y, bounds) => {
+		if (!bounds) return false
+		const x1 = bounds.x1 ?? bounds.x ?? 0
+		const y1 = bounds.y1 ?? bounds.y ?? 0
+		const x2 = bounds.x2 ?? ((bounds.x ?? 0) + (bounds.width ?? 0))
+		const y2 = bounds.y2 ?? ((bounds.y ?? 0) + (bounds.height ?? 0))
+		const minX = Math.min(x1, x2)
+		const maxX = Math.max(x1, x2)
+		const minY = Math.min(y1, y2)
+		const maxY = Math.max(y1, y2)
+		return x >= minX && x <= maxX && y >= minY && y <= maxY
+	}
+
 	const handleMouseDown = (e) => {
 		if (!isEditMode && !simpleMode) {
 			if (e.button === 1 || (e.button === 0 && e.altKey)) { // Middle mouse or Alt+left click
@@ -682,12 +788,15 @@ const SeatMapViewer = (props) => {
 			return
 		}
 
-		const canvas = canvasRef.current
-		if (!canvas) return
+		// In simple mode, left-drag pans the canvas.
+		if (simpleMode && e.button === 0 && !e.altKey) {
+			setIsPanning(true)
+			setLastPanPoint({ x: e.clientX, y: e.clientY })
+		}
 
-		const rect = canvas.getBoundingClientRect()
-		const x = (e.clientX - rect.left - canvas.width / 2) / scale + canvas.width / 2 - pan.x
-		const y = (e.clientY - rect.top - canvas.height / 2) / scale + canvas.height / 2 - pan.y
+		const world = getWorldCoords(e.clientX, e.clientY)
+		if (!world) return
+		const { x, y } = world
 
 		// Check for polygon point selection first
 		if (selectedSection !== null && localSections[selectedSection]?.polygon) {
@@ -722,16 +831,17 @@ const SeatMapViewer = (props) => {
 						// Normal section selection for polygon editing
 						setSelectedSection(i)
 						setSelectedSeats([])
-						setDraggedItem('section')
-						setDragOffset({ x, y })
-						setSectionDragOffset({ x: 0, y: 0 })
+						if (!simpleMode) {
+							setDraggedItem('section')
+							setDragOffset({ x, y })
+							setSectionDragOffset({ x: 0, y: 0 })
+						}
 						return
 					}
 				}
 			} else if (section.bounds) {
 				// Check if point is inside rectangle
-				const { x: bx, y: by, width, height } = section.bounds
-				if (x >= bx && x <= bx + width && y >= by && y <= by + height) {
+				if (isPointInBounds(x, y, section.bounds)) {
 					// If Ctrl+click on section, select all seats in that section
 					if (e.ctrlKey || e.metaKey) {
 						const seatsInSection = getSeatsInSection(i, localPlaces)
@@ -745,9 +855,11 @@ const SeatMapViewer = (props) => {
 						// Normal section selection for polygon editing
 						setSelectedSection(i)
 						setSelectedSeats([])
-						setDraggedItem('section')
-						setDragOffset({ x, y })
-						setSectionDragOffset({ x: 0, y: 0 })
+						if (!simpleMode) {
+							setDraggedItem('section')
+							setDragOffset({ x, y })
+							setSectionDragOffset({ x: 0, y: 0 })
+						}
 						return
 					}
 				}
@@ -762,7 +874,37 @@ const SeatMapViewer = (props) => {
 				const clickTolerance = simpleMode ? effectiveDisplayConfig.dotSize : 6 // Use dotSize for click detection in simple mode
 				if (distance < clickTolerance) {
 					console.log('Seat clicked at distance:', distance, 'tolerance:', clickTolerance)
-					setSelectedSection(null)
+					if (simpleMode) {
+						const seatSectionName = place.section || place.sectionName
+						if (seatSectionName) {
+							const sectionIndex = localSections.findIndex((section) =>
+								(section.name || section.sectionName) === seatSectionName
+							)
+							if (sectionIndex >= 0) {
+								setSelectedSection(sectionIndex)
+							} else {
+								setSelectedSection(null)
+							}
+						} else {
+							setSelectedSection(null)
+						}
+
+						// In simpleMode, clicking a seat opens the label editor modal.
+						// (We avoid Shift+click bulk selection to prevent popping multiple dialogs.)
+						if (!e.shiftKey && e.button === 0) {
+							setSeatEditPlaceIndex(i)
+							setSeatEditLocation(place.placeId || place.location || place.section || '')
+							setSeatEditSection(place.section || place.sectionName || '')
+							setSeatEditRow(place.row ?? '')
+							setSeatEditSeat(place.seat ?? '')
+							setSeatEditSubSectionName(place.subSectionName ?? '')
+							setSeatEditX(place.x)
+							setSeatEditY(place.y)
+							setSeatEditOpen(true)
+						}
+					} else {
+						setSelectedSection(null)
+					}
 
 					// Handle bulk selection with shift+click
 					if (e.shiftKey) {
@@ -781,19 +923,19 @@ const SeatMapViewer = (props) => {
 						setSelectedSeats([i])
 					}
 
-					setDraggedItem('seats')
-					setDragOffset({ x, y })
-					setSeatsDragOffset({ x: 0, y: 0 })
+					if (!simpleMode) {
+						setDraggedItem('seats')
+						setDragOffset({ x, y })
+						setSeatsDragOffset({ x: 0, y: 0 })
+					}
 					return
 				}
 			}
 		}
 
-		// If in simple mode and no seat was clicked, allow dragging the background SVG
+		// If in simple mode and no item was clicked, just keep panning behavior.
 		if (simpleMode) {
-			setDraggedItem('background')
-			setDragOffset({ x, y })
-			setBackgroundDragOffset({ x: 0, y: 0 })
+			closeSeatEdit()
 			return
 		}
 
@@ -827,12 +969,9 @@ const SeatMapViewer = (props) => {
 
 		if (!isEditMode && !simpleMode) return
 
-		const canvas = canvasRef.current
-		if (!canvas) return
-
-		const rect = canvas.getBoundingClientRect()
-		const x = (e.clientX - rect.left - canvas.width / 2) / scale + canvas.width / 2 - pan.x
-		const y = (e.clientY - rect.top - canvas.height / 2) / scale + canvas.height / 2 - pan.y
+		const world = getWorldCoords(e.clientX, e.clientY)
+		if (!world) return
+		const { x, y } = world
 
 		// Handle hover detection
 		let newHoveredItem = null
@@ -861,8 +1000,7 @@ const SeatMapViewer = (props) => {
 							break
 						}
 					} else if (section.bounds) {
-						const { x: bx, y: by, width, height } = section.bounds
-						if (x >= bx && x <= bx + width && y >= by && y <= by + height) {
+						if (isPointInBounds(x, y, section.bounds)) {
 							newHoveredItem = `section-${i}`
 							break
 						}
@@ -957,8 +1095,10 @@ const SeatMapViewer = (props) => {
 				// Apply bounds offset
 				const movedBounds = {
 					...section.bounds,
-					x: section.bounds.x + sectionDragOffset.x,
-					y: section.bounds.y + sectionDragOffset.y
+					x1: (section.bounds.x1 ?? section.bounds.x ?? 0) + sectionDragOffset.x,
+					y1: (section.bounds.y1 ?? section.bounds.y ?? 0) + sectionDragOffset.y,
+					x2: (section.bounds.x2 ?? ((section.bounds.x ?? 0) + (section.bounds.width ?? 0))) + sectionDragOffset.x,
+					y2: (section.bounds.y2 ?? ((section.bounds.y ?? 0) + (section.bounds.height ?? 0))) + sectionDragOffset.y
 				}
 				setLocalSections(prev => {
 					const newSections = [...prev]
@@ -1036,6 +1176,39 @@ const SeatMapViewer = (props) => {
 		setDragOffset({ x: 0, y: 0 })
 	}
 
+	const getSectionIndexAtPoint = (x, y) => {
+		for (let i = localSections.length - 1; i >= 0; i--) {
+			const section = localSections[i]
+			if (section.polygon && section.polygon.length > 0) {
+				if (isPointInPolygon(x, y, section.polygon)) {
+					return i
+				}
+			} else if (section.bounds) {
+				if (isPointInBounds(x, y, section.bounds)) {
+					return i
+				}
+			}
+		}
+		return -1
+	}
+
+	const handleDoubleClick = (e) => {
+		if (!simpleMode) return
+		const world = getWorldCoords(e.clientX, e.clientY)
+		if (!world) return
+
+		const sectionIndex = getSectionIndexAtPoint(world.x, world.y)
+		if (sectionIndex >= 0) {
+			// Double-click inside section -> lock/select that section.
+			setSelectedSection(sectionIndex)
+		} else {
+			// Double-click outside -> back to global defaults.
+			setSelectedSection(null)
+			setSelectedSeats([])
+			setHoveredItem(null)
+		}
+	}
+
 	// Helper function to check if point is inside polygon
 	const isPointInPolygon = (x, y, polygon) => {
 		let inside = false
@@ -1064,9 +1237,7 @@ const SeatMapViewer = (props) => {
 				if (section.polygon && section.polygon.length > 0) {
 					isInside = isPointInPolygon(place.x, place.y, section.polygon)
 				} else if (section.bounds) {
-					const { x, y, width, height } = section.bounds
-					isInside = place.x >= x && place.x <= x + width &&
-							   place.y >= y && place.y <= y + height
+					isInside = isPointInBounds(place.x, place.y, section.bounds)
 				}
 
 				if (isInside) {
@@ -1076,6 +1247,66 @@ const SeatMapViewer = (props) => {
 		})
 
 		return seatsInSection
+	}
+
+	const closeSeatEdit = () => {
+		setSeatEditOpen(false)
+		setSeatEditPlaceIndex(null)
+	}
+
+	const handleSaveSeatEdit = async () => {
+		if (seatEditPlaceIndex === null || seatEditPlaceIndex === undefined) return
+		if (!onSave) return
+
+		const row = String(seatEditRow ?? '').trim()
+		const seat = String(seatEditSeat ?? '').trim()
+		const section = String(seatEditSection ?? '').trim()
+		const subSectionName = String(seatEditSubSectionName ?? '').trim()
+
+		if (!section) {
+			console.warn('Seat edit validation failed: section is empty')
+			return
+		}
+		if (!row) {
+			console.warn('Seat edit validation failed: row is empty')
+			return
+		}
+		if (!seat) {
+			console.warn('Seat edit validation failed: seat is empty')
+			return
+		}
+
+		setSeatEditSaving(true)
+		try {
+			const updatedPlaces = localPlaces.map((p, idx) => {
+				if (idx !== seatEditPlaceIndex) return p
+				return {
+					...p,
+					section,
+					row,
+					seat,
+						subSectionName: subSectionName || undefined
+				}
+			})
+
+			// Optimistically update local state.
+			setLocalPlaces(updatedPlaces)
+			setHasUnsavedChanges(true)
+
+			// In simpleMode we persist immediately (there is no "Save Changes" button).
+			if (simpleMode) {
+				await onSave({
+					sections: localSections,
+					places: updatedPlaces
+				})
+				setHasUnsavedChanges(false)
+				closeSeatEdit()
+			}
+		} catch (err) {
+			console.error('Failed to save seat edit:', err)
+		} finally {
+			setSeatEditSaving(false)
+		}
 	}
 
 	const handleSaveChanges = async () => {
@@ -1104,6 +1335,44 @@ const SeatMapViewer = (props) => {
 				</Typography>
 			</Box>
 		)
+	}
+
+	const toNumber = (v) => {
+		const n = Number(v)
+		return Number.isFinite(n) ? n : null
+	}
+	const selectedSectionData = selectedSection !== null ? localSections[selectedSection] : null
+	const selectedSectionName = selectedSectionData?.name || selectedSectionData?.sectionName || null
+	const selectedSectionFromVenue = selectedSectionName
+		? (venue?.sections || []).find((section) => (section?.name || section?.sectionName) === selectedSectionName)
+		: null
+	const selectedSectionSpacing = selectedSectionFromVenue?.spacingConfig || selectedSectionData?.spacingConfig || {}
+	const selectedSectionOverride = selectedSectionName ? sectionDisplayOverrides?.[selectedSectionName] : null
+	const resolvedDisplayBadge = {
+		dotSize: selectedSectionOverride?.dotSize
+			?? toNumber(selectedSectionSpacing?.seatRadius)
+			?? toNumber(effectiveDisplayConfig.dotSize)
+			?? 8,
+		rowGap: selectedSectionOverride?.rowGap
+			?? (toNumber(selectedSectionSpacing?.rowSpacingVisual) !== null
+				? toNumber(selectedSectionSpacing.rowSpacingVisual) * 10
+				: null)
+			?? toNumber(effectiveDisplayConfig.rowGap)
+			?? 10,
+		seatGap: selectedSectionOverride?.seatGap
+			?? (toNumber(selectedSectionSpacing?.seatSpacingVisual) !== null
+				? toNumber(selectedSectionSpacing.seatSpacingVisual) * 10
+				: null)
+			?? toNumber(effectiveDisplayConfig.seatGap)
+			?? 10,
+		topPad: selectedSectionOverride?.topPad
+			?? toNumber(selectedSectionSpacing?.topPadding)
+			?? toNumber(selectedSectionSpacing?.topPaddingVisual)
+			?? 0,
+		bottomPad: selectedSectionOverride?.bottomPad
+			?? toNumber(selectedSectionSpacing?.bottomMarginY)
+			?? toNumber(selectedSectionSpacing?.bottomPaddingVisual)
+			?? 0
 	}
 
 	return (
@@ -1177,6 +1446,7 @@ const SeatMapViewer = (props) => {
 				onMouseMove={handleMouseMove}
 				onMouseUp={handleMouseUp}
 				onMouseLeave={handleMouseUp}
+				onDoubleClick={handleDoubleClick}
 			>
 				<canvas
 					ref={canvasRef}
@@ -1186,6 +1456,33 @@ const SeatMapViewer = (props) => {
 						height: '100%'
 					}}
 				/>
+
+				{/* Active display settings badge for quick visibility in Seat Map Overview */}
+				{simpleMode && (
+					<Box
+						sx={{
+							position: 'absolute',
+							top: 10,
+							left: 10,
+							backgroundColor: 'rgba(0, 0, 0, 0.72)',
+							color: '#fff',
+							px: 1.25,
+							py: 0.75,
+							borderRadius: 1,
+							fontSize: '0.72rem',
+							lineHeight: 1.4,
+							backdropFilter: 'blur(2px)',
+							maxWidth: '70%',
+							pointerEvents: 'none'
+						}}
+					>
+						<Typography variant="caption" sx={{ color: 'inherit' }}>
+							{selectedSectionName ? `Section: ${selectedSectionName}` : 'Global defaults'}
+							<br />
+							{`Dot ${Number(resolvedDisplayBadge.dotSize).toFixed(1)} | Row ${Number(resolvedDisplayBadge.rowGap).toFixed(1)} | Seat ${Number(resolvedDisplayBadge.seatGap).toFixed(1)} | Top ${Number(resolvedDisplayBadge.topPad).toFixed(1)} | Bottom ${Number(resolvedDisplayBadge.bottomPad).toFixed(1)}`}
+						</Typography>
+					</Box>
+				)}
 
 				{/* Instructions overlay */}
 				{!simpleMode && (
@@ -1228,6 +1525,64 @@ const SeatMapViewer = (props) => {
 					</Box>
 				)}
 			</Paper>
+
+			{/* Seat label edit modal (click a seat dot to edit row/seat/subSectionName) */}
+			<Dialog
+				open={seatEditOpen}
+				onClose={seatEditSaving ? undefined : closeSeatEdit}
+				maxWidth="xs"
+				fullWidth
+			>
+				<DialogTitle>Edit Seat</DialogTitle>
+				<DialogContent>
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 0.5 }}>
+						<TextField
+							label="Location"
+							value={seatEditLocation || (seatEditX !== null && seatEditY !== null ? `x=${seatEditX}, y=${seatEditY}` : '-')}
+							disabled
+							fullWidth
+						/>
+						<TextField
+							label="Section"
+							value={seatEditSection}
+							onChange={(e) => setSeatEditSection(e.target.value)}
+							fullWidth
+						/>
+						<TextField
+							label="Sub Section"
+							value={seatEditSubSectionName}
+							onChange={(e) => setSeatEditSubSectionName(e.target.value)}
+							fullWidth
+						/>
+						<TextField
+							label="Row"
+							value={seatEditRow}
+							onChange={(e) => setSeatEditRow(e.target.value)}
+							fullWidth
+						/>
+						<TextField
+							label="Seat"
+							value={seatEditSeat}
+							onChange={(e) => setSeatEditSeat(e.target.value)}
+							fullWidth
+						/>
+						<Divider />
+					</Box>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={closeSeatEdit} disabled={seatEditSaving || saving} color="secondary">
+						Cancel
+					</Button>
+					<Button
+						onClick={handleSaveSeatEdit}
+						disabled={seatEditSaving || saving}
+						color="primary"
+						variant="contained"
+					>
+						{seatEditSaving ? 'Saving...' : 'Save'}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	)
 }

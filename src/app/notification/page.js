@@ -1,11 +1,20 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid";
-import { FaPlus } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
+import { IoIosSearch } from "react-icons/io";
 import Modal from "@/components/Modal";
-import { Button, Grid, MenuItem, Select } from "@mui/material";
+import {
+  Button,
+  FormControlLabel,
+  Switch,
+  Grid,
+  Input,
+} from "@mui/material";
+import styled from "styled-components";
 import { useFormik } from "formik";
 import TextEditor from "@/components/TextEditor";
 import apiHandler from "@/RESTAPIs/helper";
@@ -15,7 +24,7 @@ import Swal from "sweetalert2";
 export default function NotificationPage() {
   const [showModal, setShowModal] = useState(false);
   const [filteredRows, setFilteredRows] = useState([]);
-  const [searchText, setSearchText] = useState("");
+  const [search, setSearch] = useState("");
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -83,9 +92,10 @@ export default function NotificationPage() {
       ? `notification/${selectedCategoryId}`
       : "notification";
     const method = editMode ? "patch" : "post";
+    const payload = { ...values, lang: "en" };
 
     try {
-      const response = await apiHandler(method, endpoint, true, false, values);
+      const response = await apiHandler(method, endpoint, true, false, payload);
       const newData = response.data;
 
       if (Array.isArray(notifications)) {
@@ -105,10 +115,7 @@ export default function NotificationPage() {
         title: `Notification ${editMode ? "updated" : "created"} successfully!`,
       });
 
-      formik.resetForm();
-      setShowModal(false);
-      setEditMode(false);
-      setSelectedNotification(null);
+      closeModal();
 
       fetchNotifications();
     } catch (error) {
@@ -121,8 +128,9 @@ export default function NotificationPage() {
   };
 
   const handleSearch = (event) => {
-    const value = event.target.value.toLowerCase();
-    setSearchText(value);
+    const raw = event.target.value;
+    setSearch(raw);
+    const value = raw.toLowerCase();
 
     const notificationsArray = Array.isArray(notifications)
       ? notifications
@@ -141,8 +149,8 @@ export default function NotificationPage() {
     const formattedRows = filteredData.map((notification) => ({
       id: notification._id,
       type: notification.notificationType?.name || "Unknown",
-      "start date": new Date(notification.startDate).toLocaleDateString(),
-      "end date": new Date(notification.endDate).toLocaleDateString(),
+      "start date": new Date(notification.startDate).toISOString(),
+      "end date": new Date(notification.endDate).toISOString(),
       notification: (notification.notification || "").replace(/<[^>]+>/g, ""),
     }));
 
@@ -184,7 +192,6 @@ export default function NotificationPage() {
           startDate: startDate,
           endDate: endDate,
           publish: notification.data.publish,
-          lang: notification.data.lang,
         });
         setEditMode(true);
         setShowModal(true);
@@ -201,28 +208,60 @@ export default function NotificationPage() {
     {
       field: "type",
       headerName: "Type",
-      width: 110,
+      width: 130,
       align: "left",
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
     },
     {
       field: "start date",
       headerName: "Start Date",
-      width: 150,
-      valueFormatter: ({ value }) => new Date(value).toLocaleDateString(),
+      width: 170,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+      valueFormatter: (params) => {
+        const v = params?.value;
+        if (!v) return "";
+        const d = new Date(v);
+        return Number.isNaN(d.getTime()) ? "" : d.toLocaleString();
+      },
     },
     {
       field: "end date",
       headerName: "End Date",
-      width: 150,
-      valueFormatter: ({ value }) => new Date(value).toLocaleDateString(),
+      width: 170,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+      valueFormatter: (params) => {
+        const v = params?.value;
+        if (!v) return "";
+        const d = new Date(v);
+        return Number.isNaN(d.getTime()) ? "" : d.toLocaleString();
+      },
     },
-    { field: "notification", headerName: "Notification", width: 300 },
+    {
+      field: "notification",
+      headerName: "Notification",
+      flex: 1,
+      minWidth: 220,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+    },
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 130,
+      sortable: false,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
       renderCell: (params) => (
-        <Button onClick={() => handleEditNotification(params.id)}>Edit</Button>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => handleEditNotification(params.id)}
+        >
+          Edit
+        </Button>
       ),
     },
   ];
@@ -240,326 +279,357 @@ export default function NotificationPage() {
       startDate: "",
       endDate: "",
       publish: false,
-      lang: "en",
     },
     onSubmit: handleSubmit,
   });
 
+  const closeModal = () => {
+    formik.resetForm();
+    setShowModal(false);
+    setEditMode(false);
+    setSelectedNotification(null);
+  };
+
+  const openCreateModal = () => {
+    formik.resetForm();
+    setEditMode(false);
+    setSelectedNotification(null);
+    setShowModal(true);
+  };
+
   return (
-    <>
-      <div>
-        <CustomBreadcrumbs
-          title={`Notification`}
-          links={[
-            {
-              path: "/notification",
-              title: "Notification",
-              active: true,
-            },
-          ]}
-        />
+    <FormWrapper>
+      <CustomBreadcrumbs
+        title="Notifications"
+        links={[
+          {
+            path: "/notification",
+            title: "Notifications",
+            active: true,
+          },
+        ]}
+      />
+      <h2>Site notifications</h2>
 
-        <div style={{ margin: "50px 0px", background: "#F6F6F6" }}>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <p style={{ margin: "10px" }}>Notification List</p>
-              <div
-                style={{
-                  display: "flex",
-                  width: "50px",
-                  height: "35px",
-                  borderRadius: "5px",
-                  background: "#007BFF",
-                  color: "white",
-                  justifyContent: "center",
-                  margin: "10px",
-                }}
-              >
-                <FaPlus
-                  style={{
-                    width: "30px",
-                    height: "auto",
-                    padding: "5px",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setShowModal(true)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Box sx={{ margin: "0 10px" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                border: "1px solid #E0E0E0",
-                alignItems: "center",
-                padding: "10px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  margin: "10px",
-                  gap: "10px",
-                }}
-              >
-                Search:
-                <input
-                  value={searchText}
-                  onChange={handleSearch}
-                  style={{
-                    width: "200px",
-                    height: "40px",
-                    padding: "5px",
-                    borderRadius: "4px",
-                    border: "1px solid #ccc",
-                    backgroundColor: "#fff",
-                  }}
-                />
-              </div>
-            </div>
-            <DataGrid
-              rows={filteredRows}
-              columns={columns}
-              initialState={{
-                pagination: {
-                  paginationModel: {
-                    pageSize: 10,
-                  },
+      <FilterSection>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={8}>
+            <Input
+              placeholder="Search by type or text..."
+              value={search}
+              fullWidth
+              sx={{
+                "--Input-focusedInset": "var(--any, )",
+                "--Input-focusedThickness": "0.50rem",
+                "--Input-focusedHighlight": "rgba(13,110,253,.25)",
+                "&::before": {
+                  transition: "box-shadow .15s ease-in-out",
+                },
+                "&:focus-within": {
+                  borderColor: "#86b7fe",
                 },
               }}
-              pageSizeOptions={[10, 15, 20]}
-              autoHeight
-              isRowSelectable={() => false}
-              sx={{
-                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
-                  outline: "none !important"
-                }
-              }}
+              onChange={handleSearch}
+              endAdornment={
+                search && search !== " " ? (
+                  <RxCross1
+                    size={25}
+                    style={{
+                      margin: 8,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setSearch("");
+                      handleSearch({
+                        target: { value: "" },
+                      });
+                    }}
+                  />
+                ) : (
+                  <IoIosSearch
+                    size={30}
+                    style={{
+                      margin: 8,
+                      cursor: "pointer",
+                    }}
+                  />
+                )
+              }
             />
-          </Box>
-
-          <Modal
-            isVisible={showModal}
-            onClose={() => {
-              setShowModal(false);
-              setEditMode(false);
-              setSelectedNotification(null);
-            }}
-            selectedNotification={selectedNotification}
-          >
-            <Grid item xs={12} sm={6} md={4}>
-              <form
-                style={{
-                  padding: "20px",
-                  maxWidth: "600px",
-                  margin: "auto",
-                  border: "1px solid #E0E0E0",
-                  borderRadius: "8px",
-                  background: "#f9f9f9",
-                }}
-                onSubmit={formik.handleSubmit}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "stretch", md: "flex-end" },
+              }}
+            >
+              <Button
+                variant="contained"
+                onClick={openCreateModal}
+                sx={{ width: { xs: "100%", md: "auto" } }}
               >
-                <Grid container direction="column" spacing={2}>
-                  <Grid item>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        paddingBottom: "10px",
-                        borderBottom: "1px solid #E0E0E0",
-                      }}
-                    >
-                      <h1 style={{ margin: 0 }}>
-                        {editMode ? "Update" : "Add"} Notification
-                      </h1>
-                      <RxCross1
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          setShowModal(false);
-                          setEditMode(false);
-                        }}
-                      />
-                    </div>
-                  </Grid>
+                + Add notification
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </FilterSection>
 
-                  <Grid item>
-                    <div>
-                      <h4 style={{ margin: "10px 0" }}>Notification Type</h4>
-                      <select
-                        name="notificationType"
-                        value={formik.values.notificationType}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        style={{
-                          width: "100%",
-                          height: "40px",
-                          padding: "5px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          backgroundColor: "#fff",
-                        }}
-                      >
-                        <option value="">Select Notification Type</option>
-                        {notificationTypes.map((type) => (
-                          <option key={type._id} value={type._id}>
-                            {type.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </Grid>
+      <StyledDataGrid
+        rows={filteredRows}
+        columns={columns}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: 10,
+            },
+          },
+        }}
+        pageSizeOptions={[10, 15, 20]}
+        autoHeight
+        disableRowSelectionOnClick
+        isRowSelectable={() => false}
+        sx={{
+          width: "100%",
+          minHeight: 360,
+          "& .MuiDataGrid-main": { overflow: "auto" },
+        }}
+      />
 
-                  <Grid item>
-                    <div>
-                      <TextEditor
-                        name="notification"
-                        id="notification"
-                        label="Notification"
-                        placeholder="Enter your notification here..."
-                        handleChange={(text) => {
-                          formik.setFieldValue("notification", text);
-                        }}
-                        value={formik.values.notification}
-                        error={
-                          formik.touched.notification &&
-                          formik.errors.notification
-                        }
-                        required={true}
-                      />
-                    </div>
-                  </Grid>
-
-                  <Grid item>
-                    <div>
-                      <h4 style={{ margin: "10px 0" }}>Start Date</h4>
-                      <input
-                        type="datetime-local"
-                        name="startDate"
-                        value={formik.values.startDate}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        style={{
-                          width: "100%",
-                          height: "40px",
-                          padding: "5px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          backgroundColor: "#fff",
-                        }}
-                      />
-                    </div>
-                  </Grid>
-
-                  <Grid item>
-                    <div>
-                      <h4 style={{ margin: "10px 0" }}>End Date</h4>
-                      <input
-                        type="datetime-local"
-                        name="endDate"
-                        value={formik.values.endDate}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        style={{
-                          width: "100%",
-                          height: "40px",
-                          padding: "5px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          backgroundColor: "#fff",
-                        }}
-                      />
-                    </div>
-                  </Grid>
-
-                  <Grid item>
-                    <div>
-                      <h4 style={{ margin: "10px 0" }}>Publish</h4>
-                      <select
-                        name="publish"
-                        value={formik.values.publish}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        style={{
-                          width: "100%",
-                          height: "40px",
-                          padding: "5px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          backgroundColor: "#fff",
-                        }}
-                      >
-                        <option value={true}>True</option>
-                        <option value={false}>False</option>
-                      </select>
-                    </div>
-                  </Grid>
-
-                  <Grid item>
-                    <div>
-                      <h4 style={{ margin: "10px 0" }}>Language</h4>
-                      <select
-                        name="lang"
-                        value={formik.values.lang}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        style={{
-                          width: "100%",
-                          height: "40px",
-                          padding: "5px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          backgroundColor: "#fff",
-                        }}
-                      >
-                        <option value="en">English</option>
-                        <option value="fi">Finnish</option>
-                      </select>
-                    </div>
-                  </Grid>
-                </Grid>
-              </form>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "28px",
-                }}
-              >
-                <Button
-                  id="cancel"
-                  variant="outlined"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditMode(false);
+      <Modal
+        isVisible={showModal}
+        onClose={closeModal}
+        selectedNotification={selectedNotification}
+      >
+            <Box
+              component="form"
+              onSubmit={formik.handleSubmit}
+              sx={{
+                width: "100%",
+                maxWidth: 720,
+                mx: "auto",
+                py: 1,
+              }}
+            >
+              <Stack spacing={2.5}>
+                <Stack
+                  direction="row"
+                  alignItems="flex-start"
+                  justifyContent="space-between"
+                  spacing={1}
+                  sx={{
+                    pb: 2,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
                   }}
                 >
-                  Cancel
-                </Button>
+                  <Box>
+                    <Typography variant="h6" component="h1" sx={{ m: 0 }}>
+                      {editMode ? "Edit notification" : "New notification"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Shown in English on the public site during the scheduled
+                      window.
+                    </Typography>
+                  </Box>
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={closeModal}
+                    sx={{
+                      border: "none",
+                      background: "none",
+                      cursor: "pointer",
+                      p: 0.5,
+                      lineHeight: 0,
+                      color: "text.secondary",
+                      "&:hover": { color: "text.primary" },
+                    }}
+                    aria-label="Close"
+                  >
+                    <RxCross1 size={22} />
+                  </Box>
+                </Stack>
 
-                <Button
-                  id="submit"
-                  onClick={formik.handleSubmit}
-                  variant="contained"
-                  type="submit"
+                <Stack spacing={0.5}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Notification type
+                  </Typography>
+                  <Box
+                    component="select"
+                    name="notificationType"
+                    value={formik.values.notificationType}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    sx={{
+                      width: "100%",
+                      height: 42,
+                      px: 1,
+                      borderRadius: 1,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "background.paper",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    <option value="">Select notification type</option>
+                    {notificationTypes.map((type) => (
+                      <option key={type._id} value={type._id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </Box>
+                </Stack>
+
+                <Box>
+                  <TextEditor
+                    name="notification"
+                    id="notification"
+                    label="Notification"
+                    placeholder="Enter your notification here..."
+                    handleChange={(text) => {
+                      formik.setFieldValue("notification", text);
+                    }}
+                    value={formik.values.notification}
+                    error={
+                      formik.touched.notification &&
+                      formik.errors.notification
+                    }
+                    required={true}
+                    enableRichToolbar
+                  />
+                </Box>
+
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  sx={{ width: "100%" }}
                 >
-                  {editMode ? "Update" : "Create"}
-                </Button>
-              </div>
-            </Grid>
-          </Modal>
-        </div>
-      </div>
-    </>
+                  <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Start date
+                    </Typography>
+                    <Box
+                      component="input"
+                      type="datetime-local"
+                      name="startDate"
+                      value={formik.values.startDate}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      sx={{
+                        width: "100%",
+                        height: 42,
+                        px: 1,
+                        borderRadius: 1,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        bgcolor: "background.paper",
+                        fontSize: "0.875rem",
+                      }}
+                    />
+                  </Stack>
+                  <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      End date
+                    </Typography>
+                    <Box
+                      component="input"
+                      type="datetime-local"
+                      name="endDate"
+                      value={formik.values.endDate}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      sx={{
+                        width: "100%",
+                        height: 42,
+                        px: 1,
+                        borderRadius: 1,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        bgcolor: "background.paper",
+                        fontSize: "0.875rem",
+                      }}
+                    />
+                  </Stack>
+                </Stack>
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      name="publish"
+                      checked={Boolean(formik.values.publish)}
+                      onChange={(e) =>
+                        formik.setFieldValue("publish", e.target.checked)
+                      }
+                      color="primary"
+                    />
+                  }
+                  label="Published on website"
+                />
+
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  justifyContent="flex-end"
+                  sx={{ pt: 1 }}
+                >
+                  <Button
+                    id="cancel"
+                    variant="outlined"
+                    type="button"
+                    onClick={closeModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    id="submit"
+                    variant="contained"
+                    type="submit"
+                  >
+                    {editMode ? "Update" : "Create"}
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
+      </Modal>
+    </FormWrapper>
   );
 }
+
+const FilterSection = styled.div`
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+`;
+
+const StyledDataGrid = styled(DataGrid)`
+  .column-header {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .column-cell {
+    font-size: 14px;
+  }
+  .MuiDataGrid-cell:focus,
+  .MuiDataGrid-cell:focus-within {
+    outline: none !important;
+  }
+`;
+
+const FormWrapper = styled.div`
+  width: 100%;
+  padding: 30px;
+  h1,
+  h2 {
+    margin-bottom: 30px;
+  }
+  .MuiTimeClock-root {
+    margin: 0;
+  }
+  .MuiDialogActions-root {
+    justify-content: flex-start;
+  }
+`;

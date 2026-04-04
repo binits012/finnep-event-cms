@@ -36,11 +36,12 @@ const StyleModal = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    width: 40%;
+    align-items: stretch;
+    width: min(840px, 96vw);
+    max-width: 100%;
     height: auto;
-    max-height: 80vh;
-    padding: 20px;
+    max-height: 90vh;
+    padding: 12px;
     // background-color: white;
     border-radius: 10px;
     // box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -58,12 +59,15 @@ const StyleModal = styled.div`
   }
   .content {
     width: 100%;
-    height: 90%;
+    min-height: 0;
+    flex: 1 1 auto;
     background-color: white;
     overflow-y: auto;
-    border: 2px solid black;
-    padding: 10px;
+    overflow-x: hidden;
+    border: 1px solid #e0e0e0;
+    padding: 12px;
     border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     div {
       border: none;
     }

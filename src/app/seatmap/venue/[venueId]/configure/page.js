@@ -66,8 +66,11 @@ const VenueConfigurePage = () => {
 		rowGap: 10,
 		seatGap: 12
 	})
+	const [selectedViewerSection, setSelectedViewerSection] = useState(null)
+	const [sectionDisplayOverrides, setSectionDisplayOverrides] = useState({})
 	// Toggle for showing section polygons in seat map viewer
 	const [showSections, setShowSections] = useState(true)
+	const [displaySaveNotice, setDisplaySaveNotice] = useState('')
 	// State for manifest generation
 	const [generating, setGenerating] = useState(false)
 	// Place ID generation pattern selection
@@ -327,9 +330,55 @@ const VenueConfigurePage = () => {
 
 		setSaving(true)
 		try {
+			const updatedSections = Array.isArray(venue?.sections)
+				? venue.sections.map((section) => {
+					const sectionKey = section?.id || section?.name || section?.sectionName
+					if (!sectionKey) return section
+					const override = sectionDisplayOverrides[sectionKey]
+					if (!override) return section
+
+					const nextSpacingConfig = {
+						...(section.spacingConfig || {}),
+					}
+
+					const seatGap = Number(override.seatGap)
+					if (Number.isFinite(seatGap)) {
+						// Baseline is 10px => multiplier = gapPx / 10.
+						nextSpacingConfig.seatSpacingVisual = seatGap / 10
+					}
+
+					const rowGap = Number(override.rowGap)
+					if (Number.isFinite(rowGap)) {
+						// Baseline is 10px => multiplier = gapPx / 10.
+						nextSpacingConfig.rowSpacingVisual = rowGap / 10
+					}
+
+					const dotSize = Number(override.dotSize)
+					if (Number.isFinite(dotSize)) {
+						nextSpacingConfig.seatRadius = dotSize
+					}
+
+					const topPad = Number(override.topPad)
+					if (Number.isFinite(topPad)) {
+						nextSpacingConfig.topPadding = topPad
+					}
+
+					const bottomPad = Number(override.bottomPad)
+					if (Number.isFinite(bottomPad)) {
+						nextSpacingConfig.bottomMarginY = bottomPad
+					}
+
+					return {
+						...section,
+						spacingConfig: nextSpacingConfig
+					}
+				})
+				: []
+
 			// Update alignment fields AND display config, preserving all existing backgroundSvg properties
 			const existingBgSvg = venue.backgroundSvg
 			const updateData = {
+				sections: updatedSections,
 				backgroundSvg: {
 					svgContent: existingBgSvg.svgContent,
 					fileName: existingBgSvg.fileName,
@@ -358,6 +407,12 @@ const VenueConfigurePage = () => {
 				timer: 2000,
 				showConfirmButton: false
 			})
+			setDisplaySaveNotice(
+				selectedSectionName
+					? `Saved section settings for "${selectedSectionName}".`
+					: 'Saved global display settings.'
+			)
+			setTimeout(() => setDisplaySaveNotice(''), 3500)
 
 			// Refresh venue data
 			await fetchVenue()
@@ -371,6 +426,78 @@ const VenueConfigurePage = () => {
 		} finally {
 			setSaving(false)
 		}
+	}
+
+	const selectedSectionId = selectedViewerSection?.id || ''
+	const selectedSectionLabel = selectedViewerSection?.name || selectedViewerSection?.sectionName || ''
+	const selectedSectionKey = selectedSectionId || selectedSectionLabel
+	const persistedSelectedSection = selectedSectionKey
+		? (venue?.sections || []).find((section) => {
+			const sectionKey = section?.id || section?.name || section?.sectionName
+			return sectionKey === selectedSectionKey
+		})
+		: null
+	const selectedSectionName =
+		persistedSelectedSection?.name ||
+		persistedSelectedSection?.sectionName ||
+		selectedSectionLabel
+	const selectedSectionOverride = selectedSectionKey ? sectionDisplayOverrides[selectedSectionKey] : null
+	const selectedSectionSpacing = persistedSelectedSection?.spacingConfig || selectedViewerSection?.spacingConfig || {}
+	const visualRowAsGap =
+		selectedSectionSpacing?.rowSpacingVisual != null && Number.isFinite(Number(selectedSectionSpacing.rowSpacingVisual))
+			? Number(selectedSectionSpacing.rowSpacingVisual) * 10
+			: null
+	const visualSeatAsGap =
+		selectedSectionSpacing?.seatSpacingVisual != null && Number.isFinite(Number(selectedSectionSpacing.seatSpacingVisual))
+			? Number(selectedSectionSpacing.seatSpacingVisual) * 10
+			: null
+	const selectedDisplayConfig = selectedSectionName
+		? {
+			dotSize: selectedSectionOverride?.dotSize
+				?? selectedSectionSpacing?.seatRadius
+				?? displayConfig.dotSize,
+			rowGap: selectedSectionOverride?.rowGap
+				?? visualRowAsGap
+				?? displayConfig.rowGap,
+			seatGap: selectedSectionOverride?.seatGap
+				?? visualSeatAsGap
+				?? displayConfig.seatGap,
+			topPad: selectedSectionOverride?.topPad
+				?? Number((selectedSectionSpacing?.topPadding ?? selectedSectionSpacing?.topPaddingVisual) || 0),
+			bottomPad: selectedSectionOverride?.bottomPad
+				?? Number((selectedSectionSpacing?.bottomMarginY ?? selectedSectionSpacing?.bottomPaddingVisual) || 0)
+		}
+		: {
+			...displayConfig,
+			topPad: 0,
+			bottomPad: 0
+		}
+
+	const handleDisplayFieldChange = (field, value) => {
+		if (!selectedSectionKey) {
+			setDisplayConfig((prev) => ({ ...prev, [field]: value }))
+			return
+		}
+		setSectionDisplayOverrides((prev) => {
+			const current = prev[selectedSectionKey] || {}
+			return {
+				...prev,
+				[selectedSectionKey]: {
+					...current,
+					[field]: value
+				}
+			}
+		})
+	}
+
+	const handleResetSectionDisplay = () => {
+		if (!selectedSectionKey) return
+		setSectionDisplayOverrides((prev) => {
+			if (!prev[selectedSectionKey]) return prev
+			const next = { ...prev }
+			delete next[selectedSectionKey]
+			return next
+		})
 	}
 
 	const handleBack = () => {
@@ -667,13 +794,18 @@ const VenueConfigurePage = () => {
 											<Typography variant="subtitle2" sx={{ width: '100%', px: 1, mt: 1 }}>
 												Display Settings
 											</Typography>
+											<Typography variant="caption" color="textSecondary" sx={{ width: '100%', px: 1, mb: 1 }}>
+												{selectedSectionName
+													? `Editing section: ${selectedSectionName}`
+													: 'No section selected - editing global defaults. Click a section in the map to edit only that section.'}
+											</Typography>
 											<Grid item xs={6} sm={3}>
 												<TextField
 													label="Dot Size"
 													type="number"
 													size="small"
-													value={displayConfig.dotSize}
-													onChange={(e) => setDisplayConfig(prev => ({ ...prev, dotSize: parseInt(e.target.value) || 4 }))}
+													value={selectedDisplayConfig.dotSize}
+													onChange={(e) => handleDisplayFieldChange('dotSize', parseInt(e.target.value) || 4)}
 													inputProps={{ min: 2, max: 20 }}
 												/>
 											</Grid>
@@ -682,8 +814,8 @@ const VenueConfigurePage = () => {
 													label="Row Gap"
 													type="number"
 													size="small"
-													value={displayConfig.rowGap}
-													onChange={(e) => setDisplayConfig(prev => ({ ...prev, rowGap: parseFloat(e.target.value) || 8 }))}
+													value={selectedDisplayConfig.rowGap}
+													onChange={(e) => handleDisplayFieldChange('rowGap', parseFloat(e.target.value) || 8)}
 													inputProps={{ min: 0.1, max: 50, step: 0.1 }}
 												/>
 											</Grid>
@@ -692,10 +824,43 @@ const VenueConfigurePage = () => {
 													label="Seat Gap"
 													type="number"
 													size="small"
-													value={displayConfig.seatGap}
-													onChange={(e) => setDisplayConfig(prev => ({ ...prev, seatGap: parseFloat(e.target.value) || 8 }))}
+													value={selectedDisplayConfig.seatGap}
+													onChange={(e) => handleDisplayFieldChange('seatGap', parseFloat(e.target.value) || 8)}
 													inputProps={{ min: 0.1, max: 50, step: 0.1 }}
 												/>
+											</Grid>
+											<Grid item xs={6} sm={3}>
+												<TextField
+													label="Top Pad"
+													type="number"
+													size="small"
+													value={selectedDisplayConfig.topPad}
+													onChange={(e) => handleDisplayFieldChange('topPad', parseFloat(e.target.value) || 0)}
+													inputProps={{ min: 0, max: 200, step: 1 }}
+													disabled={!selectedSectionKey}
+												/>
+											</Grid>
+											<Grid item xs={6} sm={3}>
+												<TextField
+													label="Bottom Pad"
+													type="number"
+													size="small"
+													value={selectedDisplayConfig.bottomPad}
+													onChange={(e) => handleDisplayFieldChange('bottomPad', parseFloat(e.target.value) || 0)}
+													inputProps={{ min: 0, max: 200, step: 1 }}
+													disabled={!selectedSectionKey}
+												/>
+											</Grid>
+											<Grid item xs={6} sm={3}>
+												<Button
+													variant="outlined"
+													size="small"
+													onClick={handleResetSectionDisplay}
+													disabled={!selectedSectionKey}
+													fullWidth
+												>
+													Reset Section to Global
+												</Button>
 											</Grid>
 											<Grid item xs={6} sm={3}>
 												<Button
@@ -709,6 +874,11 @@ const VenueConfigurePage = () => {
 													{saving ? 'Saving...' : 'Save Alignment'}
 												</Button>
 											</Grid>
+											{displaySaveNotice && (
+												<Typography variant="caption" color="success.main" sx={{ width: '100%', px: 1, mt: 0.5 }}>
+													{displaySaveNotice}
+												</Typography>
+											)}
 										</Grid>
 									</Box>
 
@@ -735,6 +905,8 @@ const VenueConfigurePage = () => {
 										bgSvgConfig={bgSvgConfig}
 										displayConfig={displayConfig}
 										onBgSvgConfigChange={setBgSvgConfig}
+										onSelectedSectionChange={setSelectedViewerSection}
+										sectionDisplayOverrides={sectionDisplayOverrides}
 										simpleMode={true}
 										showSections={showSections}
 									/>

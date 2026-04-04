@@ -7,7 +7,7 @@ import { ZoomIn, ZoomOut, Add, Edit, Fullscreen, FullscreenExit, FitScreen } fro
 /**
  * VenueCanvasEditor Component
  * Canvas-based visual editor for drawing section boundaries
- * Supports drawing rectangles and polygons
+ * Polygon-only for new drawings (rectangles are legacy/loaded data).
  */
 const VenueCanvasEditor = ({
 	width = 800,
@@ -31,7 +31,7 @@ const VenueCanvasEditor = ({
 	const canvasRef = useRef(null)
 	const containerRef = useRef(null)
 	const [isDrawing, setIsDrawing] = useState(false)
-	const [drawMode, setDrawMode] = useState(null) // 'rectangle', 'polygon', 'obstruction-rectangle', 'obstruction-polygon', null
+	const [drawMode, setDrawMode] = useState(null) // 'polygon', 'obstruction-polygon', null
 	const [currentShape, setCurrentShape] = useState(null)
 	const [selectedSection, setSelectedSection] = useState(null)
 	const [scale, setScale] = useState(1)
@@ -53,6 +53,58 @@ const VenueCanvasEditor = ({
 	const [resizeHandle, setResizeHandle] = useState(null) // Which handle: 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w', or polygon point index
 	const [resizeStartBounds, setResizeStartBounds] = useState(null) // Original bounds before resize
 	const [draggedPolygonPoint, setDraggedPolygonPoint] = useState(null) // Which polygon point is being dragged (index)
+	const [copiedSection, setCopiedSection] = useState(null) // Last copied section for keyboard paste
+	const hasPolygonGeometry = (section) =>
+		Array.isArray(section?.polygon) && section.polygon.length >= 3
+
+	const hasRectangleGeometry = (section) => {
+		const bounds = section?.bounds
+		return bounds &&
+			bounds.x1 !== undefined && bounds.x2 !== undefined &&
+			bounds.y1 !== undefined && bounds.y2 !== undefined
+	}
+
+	const isPolygonSection = (section) =>
+		section?.shape === 'polygon' || hasPolygonGeometry(section)
+
+	const isRectangleSection = (section) =>
+		section?.shape === 'rectangle' || hasRectangleGeometry(section)
+
+	const makeCopyName = (baseName) => {
+		if (!baseName || typeof baseName !== 'string') return 'Section Copy'
+		if (/\(Copy(?: \d+)?\)$/.test(baseName)) return baseName
+		return `${baseName} (Copy)`
+	}
+
+	const createPastedSectionData = (sourceSection) => {
+		if (!sourceSection) return null
+		const offset = 20
+
+		const pasted = {
+			...sourceSection,
+			id: undefined,
+			name: makeCopyName(sourceSection.name),
+			displayOrder: undefined
+		}
+
+		if (isRectangleSection(sourceSection) && sourceSection.bounds) {
+			pasted.bounds = {
+				x1: sourceSection.bounds.x1 + offset,
+				y1: sourceSection.bounds.y1 + offset,
+				x2: sourceSection.bounds.x2 + offset,
+				y2: sourceSection.bounds.y2 + offset
+			}
+		} else if (isPolygonSection(sourceSection) && Array.isArray(sourceSection.polygon)) {
+			pasted.polygon = sourceSection.polygon.map(point => ({
+				...point,
+				x: point.x + offset,
+				y: point.y + offset
+			}))
+		}
+
+		return pasted
+	}
+
 
 	// Grid spacing for visual reference (pixels)
 	const GRID_SPACING = 50 // Pixels between grid lines
@@ -482,9 +534,9 @@ const VenueCanvasEditor = ({
 
 		// Draw resize handles for selected section
 		if (selectedSection) {
-			if (selectedSection.shape === 'rectangle') {
+			if (isRectangleSection(selectedSection)) {
 				drawResizeHandles(ctx, selectedSection)
-			} else if (selectedSection.shape === 'polygon' && selectedSection.polygon && selectedSection.polygon.length >= 3) {
+			} else if (isPolygonSection(selectedSection)) {
 				drawPolygonResizeHandles(ctx, selectedSection)
 			}
 		}
@@ -664,99 +716,159 @@ const VenueCanvasEditor = ({
 	// Get places from manifest or direct prop
 	const allPlaces = places || manifest?.places || []
 
-	// Get seat positions for a section from actual manifest places
-	// This uses the real seat positions from the API, matching SeatMapCanvas approach
+	// Get seat positions for a section from actual manifest places.
+	// Must match SeatMapViewer (View Seats / simpleMode) so preview dots sit inside section geometry.
 	const getSeatsForSection = (section) => {
 		if (!section || allPlaces.length === 0) return []
 
-		const sectionName = section.name
+		const sectionName = section.name || section.sectionName
 		if (!sectionName) return []
 
-		// Filter places by section name
-		const sectionPlaces = allPlaces.filter(place => place.section === sectionName)
+		const sectionPlaces = allPlaces.filter(
+			(place) => (place.section || place.sectionName) === sectionName
+		)
 		if (sectionPlaces.length === 0) return []
 
-		// Get section-specific spacing configuration (matching SeatMapCanvas)
-		const spacingConfig = section.spacingConfig || {}
-		const displayConfig = venue?.backgroundSvg?.displayConfig || {}
 		const baselineSpacing = 10
-
-		// Get spacing multipliers (same logic as SeatMapCanvas)
-		let rawSeatSpacingMultiplier
-		if (displayConfig.seatGap !== undefined) {
-			rawSeatSpacingMultiplier = displayConfig.seatGap / baselineSpacing
-		} else if (spacingConfig.seatSpacingVisual !== undefined) {
-			rawSeatSpacingMultiplier = spacingConfig.seatSpacingVisual
-		} else {
-			rawSeatSpacingMultiplier = spacingConfig.seatSpacingMultiplier || 0.65
+		const toNumber = (v) => {
+			const n = Number(v)
+			return Number.isFinite(n) ? n : null
 		}
 
-		let rawRowSpacingMultiplier
-		if (displayConfig.rowGap !== undefined) {
-			rawRowSpacingMultiplier = displayConfig.rowGap / baselineSpacing
-		} else if (spacingConfig.rowSpacingVisual !== undefined) {
-			rawRowSpacingMultiplier = spacingConfig.rowSpacingVisual
-		} else {
-			rawRowSpacingMultiplier = spacingConfig.rowSpacingMultiplier || 0.75
-		}
+		const displayConfig = venue?.backgroundSvg?.displayConfig || {}
+		const venueSection = venue?.sections?.find(
+			(s) => (s.name || s.sectionName) === sectionName
+		)
+		const spacingConfig = section?.spacingConfig || venueSection?.spacingConfig || {}
 
-		// Clamp multipliers to max 1.0 (matching SeatMapCanvas)
-		const sectionSeatSpacingMultiplier = Math.min(1.0, rawSeatSpacingMultiplier)
-		const sectionRowSpacingMultiplier = Math.min(1.0, rawRowSpacingMultiplier)
-		const sectionTopMargin = spacingConfig.topMargin !== undefined ? spacingConfig.topMargin : 30
-		const seatRadius = displayConfig.dotSize !== undefined
-			? displayConfig.dotSize
-			: (spacingConfig.seatRadius !== undefined ? spacingConfig.seatRadius : 7)
+		const globalDot = toNumber(displayConfig.dotSize) ?? 8
+		const globalSeatGap = toNumber(displayConfig.seatGap) ?? baselineSpacing
+		const globalRowGap = toNumber(displayConfig.rowGap) ?? baselineSpacing
 
-		// Get section center for scaling (matching SeatMapCanvas)
-		let centerX, centerY
-		if (section.shape === 'polygon' && section.polygon && section.polygon.length >= 3) {
-			const xs = section.polygon.map(p => p.x)
-			const ys = section.polygon.map(p => p.y)
-			centerX = (Math.min(...xs) + Math.max(...xs)) / 2
-			centerY = (Math.min(...ys) + Math.max(...ys)) / 2
+		const visualSeatMultiplier = toNumber(spacingConfig.seatSpacingVisual)
+		const visualRowMultiplier = toNumber(spacingConfig.rowSpacingVisual)
+		const backendSeatMultiplier = toNumber(spacingConfig.seatSpacingMultiplier)
+		const backendRowMultiplier = toNumber(spacingConfig.rowSpacingMultiplier)
+		const sectionSeatRadius = toNumber(spacingConfig.seatRadius)
+
+		const seatGapValue =
+			visualSeatMultiplier !== null
+				? visualSeatMultiplier * baselineSpacing
+				: backendSeatMultiplier !== null
+					? backendSeatMultiplier * baselineSpacing
+					: globalSeatGap
+
+		const rowGapValue =
+			visualRowMultiplier !== null
+				? visualRowMultiplier * baselineSpacing
+				: backendRowMultiplier !== null
+					? backendRowMultiplier * baselineSpacing
+					: globalRowGap
+
+		const seatSpacingScale = Math.max(0.1, Math.min(3.0, seatGapValue / baselineSpacing))
+		const rowSpacingScale = Math.max(0.1, Math.min(3.0, rowGapValue / baselineSpacing))
+
+		const topPad = Math.max(
+			0,
+			toNumber(spacingConfig.topPadding) ?? toNumber(spacingConfig.topPaddingVisual) ?? 0
+		)
+		const bottomPad = Math.max(
+			0,
+			toNumber(spacingConfig.bottomMarginY) ?? toNumber(spacingConfig.bottomPaddingVisual) ?? 0
+		)
+
+		const seatRadius = sectionSeatRadius ?? globalDot
+		const rotationAngle = Number(spacingConfig.rotationAngle) || 0
+
+		let centerX
+		let centerY
+		let polygonForConstraint = null
+
+		if (section.polygon && section.polygon.length >= 3) {
+			const c = section.polygon.reduce(
+				(acc, p) => ({ x: acc.x + (p.x || 0), y: acc.y + (p.y || 0) }),
+				{ x: 0, y: 0 }
+			)
+			centerX = c.x / section.polygon.length
+			centerY = c.y / section.polygon.length
+			polygonForConstraint = section.polygon
 		} else if (section.bounds) {
-			centerX = (section.bounds.x1 + section.bounds.x2) / 2
-			centerY = (section.bounds.y1 + section.bounds.y2) / 2
+			const b = section.bounds
+			if (
+				b.x1 !== undefined && b.x2 !== undefined &&
+				b.y1 !== undefined && b.y2 !== undefined
+			) {
+				centerX = (Math.min(b.x1, b.x2) + Math.max(b.x1, b.x2)) / 2
+				centerY = (Math.min(b.y1, b.y2) + Math.max(b.y1, b.y2)) / 2
+			} else if (
+				b.x !== undefined && b.width !== undefined &&
+				b.y !== undefined && b.height !== undefined
+			) {
+				centerX = b.x + b.width / 2
+				centerY = b.y + b.height / 2
+			} else {
+				return []
+			}
 		} else {
-			return [] // No bounds defined
+			return []
 		}
 
-		// Group places by row and apply scaling (matching SeatMapCanvas logic)
-		const groupedByRow = {}
-		sectionPlaces.forEach(place => {
-			const rowKey = place.row || 'unknown'
-			if (!groupedByRow[rowKey]) {
-				groupedByRow[rowKey] = []
+		const constrainToPolygon = (x, y, originalX, originalY) => {
+			if (!polygonForConstraint || polygonForConstraint.length < 3) {
+				return { x, y }
 			}
-			groupedByRow[rowKey].push(place)
-		})
+			if (isPointInPolygon({ x, y }, polygonForConstraint)) {
+				return { x, y }
+			}
+			let closestPoint = { x: originalX, y: originalY }
+			let minDist = Infinity
+			for (let i = 0; i < polygonForConstraint.length; i++) {
+				const p1 = polygonForConstraint[i]
+				const p2 = polygonForConstraint[(i + 1) % polygonForConstraint.length]
+				const dx = p2.x - p1.x
+				const dy = p2.y - p1.y
+				const length2 = dx * dx + dy * dy
+				if (length2 === 0) continue
+				const t = Math.max(0, Math.min(1, ((x - p1.x) * dx + (y - p1.y) * dy) / length2))
+				const projX = p1.x + t * dx
+				const projY = p1.y + t * dy
+				const dist = Math.sqrt((x - projX) ** 2 + (y - projY) ** 2)
+				if (dist < minDist) {
+					minDist = dist
+					closestPoint = { x: projX, y: projY }
+				}
+			}
+			if (minDist > 20) {
+				return { x: originalX, y: originalY }
+			}
+			return closestPoint
+		}
+
+		// Same gate as SeatMapViewer simpleMode: only transform when gaps differ from baseline.
+		const shouldApplyScaling = seatSpacingScale !== 1 || rowSpacingScale !== 1
 
 		const seats = []
-		Object.keys(groupedByRow).forEach(rowKey => {
-			const rowSeats = groupedByRow[rowKey]
-			if (rowSeats.length === 0) return
+		sectionPlaces.forEach((place) => {
+			if (place.x === null || place.x === undefined || place.y === null || place.y === undefined) {
+				return
+			}
 
-			// Calculate average Y for the row
-			const avgY = rowSeats.reduce((sum, seat) => sum + (seat.y || 0), 0) / rowSeats.length
+			let seatX = place.x
+			let seatY = place.y
 
-			// Get rotation angle for tilted sections
-			const rotationAngle = spacingConfig.rotationAngle || 0
+			if (shouldApplyScaling) {
+				const offsetX = place.x - centerX
+				const offsetY = place.y - centerY
 
-			rowSeats.forEach(place => {
-				// Apply spacing multipliers from center (matching SeatMapCanvas formula)
-				let scaledX, scaledY
+				let scaledX
+				let scaledY
 
 				if (rotationAngle !== 0) {
-					// For tilted/rotated sections
-					const reducedSeatScale = 0.6 + (sectionSeatSpacingMultiplier - 1)
-					const reducedRowScale = 0.9 + (sectionRowSpacingMultiplier - 1)
+					const reducedSeatScale = 0.6 + (seatSpacingScale - 1)
+					const reducedRowScale = 0.8 + (rowSpacingScale - 1)
 					const radians = (rotationAngle * Math.PI) / 180
 					const cos = Math.cos(radians)
 					const sin = Math.sin(radians)
-
-					const offsetX = place.x - centerX
-					const offsetY = (place.y || avgY) - centerY
 
 					const localX = offsetX * cos + offsetY * sin
 					const localY = -offsetX * sin + offsetY * cos
@@ -768,19 +880,28 @@ const VenueCanvasEditor = ({
 					const rotatedBackY = scaledLocalX * sin + scaledLocalY * cos
 
 					scaledX = centerX + rotatedBackX
-					scaledY = sectionTopMargin + centerY + rotatedBackY
+					scaledY = centerY + rotatedBackY
 				} else {
-					// No rotation - standard scaling (matching SeatMapCanvas)
-					scaledX = centerX + (place.x - centerX) * sectionSeatSpacingMultiplier
-					scaledY = sectionTopMargin + centerY + ((place.y || avgY) - centerY) * sectionRowSpacingMultiplier
+					scaledX = centerX + offsetX * seatSpacingScale
+					scaledY = centerY + offsetY * rowSpacingScale
 				}
 
-				seats.push({
-					x: scaledX,
-					y: scaledY,
-					place: place,
-					radius: seatRadius
-				})
+				if (offsetY < 0 && topPad > 0) {
+					scaledY += topPad
+				} else if (offsetY > 0 && bottomPad > 0) {
+					scaledY -= bottomPad
+				}
+
+				const constrained = constrainToPolygon(scaledX, scaledY, place.x, place.y)
+				seatX = constrained.x
+				seatY = constrained.y
+			}
+
+			seats.push({
+				x: seatX,
+				y: seatY,
+				place,
+				radius: seatRadius
 			})
 		})
 
@@ -974,6 +1095,61 @@ const VenueCanvasEditor = ({
 				return
 			}
 
+			// Arrow keys: nudge selected section for precise positioning
+			// Works when not drawing a new shape and not typing in an input.
+			if (!isTyping && selectedSection && !drawMode &&
+				(e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+				e.preventDefault()
+				if (!onSectionUpdate) return
+
+				const step = e.shiftKey ? 10 : 1
+				const deltaX = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0
+				const deltaY = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0
+
+				// Resolve latest section instance to avoid stale selectedSection references.
+				const latestSection = sections.find(s => s.id === selectedSection.id) || selectedSection
+				if (!latestSection) return
+
+				if (isRectangleSection(latestSection) && latestSection.bounds) {
+					const { x1, y1, x2, y2 } = latestSection.bounds
+					onSectionUpdate(latestSection.id, {
+						bounds: {
+							x1: x1 + deltaX,
+							y1: y1 + deltaY,
+							x2: x2 + deltaX,
+							y2: y2 + deltaY
+						}
+					})
+				} else if (isPolygonSection(latestSection) && Array.isArray(latestSection.polygon) && latestSection.polygon.length > 0) {
+					const movedPolygon = latestSection.polygon.map(point => ({
+						...point,
+						x: point.x + deltaX,
+						y: point.y + deltaY
+					}))
+					onSectionUpdate(latestSection.id, { polygon: movedPolygon })
+				}
+				return
+			}
+
+			// Copy selected section (Cmd/Ctrl + C)
+			if (!isTyping && !drawMode && selectedSection && (e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'c') {
+				e.preventDefault()
+				// Capture the freshest section instance.
+				const latestSection = sections.find(s => s.id === selectedSection.id) || selectedSection
+				if (!latestSection) return
+				setCopiedSection(latestSection)
+				return
+			}
+
+			// Paste copied section (Cmd/Ctrl + V)
+			if (!isTyping && !drawMode && copiedSection && onSectionAdd && (e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'v') {
+				e.preventDefault()
+				const pastedSectionData = createPastedSectionData(copiedSection)
+				if (!pastedSectionData) return
+				onSectionAdd(pastedSectionData)
+				return
+			}
+
 			// Only handle if we're in polygon drawing mode and not typing
 			if ((drawMode === 'polygon' || drawMode === 'obstruction-polygon') && polygonPoints.length > 0 && !isTyping) {
 				if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -1012,7 +1188,7 @@ const VenueCanvasEditor = ({
 			window.removeEventListener('keydown', handleKeyDown)
 			window.removeEventListener('keyup', handleKeyUp)
 		}
-	}, [drawMode, polygonPoints, isPanning])
+	}, [drawMode, polygonPoints, isPanning, selectedSection, sections, onSectionUpdate, copiedSection, onSectionAdd])
 
 
 	const drawPolygonPoints = (ctx, points, isObstruction = false, hoveredIndex = null) => {
@@ -1086,11 +1262,31 @@ const VenueCanvasEditor = ({
 		const x = (screenX - pan.x) / scale
 		const y = (screenY - pan.y) / scale
 
-		// Round to nearest 5 pixels for better snapping to grid
+		// Snap for precision:
+		// - default: 1px (smooth dragging)
+		// - Shift: 5px (coarser snapping for easier alignment)
+		const snapStep = e.shiftKey ? 5 : 1
 		return {
-			x: Math.round(x / 5) * 5,
-			y: Math.round(y / 5) * 5
+			x: Math.round(x / snapStep) * snapStep,
+			y: Math.round(y / snapStep) * snapStep
 		}
+	}
+
+	// While drawing polygons, hold Shift to lock the next point to a
+	// straight axis (horizontal/vertical) relative to the previous point.
+	const getShiftAlignedPoint = (point, points, e) => {
+		if (!e?.shiftKey || !Array.isArray(points) || points.length === 0) {
+			return point
+		}
+
+		const prev = points[points.length - 1]
+		const dx = point.x - prev.x
+		const dy = point.y - prev.y
+
+		if (Math.abs(dx) >= Math.abs(dy)) {
+			return { x: point.x, y: prev.y }
+		}
+		return { x: prev.x, y: point.y }
 	}
 
 	const handleMouseDown = (e) => {
@@ -1116,9 +1312,9 @@ const VenueCanvasEditor = ({
 					setResizeHandle(handle)
 
 					// Store original bounds/polygon for comparison
-					if (selectedSection.shape === 'rectangle' && selectedSection.bounds) {
+				if (isRectangleSection(selectedSection) && selectedSection.bounds) {
 						setResizeStartBounds({ ...selectedSection.bounds })
-					} else if (selectedSection.shape === 'polygon' && selectedSection.polygon) {
+				} else if (isPolygonSection(selectedSection) && selectedSection.polygon) {
 						// For polygons, store the original polygon points
 						setResizeStartBounds({
 							polygon: selectedSection.polygon.map(p => ({ ...p }))
@@ -1143,14 +1339,14 @@ const VenueCanvasEditor = ({
 				if (onSectionUpdate) {
 					setDraggedSection(clickedSection)
 					// Calculate offset from click point to section's center/origin
-					if (clickedSection.shape === 'rectangle' && clickedSection.bounds) {
+					if (isRectangleSection(clickedSection) && clickedSection.bounds) {
 						const centerX = (clickedSection.bounds.x1 + clickedSection.bounds.x2) / 2
 						const centerY = (clickedSection.bounds.y1 + clickedSection.bounds.y2) / 2
 						setDragOffset({
 							x: coords.x - centerX,
 							y: coords.y - centerY
 						})
-					} else if (clickedSection.shape === 'polygon' && clickedSection.polygon) {
+					} else if (isPolygonSection(clickedSection) && clickedSection.polygon) {
 						// For polygon, use the first point as reference
 						const refPoint = clickedSection.polygon[0]
 						setDragOffset({
@@ -1187,7 +1383,8 @@ const VenueCanvasEditor = ({
 					setPolygonPoints(newPoints)
 				} else {
 					// Add new point
-					setPolygonPoints([...polygonPoints, coords])
+					const constrainedCoords = getShiftAlignedPoint(coords, polygonPoints, e)
+					setPolygonPoints([...polygonPoints, constrainedCoords])
 				}
 			}
 			return
@@ -1207,7 +1404,8 @@ const VenueCanvasEditor = ({
 				setPolygonPoints(newPoints)
 			} else {
 				// Add new point
-				setPolygonPoints([...polygonPoints, coords])
+				const constrainedCoords = getShiftAlignedPoint(coords, polygonPoints, e)
+				setPolygonPoints([...polygonPoints, constrainedCoords])
 			}
 		}
 	}
@@ -1420,54 +1618,30 @@ const VenueCanvasEditor = ({
 				return { ...point }
 			})
 
-			// Calculate new bounding box
-			const newXs = newPolygon.map(p => p.x)
-			const newYs = newPolygon.map(p => p.y)
-			const newMinX = Math.min(...newXs)
-			const newMaxX = Math.max(...newXs)
-			const newMinY = Math.min(...newYs)
-			const newMaxY = Math.max(...newYs)
-			const newWidth = newMaxX - newMinX
-			const newHeight = newMaxY - newMinY
+		// Calculate new bounding box (used only to avoid degenerate polygons).
+		const newXs = newPolygon.map(p => p.x)
+		const newYs = newPolygon.map(p => p.y)
+		const newMinX = Math.min(...newXs)
+		const newMaxX = Math.max(...newXs)
+		const newMinY = Math.min(...newYs)
+		const newMaxY = Math.max(...newYs)
+		const newWidth = newMaxX - newMinX
+		const newHeight = newMaxY - newMinY
 
-			// Check if we're strictly enlarging (BOTH dimensions growing)
-			const isStrictlyEnlarging = newWidth > origWidth && newHeight > origHeight
+		// Enforce minimum size so the polygon doesn't collapse.
+		// (We intentionally do NOT block movements based on required seat bounds,
+		// because constraining polygon edits can feel "irrational" and seats are
+		// already constrained to the polygon boundary during rendering.)
+		const minSize = 5
+		if (newWidth < minSize || newHeight < minSize) return
 
-			// If strictly enlarging, allow without checks
-			if (isStrictlyEnlarging) {
-				onSectionUpdate(resizingSection.id, { polygon: newPolygon })
-				return
-			}
-
-			// For any other movement (shrinking or mixed), always check constraints
-
-			// Enforce minimum size
-			const minSize = 50
-			if (newWidth < minSize || newHeight < minSize) {
-				// Too small - block
-				return
-			}
-
-			// ALWAYS check required bounds to prevent cutting off seats
-			const requiredBounds = calculateRequiredBounds(currentSection)
-			if (requiredBounds) {
-				const requiredWidth = requiredBounds.width
-				const requiredHeight = requiredBounds.height
-
-				if (newWidth < requiredWidth || newHeight < requiredHeight) {
-					// Would cut off seats - BLOCK this movement
-					return
-				}
-			}
-
-			// Only allow if all constraints are met
-			onSectionUpdate(resizingSection.id, { polygon: newPolygon })
-			return
+		onSectionUpdate(resizingSection.id, { polygon: newPolygon })
+		return
 		}
 
 		// Handle section dragging
 		if (draggedSection && isDrawing && coords && onSectionUpdate) {
-			if (draggedSection.shape === 'rectangle' && draggedSection.bounds) {
+			if (isRectangleSection(draggedSection) && draggedSection.bounds) {
 				// Calculate new center position
 				const newCenterX = coords.x - dragOffset.x
 				const newCenterY = coords.y - dragOffset.y
@@ -1485,7 +1659,7 @@ const VenueCanvasEditor = ({
 				}
 
 				onSectionUpdate(draggedSection.id, { bounds: newBounds })
-			} else if (draggedSection.shape === 'polygon' && draggedSection.polygon) {
+			} else if (isPolygonSection(draggedSection) && draggedSection.polygon) {
 				// Calculate translation delta
 				const refPoint = draggedSection.polygon[0]
 				const deltaX = (coords.x - dragOffset.x) - refPoint.x
@@ -1589,11 +1763,11 @@ const VenueCanvasEditor = ({
 		// Check sections in reverse order (topmost first)
 		for (let i = sections.length - 1; i >= 0; i--) {
 			const section = sections[i]
-			if (section.shape === 'rectangle' && section.bounds) {
+			if (isRectangleSection(section) && section.bounds) {
 				if (isPointInRectangle(coords, section.bounds)) {
 					return section
 				}
-			} else if (section.shape === 'polygon' && section.polygon && section.polygon.length >= 3) {
+			} else if (isPolygonSection(section) && section.polygon && section.polygon.length >= 3) {
 				if (isPointInPolygon(coords, section.polygon)) {
 					return section
 				}
@@ -1665,7 +1839,7 @@ const VenueCanvasEditor = ({
 	const findResizeHandle = (coords, section) => {
 		if (!section) return null
 
-		if (section.shape === 'rectangle' && section.bounds) {
+		if (isRectangleSection(section) && section.bounds) {
 			const { x1, y1, x2, y2 } = section.bounds
 			const handleSize = 10 / scale // Scale handle size inversely with zoom
 			const threshold = handleSize
@@ -1683,7 +1857,7 @@ const VenueCanvasEditor = ({
 			if (Math.abs(coords.x - centerX) < threshold && Math.abs(coords.y - y2) < threshold) return 's'
 			if (Math.abs(coords.x - x1) < threshold && Math.abs(coords.y - centerY) < threshold) return 'w'
 			if (Math.abs(coords.x - x2) < threshold && Math.abs(coords.y - centerY) < threshold) return 'e'
-		} else if (section.shape === 'polygon' && section.polygon && section.polygon.length >= 3) {
+		} else if (isPolygonSection(section) && section.polygon && section.polygon.length >= 3) {
 			// For polygons, check each vertex
 			const handleSize = 15 / scale // Larger threshold for easier clicking
 			const threshold = handleSize
@@ -1702,7 +1876,7 @@ const VenueCanvasEditor = ({
 
 	// Draw resize handles for the selected section
 	const drawResizeHandles = (ctx, section) => {
-		if (!section || section.shape !== 'rectangle' || !section.bounds) return
+		if (!section || !isRectangleSection(section) || !section.bounds) return
 
 		const { x1, y1, x2, y2 } = section.bounds
 		const handleSize = 8 / scale // Scale inversely with zoom
@@ -1733,7 +1907,7 @@ const VenueCanvasEditor = ({
 
 	// Draw resize handles for polygon sections (on each vertex)
 	const drawPolygonResizeHandles = (ctx, section) => {
-		if (!section || section.shape !== 'polygon' || !section.polygon || section.polygon.length < 3) return
+		if (!section || !isPolygonSection(section) || !section.polygon || section.polygon.length < 3) return
 
 		const handleSize = 8 / scale // Scale inversely with zoom
 
@@ -1979,36 +2153,30 @@ const VenueCanvasEditor = ({
 		handleZoom(delta)
 	}, [])
 
+	const toggleRectangleDrawMode = () => {
+		// Rectangle drawing intentionally disabled (polygon-only editor).
+		setDrawMode(null)
+		setPolygonPoints([])
+		setIsDrawing(false)
+	}
+
+	const togglePolygonDrawMode = () => {
+		setDrawMode(drawMode === 'polygon' ? null : 'polygon')
+		setPolygonPoints([])
+	}
+
 	return (
 		<Box>
 			{/* Toolbar */}
 			<Paper elevation={1} sx={{ p: 1, mb: 1, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
 				{mode === 'advanced' && (
 					<>
-						<Tooltip title="Draw Rectangle Section (Click and drag)">
-							<span>
-								<IconButton
-									size="small"
-									color={drawMode === 'rectangle' ? 'primary' : 'default'}
-									onClick={() => {
-										setDrawMode(drawMode === 'rectangle' ? null : 'rectangle')
-										setPolygonPoints([])
-										setIsDrawing(false)
-									}}
-								>
-									<Add />
-								</IconButton>
-							</span>
-						</Tooltip>
 						<Tooltip title="Draw Polygon Section (Click to add points, double-click to finish)">
 							<span>
 								<IconButton
 									size="small"
 									color={drawMode === 'polygon' ? 'primary' : 'default'}
-									onClick={() => {
-										setDrawMode(drawMode === 'polygon' ? null : 'polygon')
-										setPolygonPoints([])
-									}}
+									onClick={togglePolygonDrawMode}
 								>
 									<Edit />
 								</IconButton>
@@ -2052,7 +2220,7 @@ const VenueCanvasEditor = ({
 					Zoom: {Math.round(scale * 100)}%
 				</Typography>
 				<Typography variant="caption" color="textSecondary" sx={{ ml: 2 }}>
-					Scroll to zoom • Space + drag to pan • Middle mouse button to pan
+					Scroll to zoom • Space + drag to pan • Middle mouse button to pan • Arrow keys: nudge selected section (Shift = faster) • Cmd/Ctrl+C then Cmd/Ctrl+V: copy/paste selected section
 				</Typography>
 				{mode === 'advanced' && (drawMode === 'polygon' || drawMode === 'obstruction-polygon') && polygonPoints.length > 0 && (
 					<Box sx={{ ml: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -2060,7 +2228,7 @@ const VenueCanvasEditor = ({
 							Points: {polygonPoints.length} (Need at least 3)
 						</Typography>
 						<Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-							• Click to add point • Click existing point to delete • Backspace/Delete: remove last • Right-click: remove last • Double-click: finish
+							• Click to add point • Shift+Click: straight axis • Click existing point to delete • Backspace/Delete: remove last • Right-click: remove last • Double-click: finish
 						</Typography>
 					</Box>
 				)}
@@ -2097,13 +2265,40 @@ const VenueCanvasEditor = ({
 						cursor: isPanning ? 'grabbing' :
 							(isSpacePressed ? 'grab' :
 							(draggedSection ? 'grabbing' :
-							(drawMode ? (drawMode === 'rectangle' || drawMode === 'polygon' ? 'crosshair' : 'default') : 'default'))),
+							(drawMode ? (drawMode === 'polygon' || drawMode === 'obstruction-polygon' ? 'crosshair' : 'default') : 'default'))),
 						width: '100%',
 						height: '100%',
 						display: 'block',
 						backgroundColor: '#fafafa'
 					}}
 				/>
+				{/* Quick tools overlay for fullscreen / zoomed work */}
+				{mode === 'advanced' && (isFullscreen || scale > 1.05) && (
+					<Box
+						sx={{
+							position: 'absolute',
+							top: 16,
+							right: 16,
+							display: 'flex',
+							gap: 1,
+							bgcolor: 'rgba(255, 255, 255, 0.95)',
+							p: 0.5,
+							borderRadius: 1,
+							boxShadow: 2,
+							zIndex: 12
+						}}
+					>
+						<Tooltip title="Draw Polygon Section (Click to add points, double-click to finish)">
+							<IconButton
+								size="small"
+								color={drawMode === 'polygon' ? 'primary' : 'default'}
+								onClick={togglePolygonDrawMode}
+							>
+								<Edit />
+							</IconButton>
+						</Tooltip>
+					</Box>
+				)}
 				{/* Coordinate display overlay */}
 				{mouseCoords && (
 					<Box
@@ -2166,50 +2361,8 @@ const VenueCanvasEditor = ({
 					</Box>
 				)}
 
-				{/* Instructions overlay when drawing rectangle */}
-				{drawMode === 'rectangle' && (
-					<Box
-						sx={{
-							position: 'absolute',
-							bottom: 10,
-							left: '50%',
-							transform: 'translateX(-50%)',
-							px: 2,
-							py: 1,
-							bgcolor: 'rgba(0, 0, 0, 0.7)',
-							color: 'white',
-							borderRadius: 1,
-							pointerEvents: 'none',
-							zIndex: 10
-						}}
-					>
-						<Typography variant="caption">
-							Click and drag to draw a rectangle section
-						</Typography>
-					</Box>
-				)}
 				{/* Polygon instructions are shown in the detailed overlay at the top */}
-				{drawMode === 'obstruction-rectangle' && (
-					<Box
-						sx={{
-							position: 'absolute',
-							bottom: 10,
-							left: '50%',
-							transform: 'translateX(-50%)',
-							px: 2,
-							py: 1,
-							bgcolor: 'rgba(204, 204, 204, 0.9)',
-							color: '#333',
-							borderRadius: 1,
-							pointerEvents: 'none',
-							zIndex: 10
-						}}
-					>
-						<Typography variant="caption">
-							Drawing Obstruction: Click and drag to draw rectangle
-						</Typography>
-					</Box>
-				)}
+				{/* Rectangle drawing is disabled (polygon-only editor). */}
 			</Paper>
 		</Box>
 	)

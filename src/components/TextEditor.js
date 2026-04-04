@@ -6,14 +6,17 @@ import dynamic from "next/dynamic";
 // import { fileUpload } from "../../RESTAPIs/fileUpload";
 import { useRef } from "react";
 
-const modules = {
-  toolbar: [
-    [{ header: "1" }, { header: "2" }],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["bold", "italic", "underline"],
-    // ["link", "image"],
-  ],
-};
+const DEFAULT_QUILL_TOOLBAR = [
+  [{ header: "1" }, { header: "2" }],
+  [{ list: "ordered" }, { list: "bullet" }],
+  ["bold", "italic", "underline"],
+];
+
+/** Link + image for pages that need embedded media (e.g. site notifications). */
+const RICH_QUILL_TOOLBAR = [
+  ...DEFAULT_QUILL_TOOLBAR,
+  ["link", "image"],
+];
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
@@ -23,8 +26,13 @@ const TextEditor = ({
   handleChange,
   required = false,
   setImageId,
+  /** When true, Quill toolbar includes link and image (HTTPS/data URLs work on the storefront). */
+  enableRichToolbar = false,
 }) => {
   const editorRef = useRef(null);
+  const quillModules = {
+    toolbar: enableRichToolbar ? RICH_QUILL_TOOLBAR : DEFAULT_QUILL_TOOLBAR,
+  };
   const handleEditorChange = async (content) => {
     handleChange(content);
 
@@ -82,9 +90,7 @@ const TextEditor = ({
           theme="snow"
           value={value}
           onChange={handleEditorChange}
-          modules={{
-            ...modules,
-          }}
+          modules={quillModules}
         />
       ) : (
         <p>Loading editor...</p>

@@ -83,6 +83,30 @@ const LEGACY_TO_SECTION_TYPE = Object.entries(SECTION_TYPE_TO_LEGACY).reduce((ac
 
 const deriveSelectionMode = (sectionType) => (sectionType === 'Seating' ? 'seat' : 'area')
 
+const boundsToPolygonPoints = (bounds) => {
+	if (!bounds) return undefined
+	const x1 = bounds.x1 ?? bounds.x
+	const y1 = bounds.y1 ?? bounds.y
+	const x2 = bounds.x2 ?? ((bounds.x ?? 0) + (bounds.width ?? 0))
+	const y2 = bounds.y2 ?? ((bounds.y ?? 0) + (bounds.height ?? 0))
+
+	if ([x1, y1, x2, y2].some((v) => v === undefined || v === null || Number.isNaN(Number(v)))) {
+		return undefined
+	}
+
+	const minX = Math.min(x1, x2)
+	const maxX = Math.max(x1, x2)
+	const minY = Math.min(y1, y2)
+	const maxY = Math.max(y1, y2)
+
+	return [
+		{ x: minX, y: minY },
+		{ x: maxX, y: minY },
+		{ x: maxX, y: maxY },
+		{ x: minX, y: maxY }
+	]
+}
+
 /**
  * Section Editor Content Component
  * Main content for section configuration (without Dialog wrapper)
@@ -113,7 +137,7 @@ const SectionEditorContent = ({
 		type: 'seating',
 		sectionType: 'Seating',
 		selectionMode: 'seat',
-		shape: 'rectangle',
+		shape: 'polygon',
 		capacity: 0,
 		rows: 0,
 		seatsPerRow: 0,
@@ -132,14 +156,15 @@ const SectionEditorContent = ({
 		seatNumberingDirection: 'left-to-right', // Seat numbering direction
 		showRowLabels: true, // Show row labels on seat map
 		spacingConfig: {
-			topPadding: 40,
-			seatSpacingMultiplier: 0.65,
-			rowSpacingMultiplier: 0.75,
+			innerPadding: 0,
+			topPadding: 1,
+			seatSpacingMultiplier: 1,
+			rowSpacingMultiplier: 1,
 			curveDepthMultiplier: 0.7,
-			seatRadius: 7,
-			seatSpacingVisual: 1.3,
-			rowSpacingVisual: 1.2,
-			topMargin: 60
+			seatRadius: 2,
+			seatSpacingVisual: 1,
+			rowSpacingVisual: 1,
+			topMargin: 1
 		}
 	})
 	const [rowConfigMode, setRowConfigMode] = useState('uniform')
@@ -150,7 +175,7 @@ const SectionEditorContent = ({
 		id: undefined,
 		name: '',
 		type: 'obstruction',
-		shape: 'rectangle',
+		shape: 'polygon',
 		bounds: undefined,
 		polygon: undefined,
 		color: '#CCCCCC',
@@ -271,7 +296,7 @@ const SectionEditorContent = ({
 			type: 'seating',
 			sectionType: 'Seating',
 			selectionMode: 'seat',
-			shape: 'rectangle',
+			shape: 'polygon',
 			capacity: 0,
 			rows: 0,
 			seatsPerRow: 0,
@@ -289,13 +314,14 @@ const SectionEditorContent = ({
 			seatNumberingDirection: 'left-to-right',
 			showRowLabels: true,
 			spacingConfig: {
-				topPadding: 40,
-				seatSpacingMultiplier: 0.65,
-				rowSpacingMultiplier: 0.75,
+				innerPadding: 0,
+				topPadding: 1,
+				seatSpacingMultiplier: 1,
+				rowSpacingMultiplier: 1,
 				curveDepthMultiplier: 0.7,
-				seatRadius: 7,
-				seatSpacingVisual: 1.3,
-				rowSpacingVisual: 1.2,
+				seatRadius: 2,
+				seatSpacingVisual: 1,
+				rowSpacingVisual: 1,
 				topMargin: 60
 			}
 		})
@@ -305,12 +331,28 @@ const SectionEditorContent = ({
 		setEditingSection(section)
 		const hasRowConfig = section.rowConfig && Array.isArray(section.rowConfig) && section.rowConfig.length > 0
 		setRowConfigMode(hasRowConfig ? 'variable' : 'uniform')
+		// Polygon-only editor: if an existing section is stored as rectangle geometry,
+		// convert its bounds to a polygon so the canvas editor stays consistent.
+		let polygonForForm = section.polygon
+		if ((!polygonForForm || polygonForForm.length < 3) && section.bounds) {
+			const convertedPolygon = boundsToPolygonPoints(section.bounds)
+			if (convertedPolygon) {
+				polygonForForm = convertedPolygon
+				const normalizedSections = sections.map(s =>
+					s.id === section.id
+						? { ...s, shape: 'polygon', bounds: undefined, polygon: convertedPolygon }
+						: s
+				)
+				setSections(normalizedSections)
+				saveToHistory(normalizedSections, centralFeature)
+			}
+		}
 		setSectionForm({
 			name: section.name || '',
 			type: section.type || 'seating',
 			sectionType: section.sectionType || LEGACY_TO_SECTION_TYPE[section.type] || 'Seating',
 			selectionMode: section.selectionMode || deriveSelectionMode(section.sectionType || LEGACY_TO_SECTION_TYPE[section.type] || 'Seating'),
-			shape: section.shape || (section.polygon ? 'polygon' : 'rectangle'),
+			shape: 'polygon',
 			capacity: section.capacity || 0,
 			rows: section.rows || 0,
 			seatsPerRow: section.seatsPerRow || 0,
@@ -320,8 +362,8 @@ const SectionEditorContent = ({
 			features: section.features || [],
 			priceTier: section.priceTier || '',
 			basePrice: section.basePrice || 0,
-			bounds: section.bounds || undefined,
-			polygon: section.polygon || undefined,
+			bounds: undefined,
+			polygon: polygonForForm || undefined,
 			rowConfig: section.rowConfig || [],
 			obstructions: section.obstructions || [],
 			presentationStyle: section.presentationStyle || 'flat',
@@ -329,14 +371,15 @@ const SectionEditorContent = ({
 			seatNumberingDirection: section.seatNumberingDirection || 'left-to-right',
 			showRowLabels: section.showRowLabels !== false, // Default to true if not set
 			spacingConfig: section.spacingConfig || {
-				topPadding: 40,
-				seatSpacingMultiplier: 0.65,
-				rowSpacingMultiplier: 0.75,
+				innerPadding: 0,
+				topPadding: 1,
+				seatSpacingMultiplier:1,
+				rowSpacingMultiplier: 1,
 				curveDepthMultiplier: 0.7,
-				seatRadius: 7,
-				seatSpacingVisual: 1.3,
-				rowSpacingVisual: 1.2,
-				topMargin: 60
+				seatRadius: 2,
+				seatSpacingVisual: 1,
+				rowSpacingVisual: 1,
+				topMargin: 1
 			}
 		})
 	}
@@ -813,14 +856,15 @@ const SectionEditorContent = ({
 
 		// Use adjusted spacing config if provided (from auto-adjust), otherwise use form values
 		const finalSpacingConfig = adjustedSpacingConfig || sectionForm.spacingConfig || {
-			topPadding: 40,
-			seatSpacingMultiplier: 0.65,
-			rowSpacingMultiplier: 0.75,
+			innerPadding: 0,
+			topPadding: 1,
+			seatSpacingMultiplier: 1,
+			rowSpacingMultiplier: 1,
 			curveDepthMultiplier: 0.7,
-			seatRadius: 7,
-			seatSpacingVisual: 1.3,
-			rowSpacingVisual: 1.2,
-			topMargin: 60
+			seatRadius: 2,
+			seatSpacingVisual: 1,
+			rowSpacingVisual: 1,
+			topMargin: 1
 		}
 
 		const sectionData = {
@@ -915,7 +959,7 @@ const SectionEditorContent = ({
 			id: undefined,
 			name: '',
 			type: 'obstruction',
-			shape: 'rectangle',
+			shape: 'polygon',
 			bounds: undefined,
 			polygon: undefined,
 			color: '#CCCCCC',
@@ -925,13 +969,17 @@ const SectionEditorContent = ({
 
 	const handleEditObstruction = (obstruction) => {
 		setEditingObstruction(editingSection?.id)
+		const polygonForForm = obstruction?.polygon?.length >= 3
+			? obstruction.polygon
+			: boundsToPolygonPoints(obstruction?.bounds)
+		const normalizedObstructionShape = 'polygon'
 		setObstructionForm({
 			id: obstruction.id,
 			name: obstruction.name || '',
 			type: obstruction.type || 'obstruction',
-			shape: obstruction.shape || 'rectangle',
-			bounds: obstruction.bounds || undefined,
-			polygon: obstruction.polygon || undefined,
+			shape: normalizedObstructionShape,
+			bounds: undefined,
+			polygon: polygonForForm || undefined,
 			color: obstruction.color || '#CCCCCC',
 			strokeColor: obstruction.strokeColor || '#999999'
 		})
@@ -968,7 +1016,7 @@ const SectionEditorContent = ({
 			id: undefined,
 			name: '',
 			type: 'obstruction',
-			shape: 'rectangle',
+			shape: 'polygon',
 			bounds: undefined,
 			polygon: undefined,
 			color: '#CCCCCC',
@@ -1904,6 +1952,16 @@ const SectionEditorContent = ({
 							</FormHelperText>
 						</FormControl>
 
+						{sectionForm.selectionMode === 'area' &&
+							Number(sectionForm.capacity || 0) === 0 &&
+							sectionForm.isTicketed !== false && (
+								<Alert severity="info" sx={{ mt: 1 }}>
+									<strong>Not for sale (capacity 0):</strong> the web and mobile apps will still draw this
+									area on the seat map (muted outline) so visitors see it is out of use, but it will not
+									appear as a purchasable standing/area block.
+								</Alert>
+							)}
+
 						<Box sx={{ mt: 2, mb: 2 }}>
 							<FormControlLabel
 								control={
@@ -2129,6 +2187,24 @@ const SectionEditorContent = ({
 								<FormHelperText sx={{ mb: 2 }}>
 									Configure visual spacing and sizing for this section. These settings control how seats appear on the seat map.
 								</FormHelperText>
+							</Grid>
+
+							<Grid item xs={12} md={6}>
+								<TextField
+									fullWidth
+									type="number"
+									label="Inner Padding (px)"
+									value={sectionForm.spacingConfig?.innerPadding ?? 0}
+									onChange={(e) => setSectionForm({
+										...sectionForm,
+										spacingConfig: {
+											...sectionForm.spacingConfig,
+											innerPadding: Math.max(0, parseFloat(e.target.value) || 0)
+										}
+									})}
+									inputProps={{ min: 0, step: 1 }}
+									helperText="Unified inset from section boundaries (applies to left/right/top/bottom in backend seat generation)"
+								/>
 							</Grid>
 
 							<Grid item xs={12} md={6}>
@@ -2791,13 +2867,10 @@ const SectionEditorContent = ({
 								label="Shape"
 								onChange={(e) => setObstructionForm({ ...obstructionForm, shape: e.target.value })}
 							>
-								<MenuItem value="rectangle">Rectangle</MenuItem>
 								<MenuItem value="polygon">Polygon (Irregular)</MenuItem>
 							</Select>
 							<FormHelperText>
-								{obstructionForm.shape === 'rectangle'
-									? 'Draw a rectangle on the canvas to define the obstruction area.'
-									: 'Draw a polygon on the canvas by clicking points to define the obstruction area.'}
+								'Draw a polygon on the canvas by clicking points to define the obstruction area.'
 							</FormHelperText>
 						</FormControl>
 
@@ -2819,11 +2892,11 @@ const SectionEditorContent = ({
 									} else {
 										setCurrentObstruction(obstructionForm)
 									}
-									setObstructionDrawMode(obstructionForm.shape === 'polygon' ? 'obstruction-polygon' : 'obstruction-rectangle')
+									setObstructionDrawMode('obstruction-polygon')
 								}}
 								disabled={!obstructionForm.name}
 							>
-								Draw {obstructionForm.shape === 'polygon' ? 'Polygon' : 'Rectangle'} on Canvas
+								Draw Polygon on Canvas
 							</Button>
 							{currentObstruction && (
 								<Button
@@ -2840,9 +2913,7 @@ const SectionEditorContent = ({
 						</Box>
 						{currentObstruction && (
 							<Alert severity="info" sx={{ mt: 1 }}>
-								{obstructionForm.shape === 'polygon'
-									? 'Click points on the canvas to define the polygon. Double-click to finish.'
-									: 'Click and drag on the canvas to draw the rectangle.'}
+								'Click points on the canvas to define the polygon. Double-click to finish.'
 							</Alert>
 						)}
 

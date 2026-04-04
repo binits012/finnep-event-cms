@@ -33,6 +33,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 			row: place?.row || '',
 			seat: place?.seat || '',
 			section: place?.section || '',
+			subSectionName: place?.subSectionName || '',
 			zone: place?.zone || '',
 			basePrice: place?.pricing?.basePrice || 0,
 			currency: place?.pricing?.currency || 'EUR',
@@ -49,6 +50,7 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 					row: values.row,
 					seat: values.seat,
 					section: values.section,
+					subSectionName: values.subSectionName || undefined,
 					zone: values.zone,
 					pricing: {
 						basePrice: Math.round(parseFloat(values.basePrice) * 100) || 0,
@@ -129,27 +131,37 @@ const SeatEditor = ({ open, place, onClose, onSave, onDelete }) => {
 								label="Section"
 								name="section"
 								value={formik.values.section}
-								disabled
+								onChange={formik.handleChange}
 							/>
 						</Grid>
 
 						<Grid item xs={12} md={4}>
+							<TextField
+								fullWidth
+								label="Sub Section"
+								name="subSectionName"
+								value={formik.values.subSectionName}
+								onChange={formik.handleChange}
+							/>
+						</Grid>
+
+						<Grid item xs={12} md={2}>
 							<TextField
 								fullWidth
 								label="Row"
 								name="row"
 								value={formik.values.row}
-								disabled
+								onChange={formik.handleChange}
 							/>
 						</Grid>
 
-						<Grid item xs={12} md={4}>
+						<Grid item xs={12} md={2}>
 							<TextField
 								fullWidth
 								label="Seat"
 								name="seat"
 								value={formik.values.seat}
-								disabled
+								onChange={formik.handleChange}
 							/>
 						</Grid>
 

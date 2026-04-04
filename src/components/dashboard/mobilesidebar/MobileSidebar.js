@@ -7,7 +7,9 @@ import {
   MdSupervisedUserCircle,
   MdBusinessCenter,
   MdEventSeat,
-  MdOutlineSettings
+  MdOutlineSettings,
+  MdOutlineReportProblem,
+  MdSpeed,
 } from "react-icons/md";
 import { FaBell, FaEuroSign, FaHouseUser, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -198,6 +200,16 @@ const MobileSideBar = ({ onToggle }) => {
       title: "Queue Admin",
       link: "/admin/queue",
       icon: <MdOutlineSettings size={24} />,
+    },
+    {
+      title: "Ops deck",
+      link: "/admin/monitor",
+      icon: <MdSpeed size={24} />,
+    },
+    {
+      title: "DLQ / RabbitMQ",
+      link: "/admin/dlq",
+      icon: <MdOutlineReportProblem size={24} />,
     },
   ];
 

@@ -7,7 +7,9 @@ import {
   MdOutlineSettings,
   MdSupervisedUserCircle,
   MdRateReview, MdBusinessCenter,
-  MdEventSeat
+  MdEventSeat,
+  MdOutlineReportProblem,
+  MdSpeed,
 } from "react-icons/md";
 import { FaChevronLeft, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -203,6 +205,16 @@ const SideBar = ({ onToggle }) => {
       title: "Queue Admin",
       link: "/admin/queue",
       icon: <MdOutlineSettings size={24} />,
+    },
+    {
+      title: "Ops deck",
+      link: "/admin/monitor",
+      icon: <MdSpeed size={24} />,
+    },
+    {
+      title: "DLQ / RabbitMQ",
+      link: "/admin/dlq",
+      icon: <MdOutlineReportProblem size={24} />,
     },
   ];
 
