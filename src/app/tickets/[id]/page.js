@@ -174,14 +174,20 @@ const Tickets = () => {
         doc.text(quantity.toString(), 130, yPos);
         totalQuantity += quantity;
 
-        // Price (per ticket - single price)
+        // `price` from the API is the charged line total (e.g. Stripe payment amount), not always per unit.
+        // `totalPrice` when set is the explicit line total. Do not multiply `price` by quantity when totalPrice is absent.
         const price = Number(ticket?.price) || 0;
         doc.text(price.toFixed(2), 150, yPos);
 
-        // Total (price * quantity)
-        const totalPriceValue = Number(ticket?.totalPrice) || (quantity * price);
-        doc.text(totalPriceValue.toFixed(2), 170, yPos);
-        totalRevenue += totalPriceValue;
+        const totalPriceRaw = ticket?.totalPrice;
+        const totalPriceParsed = Number(totalPriceRaw);
+        const hasExplicitTotalPrice =
+          totalPriceRaw != null &&
+          totalPriceRaw !== '' &&
+          !Number.isNaN(totalPriceParsed);
+        const lineTotal = hasExplicitTotalPrice ? totalPriceParsed : price;
+        doc.text(lineTotal.toFixed(2), 170, yPos);
+        totalRevenue += lineTotal;
 
         // Move to next row based on the tallest cell
         yPos += Math.max(maxHeight, 10);
