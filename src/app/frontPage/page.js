@@ -13,12 +13,19 @@ import Swal from "sweetalert2";
 import dynamic from "next/dynamic";
 import MonacoEditor from "@monaco-editor/react";
 
+const toPlainOtherInfo = (otherInfo) => {
+  if (!otherInfo || typeof otherInfo !== "object") return {};
+  if (otherInfo instanceof Map) return Object.fromEntries(otherInfo.entries());
+  return { ...otherInfo };
+};
+
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [isEditingJson, setIsEditingJson] = useState(false);
   const [settingsId, setSettingsId] = useState(null);
   const [jsonContent, setJsonContent] = useState("");
   const [initialData, setInitialData] = useState({});
+  const [publicSiteConfigJson, setPublicSiteConfigJson] = useState("");
 
   const Toast = Swal.mixin({
     toast: true,
@@ -36,7 +43,32 @@ const Settings = () => {
     setLoading(true);
     try {
       const url = values?._id ? `setting/${values._id}` : "setting";
-      const res = await apiHandler("POST", url, true, false, {
+      let otherInfo = toPlainOtherInfo(values.otherInfo);
+      const trimmed = publicSiteConfigJson.trim();
+      if (trimmed) {
+        let parsed;
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch {
+          Toast.fire({
+            icon: "error",
+            title: "Public site config: invalid JSON",
+          });
+          setLoading(false);
+          return;
+        }
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+          Toast.fire({
+            icon: "error",
+            title: "Public site config must be a JSON object",
+          });
+          setLoading(false);
+          return;
+        }
+        otherInfo = { ...otherInfo, publicSiteConfig: parsed };
+      }
+
+      await apiHandler("POST", url, true, false, {
         ...values,
         socialMedia: {
           fb: values.fbLink,
@@ -47,6 +79,7 @@ const Settings = () => {
           email: values.email,
           phone: values.phone,
         },
+        otherInfo,
       });
 
       Toast.fire({
@@ -54,9 +87,14 @@ const Settings = () => {
         title: "Settings updated successfully!",
       });
     } catch (err) {
+      const apiErrors = err?.response?.data?.errors;
+      const msg =
+        Array.isArray(apiErrors) && apiErrors.length
+          ? apiErrors.slice(0, 3).join("; ")
+          : err?.response?.data?.message || "Error updating settings";
       Toast.fire({
         icon: "error",
-        title: "Error updating settings",
+        title: msg,
       });
     } finally {
       setLoading(false);
@@ -91,13 +129,18 @@ const Settings = () => {
     const getSettingsData = async () => {
       try {
         const response = await apiHandler("GET", "setting", true);
-        formik.setValues(
-          transformResponseValuesToForm(
-            response.data?.data &&
-              Array.isArray(response.data?.data) &&
-              response.data?.data[0]
-          )
-        );
+        const doc =
+          response.data?.data &&
+          Array.isArray(response.data?.data) &&
+          response.data?.data[0];
+        formik.setValues(transformResponseValuesToForm(doc));
+        if (doc?.otherInfo?.publicSiteConfig) {
+          setPublicSiteConfigJson(
+            JSON.stringify(doc.otherInfo.publicSiteConfig, null, 2)
+          );
+        } else {
+          setPublicSiteConfigJson("");
+        }
       } catch (err) {
         Toast.fire({
           icon: "error",
@@ -148,6 +191,13 @@ const Settings = () => {
             title: "JSON data updated successfully!",
           });
           setInitialData(updatedData);
+          if (updatedData?.otherInfo?.publicSiteConfig) {
+            setPublicSiteConfigJson(
+              JSON.stringify(updatedData.otherInfo.publicSiteConfig, null, 2)
+            );
+          } else {
+            setPublicSiteConfigJson("");
+          }
         })
         .catch((error) => {
           Toast.fire({
@@ -330,6 +380,31 @@ const Settings = () => {
                       />
                     </Grid>
                   </Grid>
+                </FormSection>
+
+                <FormSection
+                  showSection
+                  title="Public storefront (domains, CORS, SEO)"
+                  containerCSS={`margin-top: 20px;`}
+                >
+                  <Typography variant="body2" sx={{ mb: 2, maxWidth: 900 }}>
+                    Optional JSON for <code>otherInfo.publicSiteConfig</code>: public
+                    hostnames, primary canonical URL, hreflang, and extra CORS origins.
+                    Leave empty to keep the API defaults. Invalid config is rejected by
+                    the server.
+                  </Typography>
+                  <TextField
+                    label="publicSiteConfig (JSON)"
+                    value={publicSiteConfigJson}
+                    onChange={(e) => setPublicSiteConfigJson(e.target.value)}
+                    placeholder='{ "version": 1, "primaryCanonicalBaseUrl": "https://okazzo.eu", "hosts": [...], ... }'
+                    fullWidth
+                    multiline
+                    minRows={12}
+                    InputProps={{
+                      sx: { fontFamily: "monospace", fontSize: "0.85rem" },
+                    }}
+                  />
                 </FormSection>
 
                 <FormSection

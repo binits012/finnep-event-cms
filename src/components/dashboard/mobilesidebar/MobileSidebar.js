@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   MdDashboard,
   MdEventNote,
-  MdSupervisedUserCircle,
   MdBusinessCenter,
   MdEventSeat,
   MdOutlineSettings,
@@ -190,11 +189,6 @@ const MobileSideBar = ({ onToggle }) => {
       title: "Users",
       link: "/users",
       icon: <FaUsers size={24} />,
-    },
-    {
-      title: "Profile",
-      link: "/profile",
-      icon: <MdSupervisedUserCircle size={24} />,
     },
     {
       title: "Queue Admin",

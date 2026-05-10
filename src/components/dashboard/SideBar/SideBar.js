@@ -5,7 +5,6 @@ import {
   MdDashboard,
   MdEventNote,
   MdOutlineSettings,
-  MdSupervisedUserCircle,
   MdRateReview, MdBusinessCenter,
   MdEventSeat,
   MdOutlineReportProblem,
@@ -195,11 +194,6 @@ const SideBar = ({ onToggle }) => {
       title: "Users",
       link: "/users",
       icon: <FaUsers size={24} />,
-    },
-    {
-      title: "Profile",
-      link: "/profile",
-      icon: <MdSupervisedUserCircle size={24} />,
     },
     {
       title: "Queue Admin",

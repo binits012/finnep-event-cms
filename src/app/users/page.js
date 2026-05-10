@@ -1,7 +1,8 @@
 "use client";
 import apiHandler from "@/RESTAPIs/helper";
 import CustomBreadcrumbs from "@/components/CustomBreadcrumbs";
-import { Box, Button, Chip, Grid, Input } from "@mui/material";
+import { Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, FormGroup, FormLabel, Grid, Input, Stack, Typography } from "@mui/material";
+import { STRIPE_COUNTRY_OPTIONS } from "@/constants/stripeCountries";
 import { DataGrid } from "@mui/x-data-grid";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -13,10 +14,33 @@ import styled from "styled-components";
 import { TiTickOutline } from "react-icons/ti";
 import Swal from "sweetalert2";
 
+function parseJwtRole(token) {
+  if (!token || typeof window === "undefined") return null;
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join("")
+    );
+    return JSON.parse(jsonPayload).role || null;
+  } catch {
+    return null;
+  }
+}
+
 const Users = () => {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingRegionalUser, setEditingRegionalUser] = useState(null);
+  const [selectedCountryCodes, setSelectedCountryCodes] = useState([]);
+  const currentRole = typeof window !== "undefined"
+    ? parseJwtRole(localStorage.getItem("accessToken"))
+    : null;
+  const canManageRegionalUsers = currentRole === "superAdmin";
 
   const Toast = Swal.mixin({
     toast: true,
@@ -34,12 +58,21 @@ const Users = () => {
     const getUserDetails = async () => {
       setLoading(true);
       try {
-        const res = await apiHandler("GET", "user/admin", true);
-        setUsers(res.data.data || []);
+        const adminRes = await apiHandler("GET", "user/admin", true);
+        const token = localStorage.getItem("accessToken");
+        const role = parseJwtRole(token);
+        let regionalUsers = [];
+
+        if (role === "superAdmin") {
+          const regionalRes = await apiHandler("GET", "user/regional", true);
+          regionalUsers = regionalRes.data.data || [];
+        }
+
+        setUsers([...(adminRes.data.data || []), ...regionalUsers]);
       } catch (err) {
         Toast.fire({
           icon: "error",
-          title: err.message,
+          title: err?.response?.data?.message || err.message,
         });
       } finally {
         setLoading(false);
@@ -89,6 +122,73 @@ const Users = () => {
     }
   };
 
+  const openRegionalScopeDialog = (row) => {
+    setEditingRegionalUser(row);
+    setSelectedCountryCodes(
+      Array.isArray(row.allowedCountryCodes) ? row.allowedCountryCodes : []
+    );
+  };
+
+  const closeRegionalScopeDialog = () => {
+    setEditingRegionalUser(null);
+    setSelectedCountryCodes([]);
+  };
+
+  const toggleCountryCode = (countryCode) => {
+    setSelectedCountryCodes((currentCodes) =>
+      currentCodes.includes(countryCode)
+        ? currentCodes.filter((code) => code !== countryCode)
+        : [...currentCodes, countryCode]
+    );
+  };
+
+  const saveRegionalScope = async () => {
+    if (!editingRegionalUser) return;
+    if (selectedCountryCodes.length === 0) {
+      Toast.fire({
+        icon: "error",
+        title: "Select at least one country for regional users",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiHandler(
+        "PATCH",
+        `/user/${editingRegionalUser._id}`,
+        true,
+        false,
+        { allowedCountryCodes: selectedCountryCodes }
+      );
+
+      if (res.status === 200) {
+        const allowedCountryCodes =
+          res.data?.data?.allowedCountryCodes || selectedCountryCodes;
+
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === editingRegionalUser._id
+              ? { ...user, scopeType: "regional", allowedCountryCodes }
+              : user
+          )
+        );
+        closeRegionalScopeDialog();
+        Toast.fire({
+          icon: "success",
+          title: "Regional scope updated successfully",
+        });
+      }
+    } catch (err) {
+      Toast.fire({
+        icon: "error",
+        title: err?.response?.data?.message || "Failed to update regional scope",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const COLUMN = [
     {
       field: "name",
@@ -100,7 +200,7 @@ const Users = () => {
     {
       field: "role",
       headerName: "Role",
-      width: 200,
+      width: 180,
       headerClassName: "column-header",
       cellClassName: "column-cell",
       renderCell({ row }) {
@@ -112,9 +212,32 @@ const Users = () => {
               justifyContent: "center",
             }}
           >
-            {row.role.roleType}
+            {row.role?.roleType || "-"}
           </div>
         );
+      },
+    },
+    {
+      field: "scopeType",
+      headerName: "Scope",
+      width: 140,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+      renderCell({ row }) {
+        return row.scopeType || "global";
+      },
+    },
+    {
+      field: "allowedCountryCodes",
+      headerName: "Countries",
+      width: 200,
+      headerClassName: "column-header",
+      cellClassName: "column-cell",
+      renderCell({ row }) {
+        const countries = Array.isArray(row.allowedCountryCodes)
+          ? row.allowedCountryCodes
+          : [];
+        return countries.length ? countries.join(", ") : "All";
       },
     },
     {
@@ -165,9 +288,11 @@ const Users = () => {
     {
       field: "actions",
       headerName: "Actions",
+      width: 200,
+      
       renderCell({ row }) {
         return (
-          <Box>
+          <Stack direction="row" spacing={1} alignItems="center">
             <TiTickOutline
               size={24}
               color={`green`}
@@ -182,7 +307,16 @@ const Users = () => {
               style={{ marginLeft: 10, cursor: "pointer" }}
               onClick={() => updateUserStatus(row, false)}
             />
-          </Box>
+            {canManageRegionalUsers && row.role?.roleType === "regionalOps" ? (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => openRegionalScopeDialog(row)}
+              >
+                Edit scope
+              </Button>
+            ) : null}
+          </Stack>
         );
       },
     },
@@ -285,6 +419,54 @@ const Users = () => {
           ),
         }}
       />
+      <Dialog
+        fullWidth
+        maxWidth="md"
+        open={Boolean(editingRegionalUser)}
+        onClose={closeRegionalScopeDialog}
+      >
+        <DialogTitle>Edit Regional Scope</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Box>
+              <Typography fontWeight={700}>
+                {editingRegionalUser?.name || "Regional user"}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Select the countries this regional user can access.
+              </Typography>
+            </Box>
+            <FormLabel>Allowed Countries</FormLabel>
+            <FormGroup
+              row
+              sx={{
+                maxHeight: 360,
+                overflowY: "auto",
+              }}
+            >
+              {STRIPE_COUNTRY_OPTIONS.map((country) => (
+                <FormControlLabel
+                  key={country.code}
+                  control={
+                    <Checkbox
+                      checked={selectedCountryCodes.includes(country.code)}
+                      onChange={() => toggleCountryCode(country.code)}
+                    />
+                  }
+                  label={`${country.label} (${country.code})`}
+                  sx={{ width: { xs: "100%", sm: "48%", md: "32%" } }}
+                />
+              ))}
+            </FormGroup>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRegionalScopeDialog}>Cancel</Button>
+          <Button disabled={loading} variant="contained" onClick={saveRegionalScope}>
+            Update scope
+          </Button>
+        </DialogActions>
+      </Dialog>
     </FormWrapper>
   );
 };
