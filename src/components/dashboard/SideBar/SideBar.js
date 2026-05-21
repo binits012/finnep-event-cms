@@ -9,6 +9,7 @@ import {
   MdEventSeat,
   MdOutlineReportProblem,
   MdSpeed,
+  MdHistory,
 } from "react-icons/md";
 import { FaChevronLeft, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -194,6 +195,11 @@ const SideBar = ({ onToggle }) => {
       title: "Users",
       link: "/users",
       icon: <FaUsers size={24} />,
+    },
+    {
+      title: "Audit",
+      link: "/audit",
+      icon: <MdHistory size={24} />,
     },
     {
       title: "Queue Admin",

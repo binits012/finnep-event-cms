@@ -1,12 +1,13 @@
 import { Breadcrumbs } from "@mui/material";
 import Link from "next/link";
 
-const CustomBreadcrumbs = ({ title, links }) => {
+const CustomBreadcrumbs = ({ title, links = [] }) => {
+  const safeLinks = Array.isArray(links) ? links : [];
   return (
     <div style={{ margin: "20px 0" }}>
       <div className="breadcrumb-global">
         <Breadcrumbs aria-label="breadcrumb" separator=">">
-          {links.map((link) => (
+          {safeLinks.map((link) => (
             <Link
               key={link.path}
               href={link.path}
