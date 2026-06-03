@@ -293,6 +293,8 @@ const Settings = () => {
         const isUpdate = Boolean(values?._id);
         const url = isUpdate ? `setting/${values._id}` : "setting";
         const plain = toPlainOtherInfo(values.otherInfo);
+        delete plain.businessLanding;
+        delete plain.publicSiteConfig;
         let otherInfoMerged = { ...plain };
         const androidUrl = (values.android || "").trim();
         if (androidUrl) {
@@ -407,9 +409,24 @@ const Settings = () => {
         }
 
         const res = await apiHandler("POST", url, true, false, payload);
+        const voicesCount = (() => {
+          try {
+            const bl = JSON.parse(businessLandingJson || "{}");
+            return Array.isArray(bl?.organiserVoices?.items)
+              ? bl.organiserVoices.items.length
+              : Array.isArray(bl?.testimonials)
+                ? bl.testimonials.length
+                : 0;
+          } catch {
+            return 0;
+          }
+        })();
         Toast.fire({
           icon: "success",
-          title: "Settings updated successfully!",
+          title:
+            voicesCount > 0
+              ? `Settings saved (${voicesCount} organiser voice${voicesCount === 1 ? "" : "s"})`
+              : "Settings updated successfully!",
         });
         const saved = res?.data?.data;
         const nextId =
@@ -473,9 +490,29 @@ const Settings = () => {
             setIsEditingJson(false);
             return;
           }
-          setSettingsId(data._id);
-          setJsonContent(JSON.stringify(data, null, 2));
-          setInitialData(data);
+          const dataForEditor = { ...data };
+          const oi =
+            dataForEditor.otherInfo && typeof dataForEditor.otherInfo === "object"
+              ? { ...dataForEditor.otherInfo }
+              : {};
+          if (canEditBusinessLanding() && businessLandingJson.trim()) {
+            try {
+              oi.businessLanding = JSON.parse(businessLandingJson);
+            } catch {
+              /* keep server copy */
+            }
+          }
+          if (publicSiteConfigJson.trim()) {
+            try {
+              oi.publicSiteConfig = JSON.parse(publicSiteConfigJson);
+            } catch {
+              /* keep server copy */
+            }
+          }
+          if (Object.keys(oi).length) dataForEditor.otherInfo = oi;
+          setSettingsId(dataForEditor._id);
+          setJsonContent(JSON.stringify(dataForEditor, null, 2));
+          setInitialData(dataForEditor);
         } catch (err) {
           Toast.fire({
             icon: "error",
