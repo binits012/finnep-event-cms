@@ -32,6 +32,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import apiHandler from "@/RESTAPIs/helper";
 import { formatDate } from "@/utils/dateUtils";
 import Toast from "react-hot-toast";
+import MerchantSiloApiSection from "@/components/merchants/MerchantSiloApiSection";
 
 export default function MerchantsPage() {
   const [merchants, setMerchants] = useState([]);
@@ -49,6 +50,14 @@ export default function MerchantsPage() {
   const [paytrailEnabled, setPaytrailEnabled] = useState(false);
   const [paytrailCommissionRate, setPaytrailCommissionRate] = useState(3);
   const [updatingPaytrail, setUpdatingPaytrail] = useState(false);
+  const [nabilEnabled, setNabilEnabled] = useState(false);
+  const [updatingNabil, setUpdatingNabil] = useState(false);
+
+  const isNepalMerchant = (country) => {
+    if (!country || typeof country !== "string") return false;
+    const normalized = country.trim().toLowerCase();
+    return normalized === "nepal" || normalized === "np";
+  };
 
   // Get available status options based on current status
   const getAvailableStatusOptions = (currentStatus) => {
@@ -206,6 +215,7 @@ export default function MerchantsPage() {
       merchant.paytrailShopInShopData?.commissionRate ||
       parseFloat(process.env.NEXT_PUBLIC_PAYTRAIL_PLATFORM_COMMISSION || '3')
     );
+    setNabilEnabled(merchant.nabilEnabled || false);
 
     setModalOpen(true);
   };
@@ -218,6 +228,7 @@ export default function MerchantsPage() {
     setOtherInfoChanged(false);
     setPaytrailEnabled(false);
     setPaytrailCommissionRate(3);
+    setNabilEnabled(false);
   };
 
   // Handle otherInfo input change
@@ -340,6 +351,49 @@ export default function MerchantsPage() {
       Toast.error(`Error ${enabled ? 'enabling' : 'disabling'} Paytrail`);
     } finally {
       setUpdatingPaytrail(false);
+    }
+  };
+
+  // Handle Nabil toggle (Nepal merchants only)
+  const handleToggleNabil = async (merchantId, enabled) => {
+    setUpdatingNabil(true);
+    try {
+      const response = await apiHandler(
+        "POST",
+        `admin/nabil/toggle`,
+        true,
+        null,
+        {
+          merchantId: merchantId,
+          enabled: enabled
+        }
+      );
+
+      if (response.status === 200 || response.success) {
+        const updatedMerchants = merchants.map((merchant) =>
+          merchant._id === merchantId
+            ? { ...merchant, nabilEnabled: enabled }
+            : merchant
+        );
+        setMerchants(updatedMerchants);
+
+        if (selectedMerchant && selectedMerchant._id === merchantId) {
+          setSelectedMerchant({
+            ...selectedMerchant,
+            nabilEnabled: enabled
+          });
+        }
+
+        setNabilEnabled(enabled);
+        Toast.success(`Nabil ${enabled ? 'enabled' : 'disabled'} successfully`);
+      } else {
+        Toast.error(response.message || response.error || `Failed to ${enabled ? 'enable' : 'disable'} Nabil`);
+      }
+    } catch (error) {
+      console.error("Error toggling Nabil:", error);
+      Toast.error(`Error ${enabled ? 'enabling' : 'disabling'} Nabil`);
+    } finally {
+      setUpdatingNabil(false);
     }
   };
 
@@ -957,6 +1011,59 @@ export default function MerchantsPage() {
                       )}
                     </Grid>
                   </Grid>
+
+                  {isNepalMerchant(selectedMerchant?.country) ? (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* Nabil Configuration */}
+                      <Grid item xs={12}>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                          Nabil Payment Gateway
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={nabilEnabled}
+                                  onChange={(e) => {
+                                    const enabled = e.target.checked;
+                                    setNabilEnabled(enabled);
+                                    if (selectedMerchant?._id) {
+                                      handleToggleNabil(selectedMerchant._id, enabled);
+                                    }
+                                  }}
+                                  disabled={updatingNabil}
+                                  color="primary"
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="body1">
+                                    Enable Nabil for this merchant
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {nabilEnabled
+                                      ? 'Customers can pay in NPR via Nabil EPG (dual-rail with Stripe EUR)'
+                                      : 'Nabil NPR payment option will not be available for this merchant'}
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </Grid>
+                        </Grid>
+                      </Grid>
+                    </>
+                  ) : null}
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <MerchantSiloApiSection
+                    merchantId={selectedMerchant?._id}
+                    merchantWebsite={selectedMerchant?.website}
+                    merchantStatus={selectedMerchant?.status}
+                  />
 
                   <Divider sx={{ my: 2 }} />
 
