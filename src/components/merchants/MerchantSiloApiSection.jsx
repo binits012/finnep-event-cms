@@ -269,7 +269,11 @@ export default function MerchantSiloApiSection({
         true
       );
       setSiloHosting(response?.data?.siloHosting || null);
-      Toast.success("Silo hosting provisioning re-queued");
+      if (response?.data?.reconciled) {
+        Toast.success("Storefront hosting verified and synced");
+      } else {
+        Toast.success("Silo hosting provisioning re-queued");
+      }
       await fetchCredentials({ silent: true });
     } catch (err) {
       console.error("Failed to retry silo hosting:", err);
