@@ -34,6 +34,19 @@ import { formatDate } from "@/utils/dateUtils";
 import Toast from "react-hot-toast";
 import MerchantSiloApiSection from "@/components/merchants/MerchantSiloApiSection";
 
+const toPlainOtherInfo = (otherInfo) => {
+  if (!otherInfo || typeof otherInfo !== "object") return {};
+  if (otherInfo instanceof Map) return Object.fromEntries(otherInfo.entries());
+  return { ...otherInfo };
+};
+
+const otherInfoFeeValue = (plain, key) => {
+  const raw = plain[key];
+  if (raw === undefined || raw === null || raw === "") return "";
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : "";
+};
+
 export default function MerchantsPage() {
   const [merchants, setMerchants] = useState([]);
   const [filteredMerchants, setFilteredMerchants] = useState([]);
@@ -197,15 +210,11 @@ export default function MerchantsPage() {
   // Handle modal open
   const handleViewMerchant = (merchant) => {
     setSelectedMerchant(merchant);
-    // Initialize otherInfo from merchant data
-    // Handle both string and number values from API
-    const initialOtherInfo = merchant.otherInfo || {};
-    const stripeValue = initialOtherInfo.stripe !== undefined && initialOtherInfo.stripe !== null
-      ? (typeof initialOtherInfo.stripe === 'string' ? parseFloat(initialOtherInfo.stripe) : initialOtherInfo.stripe)
-      : '';
+    const initialOtherInfo = toPlainOtherInfo(merchant.otherInfo);
 
     setOtherInfo({
-      stripe: isNaN(stripeValue) ? '' : stripeValue
+      stripe: otherInfoFeeValue(initialOtherInfo, "stripe"),
+      revolut: otherInfoFeeValue(initialOtherInfo, "revolut"),
     });
     setOtherInfoChanged(false);
 
@@ -238,10 +247,13 @@ export default function MerchantsPage() {
       const updatedOtherInfo = { ...otherInfo, [key]: numericValue };
       setOtherInfo(updatedOtherInfo);
 
-      // Check if values have changed from original
-      const originalOtherInfo = selectedMerchant?.otherInfo || {};
-      const originalStripe = originalOtherInfo.stripe !== undefined ? Number(originalOtherInfo.stripe) : '';
-      const originalRevolut = originalOtherInfo.revolut !== undefined ? Number(originalOtherInfo.revolut) : '';
+      const originalOtherInfo = toPlainOtherInfo(selectedMerchant?.otherInfo);
+      const originalStripe = originalOtherInfo.stripe !== undefined && originalOtherInfo.stripe !== ""
+        ? Number(originalOtherInfo.stripe)
+        : "";
+      const originalRevolut = originalOtherInfo.revolut !== undefined && originalOtherInfo.revolut !== ""
+        ? Number(originalOtherInfo.revolut)
+        : "";
 
       const currentStripe = updatedOtherInfo.stripe === '' ? '' : Number(updatedOtherInfo.stripe || 0);
       const currentRevolut = updatedOtherInfo.revolut === '' ? '' : Number(updatedOtherInfo.revolut || 0);
@@ -257,12 +269,10 @@ export default function MerchantsPage() {
 
     setSavingOtherInfo(true);
     try {
-      // Convert empty strings to 0 and ensure all values are numbers
       const payload = {
         otherInfo: {
-          stripe: otherInfo.stripe === '' ? 0 : Number(otherInfo.stripe || 0),
-          revolut: otherInfo.revolut === '' ? 0 : Number(otherInfo.revolut || 0)
-        }
+          stripe: otherInfo.stripe === "" ? 0 : Math.round(Number(otherInfo.stripe || 0)),
+        },
       };
 
       const response = await apiHandler(
@@ -274,16 +284,21 @@ export default function MerchantsPage() {
       );
 
       if (response.status === 200) {
-        // Update the merchant in the list
+        const updated = response.data || {};
+        const mergedOtherInfo = toPlainOtherInfo(updated.otherInfo);
+
         const updatedMerchants = merchants.map((merchant) =>
           merchant._id === selectedMerchant._id
-            ? { ...merchant, otherInfo: payload.otherInfo }
+            ? { ...merchant, otherInfo: mergedOtherInfo }
             : merchant
         );
         setMerchants(updatedMerchants);
 
-        // Update selected merchant
-        setSelectedMerchant({ ...selectedMerchant, otherInfo: payload.otherInfo });
+        setSelectedMerchant({ ...selectedMerchant, ...updated, otherInfo: mergedOtherInfo });
+        setOtherInfo({
+          stripe: otherInfoFeeValue(mergedOtherInfo, "stripe"),
+          revolut: otherInfoFeeValue(mergedOtherInfo, "revolut"),
+        });
         setOtherInfoChanged(false);
         Toast.success("Platform commission updated successfully");
       } else {
@@ -1097,7 +1112,7 @@ export default function MerchantsPage() {
                           placeholder="0"
                           size="small"
                           fullWidth
-                          inputProps={{ min: 0, step: 0.01 }}
+                          inputProps={{ min: 0, step: 1 }}
                           InputProps={{
                             endAdornment: <InputAdornment position="end">cents</InputAdornment>
                           }}
