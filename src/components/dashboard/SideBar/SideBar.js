@@ -10,6 +10,7 @@ import {
   MdOutlineReportProblem,
   MdSpeed,
   MdHistory,
+  MdOutlineAccountBalance,
 } from "react-icons/md";
 import { FaChevronLeft, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -200,6 +201,11 @@ const SideBar = ({ onToggle }) => {
       title: "Audit",
       link: "/audit",
       icon: <MdHistory size={24} />,
+    },
+    {
+      title: "Accounting",
+      link: "/admin/accounting",
+      icon: <MdOutlineAccountBalance size={24} />,
     },
     {
       title: "Queue Admin",

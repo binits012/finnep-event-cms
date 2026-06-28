@@ -191,6 +191,11 @@ const MobileSideBar = ({ onToggle }) => {
       icon: <FaUsers size={24} />,
     },
     {
+      title: "Accounting",
+      link: "/admin/accounting",
+      icon: <FaEuroSign size={24} />,
+    },
+    {
       title: "Queue Admin",
       link: "/admin/queue",
       icon: <MdOutlineSettings size={24} />,

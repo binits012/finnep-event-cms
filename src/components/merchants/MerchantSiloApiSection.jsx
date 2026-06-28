@@ -232,6 +232,13 @@ export default function MerchantSiloApiSection({
   });
 
   const defaultDomain = useMemo(() => hostnameFromUrl(merchantWebsite), [merchantWebsite]);
+  const suggestedStorefrontDomains = useMemo(() => {
+    const domains = [];
+    if (defaultDomain) domains.push(defaultDomain);
+    const cloudfrontHost = (siloHosting?.deployment?.cloudfrontDomainName || "").trim().toLowerCase();
+    if (cloudfrontHost) domains.push(cloudfrontHost);
+    return [...new Set(domains)];
+  }, [defaultDomain, siloHosting?.deployment?.cloudfrontDomainName]);
   const hasActiveCredential = credentials.some((c) => c.status === "active");
   const isMerchantActive = merchantStatus === "active";
 
@@ -289,10 +296,10 @@ export default function MerchantSiloApiSection({
   }, [merchantId, deploymentStatus, fetchCredentials]);
 
   useEffect(() => {
-    if (defaultDomain && !allowedDomainsText) {
-      setAllowedDomainsText(defaultDomain);
+    if (suggestedStorefrontDomains.length > 0 && !allowedDomainsText) {
+      setAllowedDomainsText(suggestedStorefrontDomains.join(", "));
     }
-  }, [defaultDomain, allowedDomainsText]);
+  }, [suggestedStorefrontDomains, allowedDomainsText]);
 
   const parseDomains = () =>
     allowedDomainsText
@@ -315,8 +322,8 @@ export default function MerchantSiloApiSection({
     setSiloEnabled(enabled);
     if (enabled && !hasActiveCredential) {
       setShowCreateForm(true);
-      if (defaultDomain && !allowedDomainsText) {
-        setAllowedDomainsText(defaultDomain);
+      if (suggestedStorefrontDomains.length > 0 && !allowedDomainsText) {
+        setAllowedDomainsText(suggestedStorefrontDomains.join(", "));
       }
     } else {
       setShowCreateForm(false);
@@ -552,7 +559,13 @@ export default function MerchantSiloApiSection({
                 component="pre"
                 sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", m: 0 }}
               >
-                {`cd finnep-silo-storefront\nS3_BUCKET=${siloHosting.deployment.s3Bucket} \\\nNEXT_PUBLIC_SITE_URL=https://${siloHosting.deployment.cloudfrontDomainName || "your-cloudfront-domain"} \\\nCLOUDFRONT_DISTRIBUTION_ID=${siloHosting.deployment.cloudfrontDistributionId || "DIST_ID"} \\\nnpm run deploy:static`}
+                {`cd finnep-silo-storefront
+# Ensure .env has PARTNER_API_BASE_URL, PARTNER_API_KEY, PARTNER_API_SECRET
+S3_BUCKET=${siloHosting.deployment.s3Bucket} \\
+NEXT_PUBLIC_SITE_URL=https://${siloHosting.deployment.cloudfrontDomainName || "your-cloudfront-domain"} \\
+NEXT_PUBLIC_SILO_API_BASE_URL=https://test.okazzo.eu/front/silo-storefront-bff \\
+CLOUDFRONT_DISTRIBUTION_ID=${siloHosting.deployment.cloudfrontDistributionId || "DIST_ID"} \\
+npm run deploy:static`}
               </Typography>
             </Alert>
           )}
@@ -566,14 +579,20 @@ export default function MerchantSiloApiSection({
             >
               Refresh status
             </Button>
-            {hasActiveCredential && deploymentStatus !== "provisioned" && (
+            {hasActiveCredential && (
               <Button
                 size="small"
                 variant="contained"
                 onClick={handleRetryHosting}
                 disabled={retryingHosting || isDeploymentInProgress(deploymentStatus)}
               >
-                {retryingHosting ? <CircularProgress size={18} /> : "Retry provisioning"}
+                {retryingHosting ? (
+                  <CircularProgress size={18} />
+                ) : deploymentStatus === "provisioned" ? (
+                  "Re-sync hosting"
+                ) : (
+                  "Retry provisioning"
+                )}
               </Button>
             )}
           </Box>
@@ -609,8 +628,8 @@ export default function MerchantSiloApiSection({
             margin="normal"
             multiline
             minRows={2}
-            helperText="Comma or newline separated hostnames (e.g. events.merchant.com). Used for browser Origin checks."
-            placeholder={defaultDomain || "events.example.com"}
+            helperText="Comma or newline separated hostnames (merchant site + CloudFront domain). FEB adds the CloudFront hostname automatically after provisioning."
+            placeholder={suggestedStorefrontDomains.join(", ") || defaultDomain || "events.example.com"}
           />
           <FormControlLabel
             control={
