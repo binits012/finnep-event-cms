@@ -38,6 +38,7 @@ import toast from "react-hot-toast";
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -50,8 +51,22 @@ const Events = () => {
   const [pagination, setPagination] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedMerchant, setSelectedMerchant] = useState("");
+  const [selectedLifecycle, setSelectedLifecycle] = useState("");
+  const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
   const [countries, setCountries] = useState([]);
   const [merchants, setMerchants] = useState([]);
+
+  const lifecycleLabel = (status) => {
+    if (status === "completed") return "Completed";
+    if (status === "on-going") return "Ongoing";
+    return "Upcoming";
+  };
+
+  const lifecycleColor = (status) => {
+    if (status === "completed") return "#757575";
+    if (status === "on-going") return "#1976d2";
+    return "#ed6c02";
+  };
 
   const formatDate = (dateString) => {
     return moment(dateString).format("YYYY-MM-DD");
@@ -83,6 +98,19 @@ const Events = () => {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      const next = search.trim();
+      setDebouncedSearch((prev) => {
+        if (prev !== next) {
+          setPage(1);
+        }
+        return next;
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
@@ -92,6 +120,14 @@ const Events = () => {
         }
         if (selectedMerchant) {
           params.merchantId = selectedMerchant;
+        }
+        if (needsReviewOnly) {
+          params.needsReview = true;
+        } else if (selectedLifecycle) {
+          params.status = selectedLifecycle;
+        }
+        if (debouncedSearch) {
+          params.search = debouncedSearch;
         }
         const response = await apiHandler(`GET`, `event`, true, null, undefined, params);
         setEvents(response.data.data);
@@ -106,7 +142,7 @@ const Events = () => {
       }
     };
     fetchEvents();
-  }, [page, limit, selectedCountry, selectedMerchant]);
+  }, [page, limit, selectedCountry, selectedMerchant, selectedLifecycle, needsReviewOnly, debouncedSearch]);
 
   const handleDelete = async (id) => {
     setLoading(true);
@@ -146,9 +182,22 @@ const Events = () => {
     setPage(1); // Reset to first page when filter changes
   };
 
-  const filteredEvents = events.filter((event) =>
-    event.eventTitle?.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleLifecycleChange = (event) => {
+    setSelectedLifecycle(event.target.value);
+    setNeedsReviewOnly(false);
+    setPage(1);
+  };
+
+  const handleNeedsReviewChange = (event) => {
+    const enabled = event.target.value === "needs-review";
+    setNeedsReviewOnly(enabled);
+    if (enabled) {
+      setSelectedLifecycle("");
+    }
+    setPage(1);
+  };
+
+  const filteredEvents = events;
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -329,6 +378,38 @@ const Events = () => {
                     ))}
                   </Select>
                 </FormControl>
+                <FormControl sx={{ minWidth: 180, marginBottom: "20px" }}>
+                  <InputLabel id="review-filter-label">Review</InputLabel>
+                  <Select
+                    labelId="review-filter-label"
+                    id="review-filter"
+                    value={needsReviewOnly ? "needs-review" : ""}
+                    label="Review"
+                    onChange={handleNeedsReviewChange}
+                  >
+                    <MenuItem value="">
+                      <em>All</em>
+                    </MenuItem>
+                    <MenuItem value="needs-review">Needs review</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl sx={{ minWidth: 180, marginBottom: "20px" }} disabled={needsReviewOnly}>
+                  <InputLabel id="lifecycle-filter-label">Lifecycle</InputLabel>
+                  <Select
+                    labelId="lifecycle-filter-label"
+                    id="lifecycle-filter"
+                    value={selectedLifecycle}
+                    label="Lifecycle"
+                    onChange={handleLifecycleChange}
+                  >
+                    <MenuItem value="">
+                      <em>All statuses</em>
+                    </MenuItem>
+                    <MenuItem value="up-coming">Upcoming</MenuItem>
+                    <MenuItem value="on-going">Ongoing</MenuItem>
+                    <MenuItem value="completed">Completed</MenuItem>
+                  </Select>
+                </FormControl>
               </div>
 
               <Grid
@@ -432,6 +513,48 @@ const Events = () => {
                           {formatDate(event.eventDate)}
                         </Typography>
                       )}
+                      <Box display="flex" gap={1} flexWrap="wrap" mb={1}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 1,
+                            color: "#fff",
+                            backgroundColor: lifecycleColor(event.status),
+                          }}
+                        >
+                          {lifecycleLabel(event.status)}
+                        </Typography>
+                        {event.featured?.isFeatured && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              color: "#fff",
+                              backgroundColor: "#9c27b0",
+                            }}
+                          >
+                            Featured
+                          </Typography>
+                        )}
+                        {!event.active && event.status !== "completed" && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              color: "#000",
+                              backgroundColor: "#ffeb3b",
+                            }}
+                          >
+                            Needs review
+                          </Typography>
+                        )}
+                      </Box>
                     {event.status !== 'completed' && (
                       <Button
                         style={{

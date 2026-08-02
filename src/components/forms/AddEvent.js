@@ -268,6 +268,7 @@ const AddEvent = ({ editMode }) => {
       eventPhoto: [],
       transportLink: "",
       active: false,
+      status: "up-coming",
       fbLink: "",
       xLink: "",
       igLink: "",
@@ -1048,6 +1049,19 @@ const AddEvent = ({ editMode }) => {
           <FormSection title="Others">
             <Grid container spacing={2}>
               <Grid item container md={10} direction={"column"}>
+                <FormLabel className="label">Lifecycle status</FormLabel>
+                <Typography variant="body1" sx={{ mt: 1, mb: 1 }}>
+                  {formik.values.status === "completed"
+                    ? "Completed"
+                    : formik.values.status === "on-going"
+                    ? "Ongoing"
+                    : "Upcoming"}
+                  {formik.values.status === "completed"
+                    ? " (set automatically after the event ends)"
+                    : ""}
+                </Typography>
+              </Grid>
+              <Grid item container md={10} direction={"column"}>
                 <FormLabel htmlFor="active" className="label">
                   Active?
                 </FormLabel>
@@ -1058,12 +1072,14 @@ const AddEvent = ({ editMode }) => {
                       checked={formik.values.active}
                       id="active"
                       name="active"
+                      disabled={formik.values.status === "completed"}
                     />
                   }
                   htmlFor="active"
                   label="Is this event acitve, happening?"
                   value={formik.values.active}
                   onChange={(e) =>
+                    formik.values.status !== "completed" &&
                     formik.setFieldValue("active", !formik.values.active)
                   }
                 />
