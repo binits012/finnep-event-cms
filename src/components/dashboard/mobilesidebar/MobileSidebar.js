@@ -9,6 +9,8 @@ import {
   MdOutlineSettings,
   MdOutlineReportProblem,
   MdSpeed,
+  MdHistory,
+  MdOutlineEmail,
 } from "react-icons/md";
 import { FaBell, FaEuroSign, FaHouseUser, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -189,6 +191,16 @@ const MobileSideBar = ({ onToggle }) => {
       title: "Users",
       link: "/users",
       icon: <FaUsers size={24} />,
+    },
+    {
+      title: "Audit",
+      link: "/audit",
+      icon: <MdHistory size={24} />,
+    },
+    {
+      title: "Outbound Mail",
+      link: "/outbound-mail",
+      icon: <MdOutlineEmail size={24} />,
     },
     {
       title: "Accounting",

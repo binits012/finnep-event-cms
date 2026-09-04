@@ -11,6 +11,7 @@ import {
   MdSpeed,
   MdHistory,
   MdOutlineAccountBalance,
+  MdOutlineEmail,
 } from "react-icons/md";
 import { FaChevronLeft, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
@@ -201,6 +202,11 @@ const SideBar = ({ onToggle }) => {
       title: "Audit",
       link: "/audit",
       icon: <MdHistory size={24} />,
+    },
+    {
+      title: "Outbound Mail",
+      link: "/outbound-mail",
+      icon: <MdOutlineEmail size={24} />,
     },
     {
       title: "Accounting",
