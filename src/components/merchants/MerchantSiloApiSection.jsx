@@ -12,8 +12,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   FormControlLabel,
   Grid,
+  MenuItem,
+  Select,
   IconButton,
   Switch,
   TextField,
@@ -216,6 +219,7 @@ export default function MerchantSiloApiSection({
   const [siloHosting, setSiloHosting] = useState(null);
   const [loading, setLoading] = useState(false);
   const [retryingHosting, setRetryingHosting] = useState(false);
+  const [savingChromeScale, setSavingChromeScale] = useState(false);
   const [creating, setCreating] = useState(false);
   const [rotatingKeyId, setRotatingKeyId] = useState(null);
   const [revokingKeyId, setRevokingKeyId] = useState(null);
@@ -259,6 +263,27 @@ export default function MerchantSiloApiSection({
       if (!silent) setLoading(false);
     }
   }, [merchantId, onCredentialsChange]);
+
+  const handleChromeScaleChange = async (chromeScale) => {
+    if (!merchantId || chromeScale === (siloHosting?.chromeScale || "regular")) return;
+    setSavingChromeScale(true);
+    try {
+      const response = await apiHandler(
+        "PATCH",
+        `merchant/${merchantId}/silo-chrome-scale`,
+        true,
+        null,
+        { chromeScale }
+      );
+      setSiloHosting(response?.data?.siloHosting || { ...(siloHosting || {}), chromeScale });
+      Toast.success("Bar and footer size saved");
+    } catch (err) {
+      console.error("Failed to update bar and footer size:", err);
+      Toast.error(err?.response?.data?.message || "Failed to update bar and footer size");
+    } finally {
+      setSavingChromeScale(false);
+    }
+  };
 
   const handleRetryHosting = async () => {
     setRetryingHosting(true);
@@ -477,6 +502,27 @@ export default function MerchantSiloApiSection({
         }
         sx={{ mb: 2 }}
       />
+
+      {(hasActiveCredential || siloHosting?.enabled) && (
+        <Box sx={{ mb: 2, maxWidth: 420 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.75 }}>
+            Bar and footer size
+          </Typography>
+          <FormControl size="small" fullWidth disabled={savingChromeScale || loading}>
+            <Select
+              value={siloHosting?.chromeScale || "regular"}
+              onChange={(event) => handleChromeScaleChange(event.target.value)}
+            >
+              <MenuItem value="small">Small — compact bar and footer</MenuItem>
+              <MenuItem value="regular">Regular — larger bar and footer</MenuItem>
+              <MenuItem value="large">Large — display bar and footer</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
+            Sets the name, links, and logo in the top bar and the footer together.
+          </Typography>
+        </Box>
+      )}
 
       {(hasActiveCredential || siloHosting?.enabled) && (
         <Box sx={{ mb: 3, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>

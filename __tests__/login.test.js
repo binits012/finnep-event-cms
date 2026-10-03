@@ -2,10 +2,12 @@ import { Provider } from "react-redux";
 import { render, screen } from "@testing-library/react";
 import Login from "@/components/Login";
 import configureStore from "redux-mock-store";
-import { useRouter } from "next/router";
-
-jest.mock("next/router", () => ({
-  useRouter: jest.fn(),
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
 }));
 
 const mockStore = configureStore([]);

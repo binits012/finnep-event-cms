@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import axios from "axios";
-import { useRouter } from "next/router";
 import Login from "@/components/Login";
 import Dashboard from "@/app";
 import { Provider } from "react-redux";
@@ -8,9 +7,12 @@ import configureStore from "redux-mock-store";
 
 jest.mock("axios");
 
-// Mock next/router
-jest.mock("next/router", () => ({
-  useRouter: jest.fn(),
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
 }));
 const mockStore = configureStore([]);
 
