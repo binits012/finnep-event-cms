@@ -318,16 +318,6 @@ const VenueConfigurePage = () => {
 			return
 		}
 
-		if (!venue?.backgroundSvg?.svgContent) {
-			console.error('No existing backgroundSvg.svgContent found - aborting to prevent data loss')
-			SwalConfig.fire({
-				title: 'Error!',
-				text: 'Cannot save: no background SVG content found. Please upload a background SVG first.',
-				icon: 'error'
-			})
-			return
-		}
-
 		setSaving(true)
 		try {
 			const updatedSections = Array.isArray(venue?.sections)
@@ -375,26 +365,28 @@ const VenueConfigurePage = () => {
 				})
 				: []
 
-			// Update alignment fields AND display config, preserving all existing backgroundSvg properties
-			const existingBgSvg = venue.backgroundSvg
+			const existingBgSvg = venue?.backgroundSvg || {}
+			const backgroundSvg = {
+				opacity: existingBgSvg.opacity,
+				rotation: existingBgSvg.rotation,
+				sourceUrl: existingBgSvg.sourceUrl,
+				sourceType: existingBgSvg.sourceType,
+				isVisible: existingBgSvg.isVisible,
+				translateX: bgSvgConfig.translateX,
+				translateY: bgSvgConfig.translateY,
+				scale: bgSvgConfig.scale,
+				displayConfig: {
+					dotSize: displayConfig.dotSize,
+					rowGap: displayConfig.rowGap,
+					seatGap: displayConfig.seatGap
+				}
+			}
+			if (existingBgSvg.svgContent) {
+				backgroundSvg.svgContent = existingBgSvg.svgContent
+			}
 			const updateData = {
 				sections: updatedSections,
-				backgroundSvg: {
-					svgContent: existingBgSvg.svgContent,
-					fileName: existingBgSvg.fileName,
-					opacity: existingBgSvg.opacity,
-					rotation: existingBgSvg.rotation,
-					// Update the alignment fields
-					translateX: bgSvgConfig.translateX,
-					translateY: bgSvgConfig.translateY,
-					scale: bgSvgConfig.scale,
-					// Save display config for consistent rendering on customer app
-					displayConfig: {
-						dotSize: displayConfig.dotSize,
-						rowGap: displayConfig.rowGap,
-						seatGap: displayConfig.seatGap
-					}
-				}
+				backgroundSvg
 			}
 
 			console.log('Saving backgroundSvg update:', updateData)

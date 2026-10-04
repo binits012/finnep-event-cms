@@ -50,13 +50,20 @@ const SeatMapOverview = ({
 	}
 
 	const bounds = getBounds()
-	const totalWidth = bounds.maxX - bounds.minX
-	const totalHeight = bounds.maxY - bounds.minY
+	const totalWidth = Math.max(bounds.maxX - bounds.minX, 1)
+	const totalHeight = Math.max(bounds.maxY - bounds.minY, 1)
 
 	// Scale factor for overview
 	const scaleX = width / totalWidth
 	const scaleY = height / totalHeight
 	const scale = Math.min(scaleX, scaleY)
+	const hasCentralFeature = Boolean(centralFeature?.type && centralFeature.type !== 'none')
+	const rectangleX = Number(centralFeature?.x)
+	const rectangleY = Number(centralFeature?.y)
+	const canDrawRectangle = Number.isFinite(rectangleX) && Number.isFinite(rectangleY)
+	const circleCenterX = Number(centralFeature?.centerX)
+	const circleCenterY = Number(centralFeature?.centerY)
+	const canDrawCircle = Number.isFinite(circleCenterX) && Number.isFinite(circleCenterY)
 
 	// Convert main viewport to overview coordinates
 	const overviewViewport = {
@@ -109,23 +116,22 @@ const SeatMapOverview = ({
 				}}
 			>
 				<svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }}>
-					{/* Draw central feature */}
-					{centralFeature && centralFeature.type !== 'none' && (
+					{hasCentralFeature && (canDrawCircle || canDrawRectangle) && (
 						<g>
-							{centralFeature.shape === 'circle' && (
+							{centralFeature.shape === 'circle' && canDrawCircle && (
 								<circle
-									cx={(centralFeature.centerX - bounds.minX) * scale}
-									cy={(centralFeature.centerY - bounds.minY) * scale}
+									cx={(circleCenterX - bounds.minX) * scale}
+									cy={(circleCenterY - bounds.minY) * scale}
 									r={(centralFeature.radiusX || 50) * scale}
 									fill={centralFeature.color || '#E3F2FD'}
 									stroke={centralFeature.strokeColor || '#1976D2'}
 									strokeWidth={1}
 								/>
 							)}
-							{centralFeature.shape === 'rectangle' && (
+							{centralFeature.shape === 'rectangle' && canDrawRectangle && (
 								<rect
-									x={(centralFeature.x - bounds.minX) * scale}
-									y={(centralFeature.y - bounds.minY) * scale}
+									x={(rectangleX - bounds.minX) * scale}
+									y={(rectangleY - bounds.minY) * scale}
 									width={(centralFeature.width || 100) * scale}
 									height={(centralFeature.height || 100) * scale}
 									fill={centralFeature.color || '#E3F2FD'}
